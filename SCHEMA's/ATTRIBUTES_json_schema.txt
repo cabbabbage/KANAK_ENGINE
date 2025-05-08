@@ -1,0 +1,52 @@
+{
+  // Default frames folder for looping (idle) animation
+  "defaultFramesPath": "path/to/frames/folder",
+
+  // Scale range (percentage of original size)
+  "sizeScaleRange": {
+    "min": 0.5,
+    "max": 1.5
+  },
+
+  // Does this object block the player (has a collision boundary)?
+  "hasBoundary": true,
+
+  // Relative vertical position (0.0–1.0) at which the boundary line is drawn
+  "boundaryThreshold": 0.8,
+
+  // Minimum spacing in pixels from another instance of the same object
+  "peerSpacing": 100,
+
+  // Minimum spacing in pixels from any other object
+  "globalSpacing": 100,
+
+  // Initial draw order index
+  "zIndex": 0,
+
+  // Can the player interact with this object?
+  "isInteractable": true,
+
+  // Interaction radius in pixels around the object's collision mask
+  "interactionRange": 10,
+
+  // Audio file to play during the interaction animation
+  "interactionAudioPath": "path/to/interaction/audio",
+
+  // Frames folder for the interaction animation
+  "interactionFramesPath": "path/to/interaction/frames",
+
+  // Frames to display after the interaction animation completes
+  "postInteractionFramesPath": "path/to/post-interaction/frames",
+
+  // Can this object be broken?
+  "isBreakable": true,
+
+  // Audio file to play when the object breaks
+  "breakAudioPath": "path/to/break/audio",
+
+  // Frames folder for the break animation
+  "breakFramesPath": "path/to/break/frames",
+
+  // Frames to display after the break animation completes
+  "postBreakFramesPath": "path/to/post-break/frames"
+}
