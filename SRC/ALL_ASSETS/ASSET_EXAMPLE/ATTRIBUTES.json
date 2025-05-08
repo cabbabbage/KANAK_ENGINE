@@ -1,0 +1,40 @@
+{
+  "assetCode": "EX",
+  "defaultFramesPath": "FRAMES",
+  "sizeScaleRange": {
+    "min": 0.5,
+    "max": 1.5
+  },
+  "hasBoundary": true,
+  "volume": 10,
+  "boundaryThreshold": 0.8,
+  "peerSpacing": 100,
+  "globalSpacing": 100,
+  "zIndex": 0,
+  "isInteractable": true,
+  "interaction_range": 50,
+  "interactions": [
+    {
+      "trigger": "collision",
+      "audioPath": "path/to/collision/audio",
+      "framesPath": "FRAMES_COLLISION",
+      "postFramesPath": "FRAMES"
+    },
+    {
+      "trigger": "hit",
+      "audioPath": "path/to/hit/audio",
+      "framesPath": "FRAMES_HIT",
+      "postFramesPath": "FRAMES"
+    },
+    {
+      "trigger": "proximity",
+      "audioPath": "path/to/proximity/audio",
+      "framesPath": "FRAMES_PROXIMITY",
+      "postFramesPath": "FRAMES"
+    }
+  ],
+  "renderQualityPercent": 100,
+  "positionedOffWall": false,
+  "wallDirection": "left",
+  "wallOffset": 0
+}
