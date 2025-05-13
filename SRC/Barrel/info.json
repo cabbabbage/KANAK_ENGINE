@@ -1,0 +1,94 @@
+{
+  "types": [
+    "Player",
+    "Object",
+    "Background",
+    "Enemy"
+  ],
+  "available_animations": [
+    "default",
+    "interaction",
+    "attack",
+    "collision"
+  ],
+  "child_only": false,
+  "is_passable": false,
+  "collision_area": "impassable_area.json",
+  "z_threshold": 55,
+  "is_interactable": true,
+  "interaction_animation": {
+    "frames_path": "interaction",
+    "on_end": "",
+    "loop": false,
+    "audio_path": "",
+    "volume": 0
+  },
+  "interaction_area": "interaction_area.json",
+  "is_attackable": true,
+  "attack_animation": {
+    "frames_path": "attack",
+    "on_end": "",
+    "loop": false,
+    "audio_path": "",
+    "volume": 0
+  },
+  "attack_area": "attack_area.json",
+  "is_collidable": true,
+  "collision_animation": {
+    "frames_path": "collision",
+    "on_end": "",
+    "loop": false,
+    "audio_path": "",
+    "volume": 0
+  },
+  "asset_name": "Barrel",
+  "asset_type": "Player",
+  "default_animation": {
+    "on_start": "default",
+    "on_end": "default",
+    "loop": true,
+    "audio_path": "",
+    "volume": 0
+  },
+  "center": {
+    "x": 1016,
+    "y": 530
+  },
+  "size_settings": {
+    "scale_percentage": 10.761078998073218,
+    "variability_percentage": 0.0
+  },
+  "last_scaled_to": 10.761078998073218,
+  "visited_tabs": [
+    "On-Attack",
+    "On-Interaction",
+    "Passability",
+    "Region-Based Child Assets",
+    "Spacing"
+  ],
+  "spacing_area": "spacing_area.json",
+  "overlays": [
+    {
+      "folder": "overlay_0",
+      "offset_x": 0,
+      "offset_y": 0,
+      "scale_pct": 100.0,
+      "rotation": 0,
+      "mode": "normal",
+      "alpha_pct": 100,
+      "blur_radius": 0.0,
+      "fade_radius": 0.0
+    }
+  ],
+  "child_assets": [
+    {
+      "asset": "Book",
+      "area_file": "child_0_area.json",
+      "z_offset": 0,
+      "min": 1,
+      "max": 1,
+      "skew": 0.0,
+      "terminate_with_parent": false
+    }
+  ]
+}

@@ -23,9 +23,10 @@ class BasicInfoPage(ttk.Frame):
         self.default_frames_path = None
         self.audio_path = ""
         self.on_rename = on_rename_callback
-
-        # track if user picked new frames this session
         self._frames_changed = False
+
+        # Child-only flag
+        self.child_only_var = tk.BooleanVar(value=False)
 
         # Preview & center state
         self.preview_frames = []
@@ -36,44 +37,35 @@ class BasicInfoPage(ttk.Frame):
         self.center_x = None
         self.center_y = None
         self.center_dot_id = None
+        self._draw_color = DRAW_COLOR
 
         W = 20  # uniform widget width
 
         # — Styles —
         style = ttk.Style(self)
-        style.configure('Main.TButton',
-                        font=FONT, padding=6,
-                        background=MAIN_COLOR,
-                        foreground=SECONDARY_COLOR)
+        style.configure('Main.TButton', font=FONT, padding=6,
+                        background=MAIN_COLOR, foreground=SECONDARY_COLOR)
         style.map('Main.TButton',
                   background=[('active', SECONDARY_COLOR)],
                   foreground=[('active', MAIN_COLOR)])
-        style.configure('Secondary.TButton',
-                        font=FONT, padding=6,
-                        background=SECONDARY_COLOR,
-                        foreground=MAIN_COLOR)
+        style.configure('Secondary.TButton', font=FONT, padding=6,
+                        background=SECONDARY_COLOR, foreground=MAIN_COLOR)
         style.map('Secondary.TButton',
                   background=[('active', MAIN_COLOR)],
                   foreground=[('active', SECONDARY_COLOR)])
-        style.configure('Main.TMenubutton',
-                        font=FONT, padding=6,
-                        background='white',
-                        foreground=SECONDARY_COLOR,
+        style.configure('Main.TMenubutton', font=FONT, padding=6,
+                        background='white', foreground=SECONDARY_COLOR,
                         borderwidth=2, relief='solid')
         style.map('Main.TMenubutton',
                   background=[('active', 'white')],
                   foreground=[('active', SECONDARY_COLOR)])
         style.configure('Large.TLabel', font=FONT)
-        style.configure('LargeBold.TLabel',
-                        font=FONT_BOLD,
+        style.configure('LargeBold.TLabel', font=FONT_BOLD,
                         foreground=SECONDARY_COLOR)
         style.configure('Large.TEntry', font=FONT)
-        style.configure('Link.TLabel',
-                        font=FONT,
+        style.configure('Link.TLabel', font=FONT,
                         foreground=SECONDARY_COLOR)
         style.configure('Large.TCheckbutton', font=FONT)
-
-        self._draw_color = DRAW_COLOR  # center‐dot color
 
         # equal column weights
         for col in range(5):
@@ -99,6 +91,15 @@ class BasicInfoPage(ttk.Frame):
         self.type_menu = ttk.OptionMenu(self, self.type_var, "")
         self.type_menu.config(style='Main.TMenubutton', width=W)
         self.type_menu.grid(row=2, column=1, sticky="w", padx=12, pady=6)
+
+        # — Child-Only Asset Checkbox —
+        ttk.Checkbutton(
+            self,
+            text="Child-Only Asset",
+            variable=self.child_only_var,
+            style='Large.TCheckbutton'
+        ).grid(row=2, column=2, columnspan=2,
+               sticky="w", padx=12, pady=6)
 
         # — Default Frames —
         ttk.Label(self, text="Default Frames:", style='Large.TLabel')\
@@ -160,7 +161,7 @@ class BasicInfoPage(ttk.Frame):
         self.volume_spin.grid(row=5, column=4,
                               sticky="w", padx=12, pady=6)
 
-        # — Save Button (above preview) —
+        # — Save Button —
         ttk.Button(self,
                    text="Save",
                    command=self.save,
@@ -179,7 +180,6 @@ class BasicInfoPage(ttk.Frame):
         )
         self.preview_canvas.bind("<Button-1>", self._on_canvas_click)
 
-
     def select_frames(self):
         folder = filedialog.askdirectory()
         if not folder:
@@ -188,7 +188,6 @@ class BasicInfoPage(ttk.Frame):
         self.default_frames_path = folder
         self.default_frames_label.config(text=os.path.basename(folder))
         self._load_preview_frames()
-
 
     def _load_preview_frames(self):
         if self.preview_job:
@@ -219,7 +218,6 @@ class BasicInfoPage(ttk.Frame):
             self.current_preview_idx = 0
             self._animate_preview()
 
-
     def _animate_preview(self):
         frame = self.preview_frames[self.current_preview_idx]
         self.preview_canvas.delete("all")
@@ -234,7 +232,6 @@ class BasicInfoPage(ttk.Frame):
             200, self._animate_preview
         )
 
-
     def _draw_center_dot(self):
         if self.center_dot_id:
             self.preview_canvas.delete(self.center_dot_id)
@@ -248,7 +245,6 @@ class BasicInfoPage(ttk.Frame):
             fill=self._draw_color, outline=''
         )
 
-
     def _on_canvas_click(self, event):
         if not self.orig_w:
             return
@@ -261,11 +257,9 @@ class BasicInfoPage(ttk.Frame):
         self.center_y = int(disp_y / self.scale)
         self._draw_center_dot()
 
-
     def open_frames_folder(self, event):
         if self.default_frames_path and os.path.isdir(self.default_frames_path):
             os.startfile(self.default_frames_path)
-
 
     def select_audio(self):
         file = filedialog.askopenfilename(
@@ -275,11 +269,9 @@ class BasicInfoPage(ttk.Frame):
             self.audio_path = file
             self.audio_label.config(text=os.path.basename(file))
 
-
     def open_audio_file(self, event):
         if self.audio_path and os.path.isfile(self.audio_path):
             os.startfile(self.audio_path)
-
 
     def _update_on_end_state(self):
         state = "disabled" if self.loop_var.get() else "normal"
@@ -291,9 +283,8 @@ class BasicInfoPage(ttk.Frame):
         for i in range(end_index + 1):
             menu.entryconfig(i, state=state)
 
-
     def load(self, info_path):
-        """Load JSON, initialize defaults, populate UI & preview."""
+        """Load JSON, populate fields, and apply child_only flag."""
         self.asset_path = info_path
         if not info_path:
             return
@@ -303,7 +294,7 @@ class BasicInfoPage(ttk.Frame):
         with open(info_path, "r") as f:
             data = json.load(f)
 
-        # initialize missing keys…
+        # ensure keys exist
         changed = False
         if "types" not in data:
             data["types"] = ["Player","Object","Background","Enemy"]
@@ -315,63 +306,64 @@ class BasicInfoPage(ttk.Frame):
             data["child_only"] = False
             changed = True
         if changed:
-            with open(info_path,"w") as f:
+            with open(info_path, "w") as f:
                 json.dump(data, f, indent=4)
 
-        # Asset name and type…
+        # Asset name & type
         self.name_entry.delete(0, tk.END)
-        self.name_entry.insert(0, data.get("asset_name",""))
-        types = data["types"]
-        self.type_var.set(data.get("asset_type", types[0]))
+        self.name_entry.insert(0, data.get("asset_name", ""))
+        types = data.get("types", [])
+        self.type_var.set(data.get("asset_type", types[0] if types else ""))
         menu = self.type_menu["menu"]
-        menu.delete(0,"end")
+        menu.delete(0, "end")
         for t in types:
             menu.add_command(label=t,
                              command=lambda v=t: self.type_var.set(v))
 
-        # Default animation…
+        # Child-only
+        self.child_only_var.set(data.get('child_only', False))
+
+        # Default animation & frames
         default = data.get("default_animation", {})
-        on_start = default.get("on_start","")
+        on_start = default.get("on_start", "")
         self.default_frames_label.config(text=on_start)
         self.loop_var.set(default.get("loop", True))
-        folder = os.path.join(os.path.dirname(info_path), on_start)
-        if on_start and os.path.isdir(folder):
-            self.default_frames_path = folder
-            center = data.get("center")
-            if center:
-                self.center_x = center.get("x")
-                self.center_y = center.get("y")
-            self._load_preview_frames()
+        if on_start:
+            folder = os.path.join(os.path.dirname(info_path), on_start)
+            if os.path.isdir(folder):
+                self.default_frames_path = folder
+                center = data.get("center")
+                if center:
+                    self.center_x = center.get("x")
+                    self.center_y = center.get("y")
+                self._load_preview_frames()
 
-        # On-end dropdown…
+        # On-end options
         menu = self.on_end_menu["menu"]
-        menu.delete(0,"end")
+        menu.delete(0, "end")
         for anim in data.get("available_animations", []):
             menu.add_command(label=anim,
                              command=lambda v=anim: self.on_end_var.set(v))
-        self.on_end_var.set(default.get("on_end","default"))
+        self.on_end_var.set(default.get("on_end", "default"))
         self._update_on_end_state()
 
-        # Audio/volume…
-        self.audio_path = default.get("audio_path","")
+        # Audio & volume
+        self.audio_path = default.get("audio_path", "")
         self.audio_label.config(
             text=os.path.basename(self.audio_path) if self.audio_path else ""
         )
-        self.volume_var.set(default.get("volume",0))
-
+        self.volume_var.set(default.get("volume", 0))
 
     def save(self):
-        """Save basic info; rename folder, update JSON, copy frames,
-        and propagate any child‐asset references across SRC."""
+        """Save basic info, including child_only flag and animation settings."""
         if not self.asset_path:
-            messagebox.showerror("Error","No asset selected.")
+            messagebox.showerror("Error", "No asset selected.")
             return
 
-        # load existing JSON
-        with open(self.asset_path,"r") as f:
+        with open(self.asset_path, "r") as f:
             data = json.load(f)
 
-        # rename folder if needed…
+        # Rename logic
         old_name = os.path.basename(os.path.dirname(self.asset_path))
         new_name = self.name_entry.get().strip() or old_name
         asset_root = os.path.dirname(os.path.dirname(self.asset_path))
@@ -379,17 +371,13 @@ class BasicInfoPage(ttk.Frame):
         new_folder = os.path.join(asset_root, new_name)
         if new_name != old_name:
             if os.path.exists(new_folder):
-                messagebox.showerror("Error",f"Folder '{new_name}' exists.")
+                messagebox.showerror("Error", f"Folder '{new_name}' exists.")
                 return
-            # 1) rename the folder on disk
             os.rename(old_folder, new_folder)
-            # 2) update our own asset_path
-            self.asset_path = os.path.join(new_folder,"info.json")
-            # 3) tell main app to rename list entry
+            self.asset_path = os.path.join(new_folder, "info.json")
             if self.on_rename:
                 self.on_rename(old_name, new_name)
-
-            # 4) Now walk every other asset and update child_assets references:
+            # update references in child_assets of other assets
             for root, dirs, files in os.walk(asset_root):
                 if "info.json" not in files:
                     continue
@@ -397,26 +385,24 @@ class BasicInfoPage(ttk.Frame):
                 with open(path, "r") as jf:
                     j = json.load(jf)
                 changed = False
-
-                # Update any child_assets entries
                 for child in j.get("child_assets", []):
                     if child.get("asset") == old_name:
                         child["asset"] = new_name
                         changed = True
-
-                # If this is a spacing page or any other that lists assets, you
-                # could add other keys here likewise.
-
                 if changed:
                     with open(path, "w") as jf:
                         json.dump(j, jf, indent=4)
 
-        # --- now update this asset's own JSON fields below as before ---
-
+        # Basic fields
         data["asset_name"] = new_name
         data["asset_type"] = self.type_var.get()
+        data["child_only"] = self.child_only_var.get()
+
+        # Animations & audio
+        # retrieve existing defaults to preserve missing keys
+        default = data.get("default_animation", {})
         anim = {
-            "on_start":   "default",
+            "on_start":   default.get("on_start", "default"),
             "on_end":     "default" if self.loop_var.get() else self.on_end_var.get(),
             "loop":       self.loop_var.get(),
             "audio_path": self.audio_path,
@@ -424,19 +410,19 @@ class BasicInfoPage(ttk.Frame):
         }
         data["default_animation"] = anim
         if "default" not in data.get("available_animations", []):
-            data.setdefault("available_animations",[]).append("default")
+            data.setdefault("available_animations", []).append("default")
         if self.center_x is not None and self.center_y is not None:
             data["center"] = {"x": self.center_x, "y": self.center_y}
 
-        # write JSON back
-        with open(self.asset_path,"w") as f:
+        # Persist JSON
+        with open(self.asset_path, "w") as f:
             json.dump(data, f, indent=4)
 
-        # only overwrite default/ if user picked new frames
+        # Copy frames directory if changed
         if self._frames_changed and self.default_frames_path:
             dest = os.path.join(os.path.dirname(self.asset_path), "default")
             if os.path.exists(dest):
                 shutil.rmtree(dest)
             shutil.copytree(self.default_frames_path, dest)
 
-        messagebox.showinfo("Saved","Basic info saved.")
+        messagebox.showinfo("Saved", "Basic info saved.")
