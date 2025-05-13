@@ -1,8 +1,11 @@
+# pages/boundary.py
+
 import os
 import tkinter as tk
 from tkinter import messagebox, ttk
 from PIL import Image, ImageTk, ImageDraw, ImageFilter
 import numpy as np
+import scipy.ndimage as ndi
 
 def union_mask_from_frames(frames):
     """Union of all non-transparent pixels across a list of RGBA PIL Images."""
@@ -32,7 +35,8 @@ class BoundaryConfigurator(tk.Toplevel):
 
         # Load frames
         try:
-            files = sorted(f for f in os.listdir(base_folder) if f.lower().endswith('.png'))
+            files = sorted(f for f in os.listdir(base_folder)
+                           if f.lower().endswith('.png'))
         except OSError:
             messagebox.showerror("Error", f"Cannot access {base_folder}")
             self.destroy()
@@ -61,11 +65,18 @@ class BoundaryConfigurator(tk.Toplevel):
         union = union_mask_from_frames(self.frames)
         self.disp_mask = union.resize((disp_w, disp_h), Image.NEAREST)
 
+        # Precompute boolean mask array for fast filters
+        self._mask_arr = np.array(self.disp_mask) > 0
+
+        # Debounce handle
+        self._preview_job = None
+
         # Mode buttons
         btn_frame = ttk.Frame(self)
         btn_frame.pack(pady=5)
         for mode in ('mask', 'circle', 'draw'):
-            btn = ttk.Button(btn_frame, text=mode.title(), style='BC.TButton',
+            btn = ttk.Button(btn_frame, text=mode.title(),
+                             style='BC.TButton',
                              command=lambda m=mode: self.select_mode(m))
             btn.pack(side='left', padx=5)
 
@@ -85,87 +96,141 @@ class BoundaryConfigurator(tk.Toplevel):
         self.draw_mask = None
 
         # Next button
-        next_btn = ttk.Button(self, text="Next", style='BC.TButton', command=self.finish)
+        next_btn = ttk.Button(self, text="Next", style='BC.TButton',
+                              command=self.finish)
         next_btn.pack(pady=10)
 
     def select_mode(self, mode):
-        # Reset overlay, cursor, sliders, events
         self.mode = mode
+        # clear previous overlays, sliders, events
         if self.overlay_item:
             self.canvas.delete(self.overlay_item)
             self.overlay_item = None
         if self.cursor_oval:
             self.canvas.delete(self.cursor_oval)
             self.cursor_oval = None
-        for slider in self.sliders.values():
-            slider.destroy()
+        for s in self.sliders.values():
+            s.destroy()
         self.sliders.clear()
         self.expand = 0
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<Button-1>")
         self.canvas.unbind("<Motion>")
 
-        disp_w = int(self.orig_w * self.scale)
-        disp_h = int(self.orig_h * self.scale)
-
         if mode == 'mask':
-            self._refresh_mask_preview()
+            self._schedule_mask_preview()
             ctrl = ttk.Frame(self)
             ctrl.pack(pady=10)
-            ttk.Label(ctrl, text="Expand:", style='Large.TLabel').pack(side='left')
-            ttk.Button(ctrl, text="-5", style='BC.TButton', command=lambda: self._change_expand(-5)).pack(side='left', padx=5)
-            ttk.Button(ctrl, text="+5", style='BC.TButton', command=lambda: self._change_expand(5)).pack(side='left', padx=5)
+            ttk.Label(ctrl, text="Expand:", style='Large.TLabel')\
+                .pack(side='left')
+            ttk.Button(ctrl, text="-5", style='BC.TButton',
+                       command=lambda: self._change_expand(-5))\
+                .pack(side='left', padx=5)
+            ttk.Button(ctrl, text="+5", style='BC.TButton',
+                       command=lambda: self._change_expand(5))\
+                .pack(side='left', padx=5)
             self._add_slider('top_pct', 0, 100, 0)
             self._add_slider('bottom_pct', 0, 100, 0)
 
         elif mode == 'circle':
-            self.circle = {'w': disp_w//2, 'h': disp_h//2, 'x': disp_w//2, 'y': disp_h//2}
+            disp_w = int(self.orig_w * self.scale)
+            disp_h = int(self.orig_h * self.scale)
+            self.circle = {'w':disp_w//2,'h':disp_h//2,
+                           'x':disp_w//2,'y':disp_h//2}
             self._draw_circle()
-            for name, mn, mx, val in (('w',10,disp_w,self.circle['w']),
-                                       ('h',10,disp_h,self.circle['h']),
-                                       ('x',0,disp_w,self.circle['x']),
-                                       ('y',0,disp_h,self.circle['y'])):
+            for name, mn, mx, val in (
+                ('w',10,disp_w,self.circle['w']),
+                ('h',10,disp_h,self.circle['h']),
+                ('x',0,disp_w,self.circle['x']),
+                ('y',0,disp_h,self.circle['y']),
+            ):
                 self._add_slider(name, mn, mx, val)
 
-        elif mode == 'draw':
+        else:  # draw
+            disp_w = int(self.orig_w * self.scale)
+            disp_h = int(self.orig_h * self.scale)
             self.draw_mask = Image.new('L', (disp_w, disp_h), 0)
             self._refresh_draw_preview()
             self.canvas.bind("<B1-Motion>", self._on_draw)
-            self.canvas.bind("<Button-1>", self._on_draw)
-            self.canvas.bind("<Motion>", self._show_brush_cursor)
-            self._add_slider('brush_size', 1, max(disp_w, disp_h)//2, self.BRUSH_RADIUS)
+            self.canvas.bind("<Button-1>",  self._on_draw)
+            self.canvas.bind("<Motion>",    self._show_brush_cursor)
+            self._add_slider('brush_size',
+                             1,
+                             max(disp_w, disp_h)//2,
+                             self.BRUSH_RADIUS)
 
     def _change_expand(self, delta):
-        self.expand = max(-self.orig_w, min(self.orig_w, self.expand + delta))
-        self._refresh_mask_preview()
+        self.expand = max(-self.orig_w,
+                          min(self.orig_w, self.expand + delta))
+        self._schedule_mask_preview()
+
+    def _add_slider(self, name, mn, mx, val):
+        frm = ttk.Frame(self)
+        frm.pack(fill='x', padx=10, pady=4)
+        ttk.Label(frm, text=name, style='Large.TLabel').pack(side='left')
+        slider = tk.Scale(frm, from_=mn, to=mx, orient='horizontal',
+                          command=lambda v,n=name: self._on_slider(n,int(v)))
+        slider.set(val)
+        slider.pack(side='left', fill='x', expand=True, padx=5)
+        self.sliders[name] = slider
+
+    def _on_slider(self, name, val):
+        if self.mode == 'mask':
+            self._schedule_mask_preview()
+        elif self.mode == 'circle':
+            self.circle[name] = val
+            self._draw_circle()
+        elif self.mode == 'draw' and name == 'brush_size':
+            self.BRUSH_RADIUS = val
+
+    def _schedule_mask_preview(self):
+        if self._preview_job:
+            self.after_cancel(self._preview_job)
+        self._preview_job = self.after(50, self._refresh_mask_preview)
 
     def _refresh_mask_preview(self):
+        self._preview_job = None
         disp_w = int(self.orig_w * self.scale)
         disp_h = int(self.orig_h * self.scale)
-        size = abs(self.expand) * 2 + 1
-        filt = None
+
+        # Fast dilation/erosion via SciPy
+        size = abs(self.expand)*2 + 1
+        arr = self._mask_arr
         if self.expand > 0:
-            filt = ImageFilter.MaxFilter(size)
+            arr2 = ndi.grey_dilation(arr.astype(np.uint8),
+                                     size=(size, size)) > 0
         elif self.expand < 0:
-            filt = ImageFilter.MinFilter(size)
-        mask = self.disp_mask.filter(filt) if filt else self.disp_mask
+            arr2 = ndi.grey_erosion(arr.astype(np.uint8),
+                                    size=(size, size)) > 0
+        else:
+            arr2 = arr.copy()
 
-        top = self.sliders.get('top_pct')
-        bot = self.sliders.get('bottom_pct')
-        y0 = int((top.get()/100) * disp_h) if top else 0
-        y1 = int((1 - (bot.get()/100)) * disp_h) if bot else disp_h
-        full_mask = Image.new('L', (disp_w, disp_h))
-        cropped = mask.crop((0, y0, disp_w, y1))
-        full_mask.paste(cropped, (0, y0))
+        # Crop top/bottom via slicing
+        top = self.sliders['top_pct'].get() / 100
+        bot = self.sliders['bottom_pct'].get() / 100
+        h0 = arr2.shape[0]
+        y0 = int(top * h0)
+        y1 = int((1-bot) * h0)
+        arr2[:y0, :] = False
+        arr2[y1:, :] = False
 
-        red_overlay = Image.new('RGBA', (disp_w, disp_h), (255,0,0,128))
+        # Build RGBA overlay array
+        overlay = np.zeros((arr2.shape[0], arr2.shape[1], 4),
+                           dtype=np.uint8)
+        overlay[arr2, 0] = 255    # red channel
+        overlay[arr2, 3] = 128    # alpha channel
+
+        # Composite & show
+        ov_img = Image.fromarray(overlay, 'RGBA')\
+                      .resize((disp_w, disp_h), Image.NEAREST)
         comp = self.disp_base.copy()
-        comp.paste(red_overlay, (0,0), full_mask)
+        comp.paste(ov_img, (0,0), ov_img)
 
         if self.overlay_item:
             self.canvas.delete(self.overlay_item)
         self.tk_mask = ImageTk.PhotoImage(comp)
-        self.overlay_item = self.canvas.create_image(0, 0, anchor='nw', image=self.tk_mask)
+        self.overlay_item = self.canvas.create_image(
+            0, 0, anchor='nw', image=self.tk_mask)
 
     def _refresh_draw_preview(self):
         disp_w = int(self.orig_w * self.scale)
@@ -173,15 +238,15 @@ class BoundaryConfigurator(tk.Toplevel):
         red_overlay = Image.new('RGBA', (disp_w, disp_h), (255,0,0,128))
         comp = self.disp_base.copy()
         comp.paste(red_overlay, (0,0), self.draw_mask)
-
         if self.overlay_item:
             self.canvas.delete(self.overlay_item)
         self.tk_draw = ImageTk.PhotoImage(comp)
-        self.overlay_item = self.canvas.create_image(0, 0, anchor='nw', image=self.tk_draw)
+        self.overlay_item = self.canvas.create_image(
+            0, 0, anchor='nw', image=self.tk_draw)
 
     def _on_draw(self, event):
-        x = min(max(event.x, 0), int(self.orig_w*self.scale)-1)
-        y = min(max(event.y, 0), int(self.orig_h*self.scale)-1)
+        x = min(max(event.x,0), int(self.orig_w*self.scale)-1)
+        y = min(max(event.y,0), int(self.orig_h*self.scale)-1)
         draw = ImageDraw.Draw(self.draw_mask)
         r = self.BRUSH_RADIUS
         draw.ellipse((x-r, y-r, x+r, y+r), fill=255)
@@ -192,27 +257,10 @@ class BoundaryConfigurator(tk.Toplevel):
             self.canvas.delete(self.cursor_oval)
         x, y = event.x, event.y
         r = self.BRUSH_RADIUS
-        self.cursor_oval = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                                 outline='white', width=1, dash=(2,))
-
-    def _add_slider(self, name, mn, mx, val):
-        frm = ttk.Frame(self)
-        frm.pack(fill='x', padx=10, pady=4)
-        ttk.Label(frm, text=name, style='Large.TLabel').pack(side='left')
-        slider = tk.Scale(frm, from_=mn, to=mx, orient='horizontal',
-                          command=lambda v, n=name: self._on_slider(n, int(v)))
-        slider.set(val)
-        slider.pack(side='left', fill='x', expand=True, padx=5)
-        self.sliders[name] = slider
-
-    def _on_slider(self, name, val):
-        if self.mode == 'mask':
-            self._refresh_mask_preview()
-        elif self.mode == 'circle':
-            self.circle[name] = val
-            self._draw_circle()
-        elif self.mode == 'draw' and name == 'brush_size':
-            self.BRUSH_RADIUS = val
+        self.cursor_oval = self.canvas.create_oval(
+            x-r, y-r, x+r, y+r,
+            outline='white', width=1, dash=(2,)
+        )
 
     def _draw_circle(self):
         disp_w = int(self.orig_w * self.scale)
@@ -221,49 +269,99 @@ class BoundaryConfigurator(tk.Toplevel):
         draw = ImageDraw.Draw(mask)
         w, h, x, y = (self.circle[k] for k in ('w','h','x','y'))
         draw.ellipse((x-w//2, y-h//2, x+w//2, y+h//2), fill=255)
-
         overlay = Image.new('RGBA', (disp_w, disp_h), (255,0,0,128))
         comp = self.disp_base.copy()
         comp.paste(overlay, (0,0), mask)
-
         if self.overlay_item:
             self.canvas.delete(self.overlay_item)
         self.tk_overlay = ImageTk.PhotoImage(comp)
-        self.overlay_item = self.canvas.create_image(0, 0, anchor='nw', image=self.tk_overlay)
+        self.overlay_item = self.canvas.create_image(
+            0, 0, anchor='nw', image=self.tk_overlay)
 
     def finish(self):
-        pts = []
+        if not self.mode:
+            messagebox.showwarning("No mode selected",
+                                   "Please pick Mask, Circle, or Draw.")
+            return
+
+        # --- build full-resolution mask_full as before ---
         if self.mode == 'mask':
             expand = self.expand
-            size = abs(expand) * 2 + 1
-            filt = ImageFilter.MaxFilter(size) if expand>0 else ImageFilter.MinFilter(size) if expand<0 else None
+            size   = abs(expand)*2 + 1
+            filt   = (ImageFilter.MaxFilter(size) if expand>0
+                      else ImageFilter.MinFilter(size) if expand<0
+                      else None)
             mask_full = union_mask_from_frames(self.frames)
-            mask_full = mask_full.filter(filt) if filt else mask_full
-            top_pct = self.sliders['top_pct'].get() / 100
-            bottom_pct = self.sliders['bottom_pct'].get() / 100
+            if filt: mask_full = mask_full.filter(filt)
+            top, bot = self.sliders['top_pct'].get()/100, self.sliders['bottom_pct'].get()/100
             ow, oh = mask_full.size
-            y0 = int(top_pct * oh)
-            y1 = int((1 - bottom_pct) * oh)
-            mask_full = mask_full.crop((0, y0, ow, y1))
-            arr = np.array(mask_full) > 0
-            ys, xs = np.nonzero(arr)
-            pts = [[int(x), int(y + y0)] for x, y in zip(xs, ys)]
+            mask_full = mask_full.crop((0,
+                                        int(top*oh),
+                                        ow,
+                                        int((1-bot)*oh)))
         elif self.mode == 'circle':
-            w = int(self.circle['w'] / self.scale)
-            h = int(self.circle['h'] / self.scale)
-            x = int(self.circle['x'] / self.scale)
-            y = int(self.circle['y'] / self.scale)
-            mask = Image.new('L', (self.orig_w, self.orig_h))
-            draw = ImageDraw.Draw(mask)
+            w = int(self.circle['w']/self.scale)
+            h = int(self.circle['h']/self.scale)
+            x = int(self.circle['x']/self.scale)
+            y = int(self.circle['y']/self.scale)
+            mask_full = Image.new('L', (self.orig_w, self.orig_h), 0)
+            draw = ImageDraw.Draw(mask_full)
             draw.ellipse((x-w//2, y-h//2, x+w//2, y+h//2), fill=255)
-            arr = np.array(mask) > 0
-            ys, xs = np.nonzero(arr)
-            pts = [[int(x), int(y)] for x, y in zip(xs, ys)]
-        elif self.mode == 'draw':
-            dm = self.draw_mask.resize((self.orig_w, self.orig_h), Image.NEAREST)
-            arr = np.array(dm) > 0
-            ys, xs = np.nonzero(arr)
-            pts = [[int(x), int(y)] for x, y in zip(xs, ys)]
+        else:  # draw
+            mask_full = self.draw_mask.resize(
+                (self.orig_w, self.orig_h), Image.NEAREST)
 
-        self.callback(pts)
+        # --- downsample & edge-detect ---
+        sample_factor = 0.5  # try 0.25 for even faster
+        sw = max(1, int(self.orig_w * sample_factor))
+        sh = max(1, int(self.orig_h * sample_factor))
+        small = mask_full.resize((sw, sh), Image.NEAREST)
+
+        edges = small.filter(ImageFilter.FIND_EDGES)
+        arr = np.array(edges) > 0  # boolean edge map
+
+        # --- extract edge coords ---
+        ys, xs = np.nonzero(arr)
+        pts = list(zip(xs, ys))
+
+        # --- rescale coords back to full resolution ---
+        scale_x = self.orig_w / sw
+        scale_y = self.orig_h / sh
+        pts_full = [[int(x*scale_x), int(y*scale_y)] for x,y in pts]
+
+        # --- optional: simplify with RDP ---
+        def rdp(points, epsilon=2.0):
+            import math
+            if len(points)<3: return points[:]
+            a, b = points[0], points[-1]
+            ax, ay = a; bx, by = b
+            maxd, idx = 0.0, -1
+            for i, p in enumerate(points[1:-1], start=1):
+                px, py = p
+                if (ax,ay)==(bx,by):
+                    d = math.hypot(px-ax, py-ay)
+                else:
+                    t = ((px-ax)*(bx-ax)+(py-ay)*(by-ay))/((bx-ax)**2+(by-ay)**2)
+                    t = max(0, min(1, t))
+                    proj = (ax + t*(bx-ax), ay + t*(by-ay))
+                    d = math.hypot(px-proj[0], py-proj[1])
+                if d>maxd:
+                    maxd, idx = d, i
+            if maxd <= epsilon:
+                return [a,b]
+            left  = rdp(points[:idx+1], epsilon)
+            right = rdp(points[idx:],    epsilon)
+            return left[:-1] + right
+
+        simplified = rdp(pts_full, epsilon=2.0)
+
+        # --- callback & auto-save ---
+        try:
+            self.callback(simplified)
+            if hasattr(self.master, 'save'):
+                self.master.save()
+        except Exception as e:
+            messagebox.showerror("Error saving perimeter", str(e))
+
+        # close
         self.destroy()

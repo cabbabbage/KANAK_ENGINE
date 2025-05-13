@@ -16,98 +16,123 @@ from pages.passa           import PassabilityPage
 from pages.overlay         import ImageOverlayPage
 from pages.child           import ChildAssetsPage
 from pages.spacing         import SpacingThresholdPage
+from pages.fixed_child     import FixedChildAssetsPage
 
 ASSET_DIR = "SRC"
 
 class AssetOrganizerApp(tk.Tk):
     def __init__(self):
         super().__init__()
-
-        # — Title & maximize —
         self.title("Asset Organizer")
         try:
             self.state('zoomed')
         except tk.TclError:
             self.attributes('-zoomed', True)
 
-        # — Enforce black text —
+        # Enforce black text by default
         style = ttk.Style(self)
         for w in ('TLabel','TButton','TCheckbutton','TEntry',
                   'TMenubutton','TSpinbox','TScale'):
             style.configure(w, foreground='black')
 
-        # --- state ---
+        # State
         self.assets = self._scan_assets()
-        self.current_asset = self.assets[0] if self.assets else None
-        self._right_click_index = None
+        self.current_asset = None
+        self.pages = {}
+        self.tab_titles = {}   # map page -> original title
 
-        # --- layout ---
+        # Layout
         paned = ttk.Panedwindow(self, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True)
 
-        # left: asset list + New Asset button
+        # Left panel: asset list + New Asset button
         left = ttk.Frame(paned, width=200)
         paned.add(left, weight=1)
         self.listbox = tk.Listbox(left, font=("Segoe UI",12), fg='black')
-        for name in self.assets:
-            self.listbox.insert(tk.END, name)
         self.listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        if self.assets:
-            self.listbox.selection_set(0)
 
-        # Right-click context menu
+        # Context menu for listbox
         self.context_menu = tk.Menu(self, tearoff=0)
         self.context_menu.add_command(label="Copy Name", command=self._copy_asset_name)
         self.context_menu.add_command(label="Duplicate", command=self._duplicate_asset)
         self.context_menu.add_separator()
         self.context_menu.add_command(label="Delete", command=self._delete_asset)
-
         self.listbox.bind("<Button-3>", self._on_right_click)
         self.listbox.bind("<<ListboxSelect>>", self._on_asset_select)
 
         ttk.Button(left, text="New Asset", command=self._new_asset)\
             .pack(fill=tk.X, padx=5, pady=(0,10))
 
-        # right: notebook with tabs
+        # Right panel: notebook with pages
         right = ttk.Frame(paned)
         paned.add(right, weight=4)
         self.notebook = ttk.Notebook(right)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
-        # --- pages ---
-        self.pages = {}
+        # Create pages
         basic = BasicInfoPage(self.notebook, on_rename_callback=self._on_asset_renamed)
-        self.notebook.add(basic, text="Basic Info"); self.pages["Basic Info"] = basic
-        size_tab = SizePage(self.notebook)
-        self.notebook.add(size_tab, text="Sizing"); self.pages["Sizing"] = size_tab
-        pass_tab = PassabilityPage(self.notebook)
-        self.notebook.add(pass_tab, text="Passability"); self.pages["Passability"] = pass_tab
-        spacing_tab = SpacingThresholdPage(self.notebook)
-        self.notebook.add(spacing_tab, text="Spacing"); self.pages["Spacing"] = spacing_tab
-        interaction = OnInteractionPage(self.notebook)
-        self.notebook.add(interaction, text="On-Interaction"); self.pages["On-Interaction"] = interaction
-        attack = OnAttackPage(self.notebook)
-        self.notebook.add(attack, text="On-Attack"); self.pages["On-Attack"] = attack
-        collision = OnCollisionPage(self.notebook)
-        self.notebook.add(collision, text="On-Collision"); self.pages["On-Collision"] = collision
-        overlay_tab = ImageOverlayPage(self.notebook)
-        self.notebook.add(overlay_tab, text="Image Overlay"); self.pages["Image Overlay"] = overlay_tab
-        child_tab = ChildAssetsPage(self.notebook)
-        self.notebook.add(child_tab, text="Child Assets"); self.pages["Child Assets"] = child_tab
+        self._add_tab(basic, "Basic Info")
 
-        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+        def add_page(cls, title):
+            page = cls(self.notebook)
+            self._add_tab(page, title)
 
-        # initial load
-        self._load_current_asset()
-        self._update_tab_states()
+        add_page(SizePage,             "Sizing")
+        add_page(PassabilityPage,      "Passability")
+        add_page(SpacingThresholdPage, "Spacing")
+        add_page(OnInteractionPage,    "On-Interaction")
+        add_page(OnAttackPage,         "On-Attack")
+        add_page(OnCollisionPage,      "On-Collision")
+        add_page(ImageOverlayPage,     "Image Overlay")
+        add_page(ChildAssetsPage,      "Region-Based Child Assets")
+        add_page(FixedChildAssetsPage, "Fixed-Spawn Child Assets")
 
-        # finalize button
+        # Wrap each page.save to record visits (✓) and persist visited_tabs
+        for title, page in self.pages.items():
+            orig = page.save
+            def make_wrap(t=title, p=page, o=orig):
+                def wrapped():
+                    o()
+                    path = self._asset_json_path()
+                    if path:
+                        with open(path,'r') as f:
+                            data = json.load(f)
+                        visited = set(data.get("visited_tabs", []))
+                        if t not in visited:
+                            visited.add(t)
+                            data["visited_tabs"] = sorted(visited)
+                            with open(path,'w') as f:
+                                json.dump(data, f, indent=2)
+                    # update tab label to include ✓
+                    self.notebook.tab(p, text=f"{t} ✓")
+                return wrapped
+            page.save = make_wrap()
+
+        # Basic Info’s save also re-enables all tabs
+        def save_basic_and_enable():
+            basic.save()
+            self._update_tab_states()
+        basic.save = save_basic_and_enable
+
+        # Enable/disable on tab change
+        self.notebook.bind("<<NotebookTabChanged>>", self._update_tab_states)
+
+        # Finalize button
         footer = ttk.Frame(self)
         footer.pack(fill=tk.X, side=tk.BOTTOM, padx=12, pady=8)
-        footer.columnconfigure(0, weight=1)
-        btn_finalize = ttk.Button(footer, text="Finalize & Export",
-                                  command=self._run_finalize, style='TButton')
-        btn_finalize.grid(row=0, column=1, sticky="e")
+        ttk.Button(footer, text="Finalize & Export",
+                   command=self._run_finalize).grid(row=0, column=1, sticky="e")
+
+        # Initial load
+        self._refresh_asset_list()
+        if self.assets:
+            self.listbox.selection_set(0)
+            self._on_asset_select(None)
+
+    def _add_tab(self, page, title):
+        self.notebook.add(page, text=title)
+        self.pages[title] = page
+        self.tab_titles[page] = title
 
     def _scan_assets(self):
         if not os.path.isdir(ASSET_DIR):
@@ -115,62 +140,79 @@ class AssetOrganizerApp(tk.Tk):
         return [d for d in sorted(os.listdir(ASSET_DIR))
                 if os.path.isdir(os.path.join(ASSET_DIR, d))]
 
+    def _refresh_asset_list(self):
+        self.assets = self._scan_assets()
+        self.listbox.delete(0, tk.END)
+        for idx, name in enumerate(self.assets):
+            self.listbox.insert(tk.END, name)
+            inf = os.path.join(ASSET_DIR, name, "info.json")
+            if os.path.isfile(inf) and json.load(open(inf)).get("child_only", False):
+                self.listbox.itemconfig(idx, fg='green')
+
     def _on_right_click(self, event):
         idx = self.listbox.nearest(event.y)
-        if idx is None: return
-        self._right_click_index = idx
-        self.listbox.selection_clear(0, tk.END)
-        self.listbox.selection_set(idx)
-        self.current_asset = self.assets[idx]
-        self.context_menu.tk_popup(event.x_root, event.y_root)
+        if idx is not None:
+            self.listbox.selection_clear(0, tk.END)
+            self.listbox.selection_set(idx)
+            self.current_asset = self.assets[idx]
+            self.context_menu.tk_popup(event.x_root, event.y_root)
 
     def _copy_asset_name(self):
-        name = self.assets[self._right_click_index]
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        name = self.assets[sel[0]]
         self.clipboard_clear()
         self.clipboard_append(name)
 
     def _duplicate_asset(self):
-        src_name = self.assets[self._right_click_index]
-        src_folder = os.path.join(ASSET_DIR, src_name)
-        # find next suffix
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        src = self.assets[sel[0]]
+        src_folder = os.path.join(ASSET_DIR, src)
         i = 1
         while True:
-            dst_name = f"{src_name}_{i}"
-            dst_folder = os.path.join(ASSET_DIR, dst_name)
+            dst = f"{src}_{i}"
+            dst_folder = os.path.join(ASSET_DIR, dst)
             if not os.path.exists(dst_folder):
                 shutil.copytree(src_folder, dst_folder)
                 break
             i += 1
         self._refresh_asset_list()
-        messagebox.showinfo("Duplicated", f"{src_name} → {dst_name}")
+        messagebox.showinfo("Duplicated", f"{src} → {dst}")
 
     def _delete_asset(self):
-        name = self.assets[self._right_click_index]
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        name = self.assets[sel[0]]
         if not messagebox.askyesno("Delete", f"Really delete '{name}'?"):
             return
         shutil.rmtree(os.path.join(ASSET_DIR, name))
         self._refresh_asset_list()
 
-    def _refresh_asset_list(self):
-        self.assets = self._scan_assets()
-        self.listbox.delete(0, tk.END)
-        for a in self.assets:
-            self.listbox.insert(tk.END, a)
-        # select first
-        if self.assets:
-            self.listbox.selection_set(0)
-            self.current_asset = self.assets[0]
-            self._load_current_asset()
-            self._update_tab_states()
-
     def _on_asset_select(self, _):
         sel = self.listbox.curselection()
-        if not sel: return
+        if not sel:
+            return
         self.current_asset = self.assets[sel[0]]
-        self._load_current_asset()
-        self._update_tab_states()
+        path = self._asset_json_path()
 
-    def _on_tab_changed(self, _):
+        # load pages
+        for page in self.pages.values():
+            page.load(path)
+
+        # restore visited marks
+        visited = []
+        if path and os.path.isfile(path):
+            visited = json.load(open(path)).get("visited_tabs", [])
+        for page, orig_title in self.tab_titles.items():
+            text = f"{orig_title} ✓" if orig_title in visited else orig_title
+            self.notebook.tab(page, text=text)
+
+        # show Basic Info first
+        self.notebook.select(self.pages["Basic Info"])
         self._update_tab_states()
 
     def _asset_json_path(self):
@@ -178,54 +220,44 @@ class AssetOrganizerApp(tk.Tk):
             return None
         return os.path.join(ASSET_DIR, self.current_asset, "info.json")
 
-    def _load_current_asset(self):
-        path = self._asset_json_path()
-        for page in self.pages.values():
-            page.load(path)
-        self.notebook.select(0)
+    def _update_tab_states(self, _=None):
+        data = {}
+        p = self._asset_json_path()
+        if p and os.path.isfile(p):
+            data = json.load(open(p))
+        basic_ok = bool(data.get("asset_name")
+                        and data.get("default_animation",{}).get("on_start"))
+        for title, page in self.pages.items():
+            state = "normal" if title == "Basic Info" or basic_ok else "disabled"
+            self.notebook.tab(page, state=state)
 
     def _new_asset(self):
-        idx = 1
+        i = 1
         while True:
-            name = f"new_asset_{idx}"
+            name = f"new_asset_{i}"
             folder = os.path.join(ASSET_DIR, name)
             if not os.path.exists(folder):
                 os.makedirs(folder)
+                open(os.path.join(folder, "info.json"), "w").write("{}")
                 break
-            idx += 1
-        open(os.path.join(folder, "info.json"), "w").write("{}")
+            i += 1
         self._refresh_asset_list()
-
-    def _on_asset_renamed(self, old_name, new_name):
-        idx = self.assets.index(old_name)
-        self.assets[idx] = new_name
-        self.listbox.delete(idx)
-        self.listbox.insert(idx, new_name)
+        idx = self.assets.index(name)
         self.listbox.selection_clear(0, tk.END)
         self.listbox.selection_set(idx)
-        self.current_asset = new_name
+        self._on_asset_select(None)
 
-    def _update_tab_states(self):
-        if not self.current_asset:
-            for p in self.pages.values():
-                self.notebook.tab(p, state="disabled")
-            return
-        info_path = self._asset_json_path()
-        basic_ok = False
-        try:
-            with open(info_path) as f:
-                d = json.load(f)
-            basic_ok = bool(d.get("asset_name") and d.get("default_animation",{}).get("on_start"))
-        except:
-            pass
-        for title, page in self.pages.items():
-            state = "normal" if title=="Basic Info" or basic_ok else "disabled"
-            self.notebook.tab(page, state=state)
+    def _on_asset_renamed(self, old, new):
+        self._refresh_asset_list()
+        idx = self.assets.index(new)
+        self.listbox.selection_clear(0, tk.END)
+        self.listbox.selection_set(idx)
+        self._on_asset_select(None)
 
     def _run_finalize(self):
         try:
-            subprocess.run(["python","finalize.py"], check=True)
-            messagebox.showinfo("Done","Export complete: see SRC_final/manifest.json")
+            subprocess.run(["python", "finalize.py"], check=True)
+            messagebox.showinfo("Done", "Export complete: see SRC_final/manifest.json")
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Finalize failed:\n{e}")
 
