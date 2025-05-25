@@ -1,0 +1,30 @@
+{
+  "perimeter": [
+    [0, 0],
+    [3200, 0],
+    [3200, 2400],
+    [0, 2400]
+  ],
+  "assets": [
+    {
+      "name": "Tree",
+      "min_number": 50,
+      "max_number": 100
+    },
+    {
+      "name": "Barrel",
+      "min_number": 30,
+      "max_number": 60
+    },
+    {
+      "name": "Book",
+      "min_number": 3,
+      "max_number": 5
+    },
+    {
+      "name": "Default_Player",
+      "min_number": 1,
+      "max_number": 1
+    }
+  ]
+}
