@@ -128,7 +128,7 @@ class SpacingThresholdPage(ttk.Frame):
             data = json.load(f)
 
         # pull default frames folder from BasicInfoPage
-        default_anim = data.get('default_animation', {}).get('on_start','')
+        default_anim = data.get('default_animation', {}).get('frames_path','')
         asset_dir = os.path.dirname(info_path)
         folder = os.path.join(asset_dir, default_anim)
         if os.path.isdir(folder):

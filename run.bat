@@ -1,58 +1,90 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal
 
-set "ROOT=C:\Users\cal_m\OneDrive\Documents\GitHub\tarot_game"
-set "OUTPUT=project_structure.txt"
-set /a MAX_DEPTH=3
-set /a FILE_LIMIT=15
+:: Step 1: Confirm critical files exist
+echo Checking required files and directories...
 
-echo 📁 Project structure for: %ROOT% > "%OUTPUT%"
-echo. >> "%OUTPUT%"
-
-call :scan "%ROOT%" 0 >> "%OUTPUT%"
-
-echo. >> "%OUTPUT%"
-echo Done. Output saved to %OUTPUT%
-pause
-exit /b
-
-:scan
-set "FOLDER=%~1"
-set /a DEPTH=%2
-
-REM Skip ignored folders
-for %%X in (__pycache__ vcpkg .git .vs build) do (
-    echo %FOLDER% | findstr /I /C:\"%%X\" >nul && goto :eof
+if not exist "CMakeLists.txt" (
+    echo ❌ Missing CMakeLists.txt in root directory.
+    pause
+    exit /b 1
 )
 
-REM Stop if too deep
-if %DEPTH% GEQ %MAX_DEPTH% (
-    set "indent="
-    for /L %%N in (1,1,%DEPTH%) do set "indent=!indent!    "
-    echo !indent!... >> "%OUTPUT%"
-    goto :eof
+if not exist "ENGINE\main.cpp" (
+    echo ❌ Missing ENGINE/main.cpp
+    pause
+    exit /b 1
 )
 
-pushd "%FOLDER%" >nul 2>&1 || goto :eof
+if not exist "ENGINE\engine.cpp" (
+    echo ❌ Missing ENGINE/engine.cpp
+    pause
+    exit /b 1
+)
 
-set "indent="
-for /L %%N in (1,1,%DEPTH%) do set "indent=!indent!    "
+if not exist "vcpkg\scripts\buildsystems\vcpkg.cmake" (
+    echo ❌ Missing vcpkg toolchain file at vcpkg/scripts/buildsystems/vcpkg.cmake
+    pause
+    exit /b 1
+)
 
-set /a count=0
-for %%F in (*.cpp *.h *.hpp *.json) do set /a count+=1
+if not exist "SRC\Map.json" (
+    echo ❌ Missing SRC/Map.json
+    pause
+    exit /b 1
+)
 
-if !count! GTR %FILE_LIMIT% (
-    echo !indent!... (!count! files) >> "%OUTPUT%"
+echo ✅ All required files found.
+
+:: Step 2: Clean old build
+echo Cleaning previous build...
+rmdir /s /q build >nul 2>&1
+mkdir build
+
+:: Step 3: Run CMake to configure
+echo Configuring project with CMake...
+cmake -G "Visual Studio 17 2022" -A x64 ^
+  -DCMAKE_TOOLCHAIN_FILE="vcpkg/scripts/buildsystems/vcpkg.cmake" ^
+  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="%cd%\ENGINE" ^
+  -B build
+
+if errorlevel 1 (
+    echo ❌ CMake configuration failed.
+    pause
+    exit /b 1
+)
+
+:: Step 4: Build project
+echo Building project...
+cmake --build build --config Release
+
+if errorlevel 1 (
+    echo ❌ Build failed.
+    pause
+    exit /b 1
+)
+
+:: Step 5: Copy assets to release folder
+echo Copying SRC assets to release folder...
+xcopy /E /I /Y "SRC" "engine\Release\SRC"
+
+:: Step 6: Run executable
+echo Launching built game...
+
+set EXE1=ENGINE\engine.exe
+set EXE2=build\Release\engine.exe
+
+if exist "%EXE1%" (
+    echo ✅ Build succeeded.
+    echo Running: %EXE1%
+    "%EXE1%"
+) else if exist "%EXE2%" (
+    echo ✅ Build succeeded.
+    echo Running: %EXE2%"
+    "%EXE2%"
 ) else (
-    for %%F in (*.cpp *.h *.hpp *.json) do (
-        echo !indent!%%F >> "%OUTPUT%"
-    )
+    echo ❌ Executable not found at %EXE1% or %EXE2%
 )
 
-for /D %%D in (*) do (
-    echo !indent!%%D >> "%OUTPUT%"
-    call :scan "%%D" !DEPTH!+1
-)
-
-popd
-exit /b
+pause
+endlocal

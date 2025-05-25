@@ -325,11 +325,11 @@ class BasicInfoPage(ttk.Frame):
 
         # Default animation & frames
         default = data.get("default_animation", {})
-        on_start = default.get("on_start", "")
-        self.default_frames_label.config(text=on_start)
+        frames_path = default.get("frames_path", "")
+        self.default_frames_label.config(text=frames_path)
         self.loop_var.set(default.get("loop", True))
-        if on_start:
-            folder = os.path.join(os.path.dirname(info_path), on_start)
+        if frames_path:
+            folder = os.path.join(os.path.dirname(info_path), frames_path)
             if os.path.isdir(folder):
                 self.default_frames_path = folder
                 center = data.get("center")
@@ -402,7 +402,7 @@ class BasicInfoPage(ttk.Frame):
         # retrieve existing defaults to preserve missing keys
         default = data.get("default_animation", {})
         anim = {
-            "on_start":   default.get("on_start", "default"),
+            "frames_path":   default.get("frames_path", "default"),
             "on_end":     "default" if self.loop_var.get() else self.on_end_var.get(),
             "loop":       self.loop_var.get(),
             "audio_path": self.audio_path,

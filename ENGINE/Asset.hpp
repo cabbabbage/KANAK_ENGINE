@@ -1,8 +1,8 @@
 #ifndef ASSET_HPP
 #define ASSET_HPP
 
-#include "AssetInfo.hpp"
-#include "Area.hpp"
+#include "asset_info.hpp"
+#include "area.hpp"
 #include <SDL.h>
 #include <string>
 
@@ -18,59 +18,25 @@ public:
     std::string current_animation = "default";
     int current_frame_index = 0;
 
-    Asset(int z_offset = 0, const Area& spawn_area = Area())
-        : z_offset(z_offset), spawn_area(spawn_area) {}
+    Asset(int z_offset = 0, const Area& spawn_area = Area());
 
-    void update() {
-        if (!info) return;
-        auto& anim = info->animations[current_animation];
-        if (anim.frames.empty()) return;
+    void finalize_setup();  // ← add this declaration
 
-        current_frame_index++;
-        if (current_frame_index >= anim.frames.size()) {
-            if (anim.loop) {
-                current_frame_index = 0;
-            } else if (!anim.on_end.empty()) {
-                current_animation = anim.on_end;
-                current_frame_index = 0;
-            } else {
-                current_frame_index = anim.frames.size() - 1;
-            }
-        }
-    }
+    void update(bool player_is_moving);
+    void change_animation(const std::string& animation_name);
 
-    void change_animation(const std::string& animation_name) {
-        if (!info) return;
-        auto it = info->animations.find(animation_name);
-        if (it != info->animations.end()) {
-            current_animation = animation_name;
-            current_frame_index = 0;
-        }
-    }
+    SDL_Texture* get_current_frame() const;
+    SDL_Texture* get_image() const;
 
-    SDL_Texture* get_current_frame() const {
-        if (!info) return nullptr;
-        const auto& anim = info->animations.at(current_animation);
-        if (anim.frames.empty()) return nullptr;
-        return anim.frames[current_frame_index];
-    }
+    void set_z_index(int z);
+    void set_position(int x, int y);
+    std::string get_type() const;
 
-    SDL_Texture* get_image() const {
-        return get_current_frame();
-    }
-
-    void set_z_index(int z) {
-        z_index = z;
-    }
-
-    void set_position(int x, int y) {
-        pos_X = x;
-        pos_Y = y;
-    }
-
-    std::string get_type() const {
-        return info ? info->type : "Unknown";
-    }
+    Area get_global_collision_area() const;
+    Area get_global_interaction_area() const;
+    Area get_global_attack_area() const;
+    Area get_global_spacing_area() const;
+    Area get_global_passability_area() const;
 };
 
 #endif

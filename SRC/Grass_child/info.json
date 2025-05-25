@@ -1,0 +1,63 @@
+{
+    "types": [
+        "Player",
+        "Object",
+        "Background",
+        "Enemy"
+    ],
+    "available_animations": [
+        "default"
+    ],
+    "child_only": true,
+    "is_passable": true,
+    "collision_area": null,
+    "z_threshold": 864,
+    "is_interactable": false,
+    "interaction_animation": {
+        "frames_path": "",
+        "on_end": "",
+        "loop": false,
+        "audio_path": "",
+        "volume": 0
+    },
+    "interaction_area": "",
+    "is_attackable": false,
+    "attack_animation": {
+        "frames_path": "",
+        "on_end": "",
+        "loop": false,
+        "audio_path": "",
+        "volume": 0
+    },
+    "attack_area": "",
+    "is_collidable": false,
+    "collision_animation": {
+        "frames_path": "",
+        "on_end": "",
+        "loop": false,
+        "audio_path": "",
+        "volume": 0
+    },
+    "asset_name": "Grass_child",
+    "asset_type": "Object",
+    "default_animation": {
+        "frames_path": "default",
+        "on_end": "default",
+        "loop": true,
+        "audio_path": "",
+        "volume": 0
+    },
+    "center": {
+        "x": 1040,
+        "y": 608
+    },
+    "size_settings": {
+        "scale_percentage": 3.583815028901734,
+        "variability_percentage": 0.0
+    },
+    "last_scaled_to": 3.583815028901734,
+    "spacing_area": "spacing_area.json",
+    "visited_tabs": [
+        "Spacing"
+    ]
+}

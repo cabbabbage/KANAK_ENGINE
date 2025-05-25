@@ -6,87 +6,77 @@
     "Enemy"
   ],
   "available_animations": [
-    "default",
-    "interaction",
-    "attack",
-    "collision"
+    "default"
   ],
   "child_only": false,
-  "is_passable": false,
-  "collision_area": "impassable_area.json",
-  "z_threshold": 55,
-  "is_interactable": true,
+  "is_passable": true,
+  "collision_area": null,
+  "z_threshold": 864,
+  "is_interactable": false,
   "interaction_animation": {
-    "frames_path": "interaction",
+    "frames_path": "",
     "on_end": "",
     "loop": false,
     "audio_path": "",
     "volume": 0
   },
-  "interaction_area": "interaction_area.json",
-  "is_attackable": true,
+  "interaction_area": "",
+  "is_attackable": false,
   "attack_animation": {
-    "frames_path": "attack",
+    "frames_path": "",
     "on_end": "",
     "loop": false,
     "audio_path": "",
     "volume": 0
   },
-  "attack_area": "attack_area.json",
-  "is_collidable": true,
+  "attack_area": "",
+  "is_collidable": false,
   "collision_animation": {
-    "frames_path": "collision",
+    "frames_path": "",
     "on_end": "",
     "loop": false,
     "audio_path": "",
     "volume": 0
   },
   "asset_name": "Barrel",
-  "asset_type": "Player",
+  "asset_type": "Object",
   "default_animation": {
-    "on_start": "default",
+    "frames_path": "default",
     "on_end": "default",
     "loop": true,
     "audio_path": "",
     "volume": 0
   },
   "center": {
-    "x": 1016,
-    "y": 530
+    "x": 966,
+    "y": 454
   },
   "size_settings": {
-    "scale_percentage": 10.761078998073218,
+    "scale_percentage": 9.948522402287892,
     "variability_percentage": 0.0
   },
-  "last_scaled_to": 10.761078998073218,
+  "last_scaled_to": 9.948522402287892,
+  "spacing_area": "spacing_area.json",
   "visited_tabs": [
-    "On-Attack",
-    "On-Interaction",
-    "Passability",
     "Region-Based Child Assets",
     "Spacing"
   ],
-  "spacing_area": "spacing_area.json",
-  "overlays": [
-    {
-      "folder": "overlay_0",
-      "offset_x": 0,
-      "offset_y": 0,
-      "scale_pct": 100.0,
-      "rotation": 0,
-      "mode": "normal",
-      "alpha_pct": 100,
-      "blur_radius": 0.0,
-      "fade_radius": 0.0
-    }
-  ],
   "child_assets": [
     {
-      "asset": "Book",
+      "asset": "Candle",
       "area_file": "child_0_area.json",
-      "z_offset": 0,
-      "min": 1,
+      "z_offset": 1,
+      "min": 0,
       "max": 1,
+      "skew": -0.7321428571428572,
+      "terminate_with_parent": false
+    },
+    {
+      "asset": "Grass_child",
+      "area_file": "child_1_area.json",
+      "z_offset": 1,
+      "min": 1,
+      "max": 2,
       "skew": 0.0,
       "terminate_with_parent": false
     }

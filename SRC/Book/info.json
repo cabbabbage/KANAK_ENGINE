@@ -11,7 +11,7 @@
     "child_only": true,
     "is_passable": true,
     "collision_area": null,
-    "z_threshold": null,
+    "z_threshold": 0,
     "is_interactable": false,
     "interaction_animation": {
         "frames_path": "",
@@ -39,16 +39,21 @@
         "volume": 0
     },
     "asset_name": "Book",
-    "asset_type": "Player",
+    "asset_type": "Object",
     "default_animation": {
-        "on_start": "default",
+        "frames_path": "default",
         "on_end": "default",
         "loop": true,
         "audio_path": "",
         "volume": 0
     },
     "center": {
-        "x": 1016,
-        "y": 530
-    }
+        "x": 960,
+        "y": 540
+    },
+    "size_settings": {
+        "scale_percentage": 11.048169556840078,
+        "variability_percentage": 0.0
+    },
+    "last_scaled_to": 11.048169556840078
 }

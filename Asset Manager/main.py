@@ -226,7 +226,7 @@ class AssetOrganizerApp(tk.Tk):
         if p and os.path.isfile(p):
             data = json.load(open(p))
         basic_ok = bool(data.get("asset_name")
-                        and data.get("default_animation",{}).get("on_start"))
+                        and data.get("default_animation",{}).get("frames_path"))
         for title, page in self.pages.items():
             state = "normal" if title == "Basic Info" or basic_ok else "disabled"
             self.notebook.tab(page, state=state)
