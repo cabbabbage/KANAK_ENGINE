@@ -1,0 +1,39 @@
+# Ignore vcpkg installed packages and build artifacts
+vcpkg/
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Visual Studio build output
+Debug/
+Release/
+x64/
+*.vcxproj*
+*.sln
+*.user
+*.obj
+*.log
+*.tlog
+*.pdb
+*.idb
+
+# VSCode settings (optional)
+.vscode/
+
+# Windows system files
+Thumbs.db
+desktop.ini
+
+# Python cache (just in case)
+__pycache__/
+
+# Ignore compiled binaries
+*.exe
+*.dll
+*.lib
+*.out
+
+# Engine output binary
+ENGINE/engine.exe
