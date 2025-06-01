@@ -20,9 +20,9 @@ class PassabilityPage(ttk.Frame):
         # — State vars —
         self.asset_path      = None
         self.frames_source   = None
-        self.collision_area  = None
+        self.impassable_area  = None
         self.is_passable_var = tk.BooleanVar(value=True)
-        self.z_threshold     = None
+
 
         W = 20  # widget width
 
@@ -112,9 +112,9 @@ class PassabilityPage(ttk.Frame):
         else:
             self.btn_configure.state(('!disabled',))
             self.area_label.config(
-                text="(configured)" if self.collision_area else "(none)"
+                text="(configured)" if self.impassable_area else "(none)"
             )
-            if self.collision_area:
+            if self.impassable_area:
                 self._draw_preview()
 
 
@@ -136,13 +136,9 @@ class PassabilityPage(ttk.Frame):
         """Receive geometry (list or dict), normalize, compute z-threshold."""
         if isinstance(geo, list):
             geo = {'type': 'mask', 'points': geo}
-        self.collision_area = geo
+        self.impassable_area = geo
 
-        if geo['type'] == 'circle':
-            self.z_threshold = geo['y']
-        else:
-            ys = [p[1] for p in geo.get('points', [])]
-            self.z_threshold = sum(ys)//len(ys) if ys else None
+
 
         self.area_label.config(text="(configured)")
         self._draw_preview()
@@ -150,7 +146,7 @@ class PassabilityPage(ttk.Frame):
 
     def _draw_preview(self):
         """Overlay the impassable shape on default/0.png at 50% scale."""
-        if not self.asset_path or not self.collision_area:
+        if not self.asset_path or not self.impassable_area:
             return
         asset_dir = os.path.dirname(self.asset_path)
         img_path = os.path.join(asset_dir, 'default', '0.png')
@@ -164,7 +160,7 @@ class PassabilityPage(ttk.Frame):
 
         overlay = Image.new('RGBA', disp, (0,0,0,0))
         draw = ImageDraw.Draw(overlay)
-        geo = self.collision_area
+        geo = self.impassable_area
 
         if geo['type'] == 'circle':
             cx = int(geo['x']*scale)
@@ -186,52 +182,66 @@ class PassabilityPage(ttk.Frame):
         self.preview_canvas.delete("all")
         self.preview_canvas.create_image(0, 0, anchor='nw', image=self.tk_preview)
 
-
     def load(self, info_path):
         """Load JSON and repopulate UI."""
         self.asset_path = info_path
         if not info_path:
             return
+
         asset_dir = os.path.dirname(info_path)
         if not os.path.exists(info_path):
-            open(info_path,'w').close()
-        data = json.load(open(info_path,'r'))
+            open(info_path, 'w').close()
 
-        # ensure keys
+        try:
+            with open(info_path, 'r') as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            messagebox.showerror("Error", f"Malformed JSON: {info_path}")
+            return
+
+        # Ensure required keys
         changed = False
-        for k,dft in (('is_passable', True),
-                      ('collision_area', None),
-                      ('z_threshold', None)):
+        for k, dft in (('is_passable', True),
+                    ('impassable_area', None)):
             if k not in data:
                 data[k] = dft
                 changed = True
         if changed:
-            with open(info_path,'w') as f:
+            with open(info_path, 'w') as f:
                 json.dump(data, f, indent=4)
 
-        # populate
+        # Load flags
         self.is_passable_var.set(data['is_passable'])
-        area_file = data.get('collision_area')
+
+        # Load existing impassable area if present
+        area_file = data.get('impassable_area')
         if area_file:
             full = os.path.join(asset_dir, area_file)
             if os.path.isfile(full):
-                self.collision_area = json.load(open(full,'r'))
+                try:
+                    with open(full, 'r') as f:
+                        self.impassable_area = json.load(f)
+                except Exception:
+                    self.impassable_area = None
             else:
-                self.collision_area = None
+                self.impassable_area = None
         else:
-            self.collision_area = None
+            self.impassable_area = None
 
-        # get frames folder from Basic Info
-        default_anim = data.get('default_animation', {}).get('on_start','')
-        folder = os.path.join(asset_dir, default_anim)
-        if os.path.isdir(folder):
-            self.frames_source = folder
+        # Always use "default" folder
+        self.frames_source = os.path.join(asset_dir, "default")
+        if not os.path.isdir(self.frames_source):
+            print(f"[Warning] Default frame folder missing: {self.frames_source}")
+            self.frames_source = None
 
+        print("[DEBUG] frames_source =", self.frames_source)
         self._on_toggle()
 
 
+
+
     def save(self):
-        """Write is_passable, impassable_area.json, and z_threshold."""
+
         if not self.asset_path:
             messagebox.showerror("Error", "No asset selected.")
             return
@@ -240,26 +250,26 @@ class PassabilityPage(ttk.Frame):
 
         # impassable area file
         if not self.is_passable_var.get():
-            if not self.collision_area:
+            if not self.impassable_area:
                 messagebox.showerror(
                     "Error", "Configure an impassable area first."
                 )
                 return
             area_file = "impassable_area.json"
             with open(os.path.join(asset_dir, area_file), 'w') as f:
-                json.dump(self.collision_area, f, indent=4)
-            info['collision_area'] = area_file
+                json.dump(self.impassable_area, f, indent=4)
+            info['impassable_area'] = area_file
         else:
             # remove old file
-            old = info.get('collision_area')
+            old = info.get('impassable_area')
             if old:
                 try: os.remove(os.path.join(asset_dir, old))
                 except: pass
-            info['collision_area'] = None
+            info['impassable_area'] = None
 
-        # always store passable + z_threshold
+
         info['is_passable'] = self.is_passable_var.get()
-        info['z_threshold']  = self.z_threshold
+
 
         with open(self.asset_path,'w') as f:
             json.dump(info, f, indent=4)

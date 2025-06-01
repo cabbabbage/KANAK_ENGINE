@@ -1,0 +1,27 @@
+{
+    "asset_name": "Chest_Opening",
+    "asset_type": "Object",
+    "child_only": false,
+    "types": [
+        "Player",
+        "Object",
+        "Background",
+        "Enemy"
+    ],
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "available_animations": [
+        "default"
+    ],
+    "is_passable": true,
+    "impassable_area": null
+}

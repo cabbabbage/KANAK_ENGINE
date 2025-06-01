@@ -1,0 +1,71 @@
+{
+    "is_passable": false,
+    "impassable_area": "impassable_area.json",
+    "asset_name": "Davey",
+    "asset_type": "Player",
+    "child_only": false,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "right": {
+            "frames_path": "right",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "backward": {
+            "frames_path": "backward",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "forward": {
+            "frames_path": "forward",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "left": {
+            "frames_path": "left",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "available_animations": [
+        "right",
+        "backward",
+        "forward",
+        "left"
+    ],
+    "z_threshold": 19,
+    "size_settings": {
+        "scale_percentage": 40.585074626865676,
+        "variability_percentage": 0.0
+    },
+    "visited_tabs": [
+        "Passability",
+        "Spacing"
+    ],
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 500
+}

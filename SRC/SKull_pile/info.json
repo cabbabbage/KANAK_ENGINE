@@ -1,0 +1,37 @@
+{
+  "asset_name": "Skull_Pile",
+  "asset_type": "Object",
+  "child_only": false,
+  "types": [
+    "Player",
+    "Object",
+    "Background",
+    "Enemy"
+  ],
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "loop",
+      "loop": true,
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "available_animations": [
+    "default"
+  ],
+  "is_passable": true,
+  "impassable_area": null,
+  "z_threshold": 13,
+  "size_settings": {
+    "scale_percentage": 24.45548387096774,
+    "variability_percentage": 0.0
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 600,
+  "visited_tabs": [
+    "Spacing"
+  ]
+}

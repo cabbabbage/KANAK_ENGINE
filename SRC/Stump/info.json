@@ -1,0 +1,38 @@
+{
+  "asset_name": "Stump",
+  "asset_type": "Object",
+  "child_only": false,
+  "types": [
+    "Player",
+    "Object",
+    "Background",
+    "Enemy"
+  ],
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "loop",
+      "loop": true,
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "available_animations": [
+    "default"
+  ],
+  "is_passable": false,
+  "impassable_area": "impassable_area.json",
+  "z_threshold": 10,
+  "size_settings": {
+    "scale_percentage": 14.343283582089551,
+    "variability_percentage": 0.0
+  },
+  "visited_tabs": [
+    "Passability",
+    "Spacing"
+  ],
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 200
+}

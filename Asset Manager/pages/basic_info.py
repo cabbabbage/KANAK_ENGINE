@@ -1,361 +1,94 @@
-# pages/basic_info.py
-
 import os
 import json
 import shutil
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from PIL import Image, ImageTk
+from tkinter import ttk, messagebox
+from pages.AnimationConfig import AnimationEditor
 
 class BasicInfoPage(ttk.Frame):
     def __init__(self, parent, on_rename_callback=None):
         super().__init__(parent)
-
-        # — Theme & fonts —
-        FONT             = ('Segoe UI', 14)
-        FONT_BOLD        = ('Segoe UI', 18, 'bold')
-        MAIN_COLOR       = "#005f73"  # teal
-        SECONDARY_COLOR  = "#ee9b00"  # amber
-        DRAW_COLOR       = "#f94144"  # coral
-
-        # --- state ---
         self.asset_path = None
-        self.default_frames_path = None
-        self.audio_path = ""
         self.on_rename = on_rename_callback
-        self._frames_changed = False
 
-        # Child-only flag
-        self.child_only_var = tk.BooleanVar(value=False)
+        self.duplicatable_var = tk.BooleanVar(value=False)
+        self.name_var = tk.StringVar()
+        self.type_var = tk.StringVar()
 
-        # Preview & center state
-        self.preview_frames = []
-        self.current_preview_idx = 0
-        self.preview_job = None
-        self.scale = 0.5
-        self.orig_w = self.orig_h = 0
-        self.center_x = None
-        self.center_y = None
-        self.center_dot_id = None
-        self._draw_color = DRAW_COLOR
+        self.dup_min_var = tk.IntVar(value=30)
+        self.dup_max_var = tk.IntVar(value=60)
+        self.min_depth_var = tk.IntVar(value=0)
+        self.max_depth_var = tk.IntVar(value=2)
 
-        W = 20  # uniform widget width
+        font_large = ("Segoe UI", 14)
+        style = ttk.Style()
+        style.configure("Big.TButton", font=("Segoe UI", 14), background="#ffcc00")
+        style.configure("Big.TEntry", font=font_large)
+        style.configure("Big.TMenubutton", font=font_large)
+        style.configure("Big.TCheckbutton", font=font_large)
 
-        # — Styles —
-        style = ttk.Style(self)
-        style.configure('Main.TButton', font=FONT, padding=6,
-                        background=MAIN_COLOR, foreground=SECONDARY_COLOR)
-        style.map('Main.TButton',
-                  background=[('active', SECONDARY_COLOR)],
-                  foreground=[('active', MAIN_COLOR)])
-        style.configure('Secondary.TButton', font=FONT, padding=6,
-                        background=SECONDARY_COLOR, foreground=MAIN_COLOR)
-        style.map('Secondary.TButton',
-                  background=[('active', MAIN_COLOR)],
-                  foreground=[('active', SECONDARY_COLOR)])
-        style.configure('Main.TMenubutton', font=FONT, padding=6,
-                        background='white', foreground=SECONDARY_COLOR,
-                        borderwidth=2, relief='solid')
-        style.map('Main.TMenubutton',
-                  background=[('active', 'white')],
-                  foreground=[('active', SECONDARY_COLOR)])
-        style.configure('Large.TLabel', font=FONT)
-        style.configure('LargeBold.TLabel', font=FONT_BOLD,
-                        foreground=SECONDARY_COLOR)
-        style.configure('Large.TEntry', font=FONT)
-        style.configure('Link.TLabel', font=FONT,
-                        foreground=SECONDARY_COLOR)
-        style.configure('Large.TCheckbutton', font=FONT)
+        ttk.Label(self, text="Asset Name:", font=font_large).grid(row=0, column=0, sticky="w", padx=16, pady=10)
+        self.name_entry = ttk.Entry(self, textvariable=self.name_var, width=40, style="Big.TEntry")
+        self.name_entry.grid(row=0, column=1, columnspan=2, sticky="w", padx=16, pady=10)
 
-        # equal column weights
-        for col in range(5):
-            self.columnconfigure(col, weight=1)
-
-        # — Title —
-        ttk.Label(self, text="Basic Asset Info",
-                  style='LargeBold.TLabel')\
-            .grid(row=0, column=0, columnspan=5,
-                  pady=(10, 20), padx=12)
-
-        # — Asset Name —
-        ttk.Label(self, text="Asset Name:", style='Large.TLabel')\
-            .grid(row=1, column=0, sticky="w", padx=12, pady=6)
-        self.name_entry = ttk.Entry(self, width=W, style='Large.TEntry')
-        self.name_entry.grid(row=1, column=1, sticky="w",
-                             padx=12, pady=6, ipady=6)
-
-        # — Asset Type —
-        ttk.Label(self, text="Asset Type:", style='Large.TLabel')\
-            .grid(row=2, column=0, sticky="w", padx=12, pady=6)
-        self.type_var = tk.StringVar(self)
+        ttk.Label(self, text="Asset Type:", font=font_large).grid(row=1, column=0, sticky="w", padx=16, pady=10)
         self.type_menu = ttk.OptionMenu(self, self.type_var, "")
-        self.type_menu.config(style='Main.TMenubutton', width=W)
-        self.type_menu.grid(row=2, column=1, sticky="w", padx=12, pady=6)
+        self.type_menu.config(style="Big.TMenubutton", width=30)
+        self.type_menu.grid(row=1, column=1, columnspan=2, sticky="w", padx=16, pady=10)
 
-        # — Child-Only Asset Checkbox —
-        ttk.Checkbutton(
-            self,
-            text="Child-Only Asset",
-            variable=self.child_only_var,
-            style='Large.TCheckbutton'
-        ).grid(row=2, column=2, columnspan=2,
-               sticky="w", padx=12, pady=6)
+        ttk.Checkbutton(self,
+                        text="Duplicatable Asset",
+                        variable=self.duplicatable_var,
+                        style="Big.TCheckbutton")\
+            .grid(row=2, column=0, columnspan=3, sticky="w", padx=16, pady=6)
 
-        # — Default Frames —
-        ttk.Label(self, text="Default Frames:", style='Large.TLabel')\
-            .grid(row=3, column=0, sticky="w", padx=12, pady=6)
-        ttk.Button(self,
-                   text="Select Frames",
-                   command=self.select_frames,
-                   style='Main.TButton',
-                   width=W)\
-            .grid(row=3, column=1, sticky="w", padx=12, pady=6)
-        self.default_frames_label = ttk.Label(
-            self, text="", style='Link.TLabel',
-            cursor="hand2", width=W
-        )
-        self.default_frames_label.grid(
-            row=3, column=2, sticky="w", padx=12, pady=6
-        )
-        self.default_frames_label.bind(
-            "<Button-1>", self.open_frames_folder
-        )
+        # Duplication timing
+        ttk.Label(self, text="Duplication Interval (s):", font=font_large).grid(row=3, column=0, sticky="w", padx=16)
+        ttk.Label(self, text="Min:", font=font_large).grid(row=3, column=1, sticky="e")
+        ttk.Spinbox(self, from_=30, to=9999, textvariable=self.dup_min_var, width=5).grid(row=3, column=2, sticky="w")
+        ttk.Label(self, text="Max:", font=font_large).grid(row=3, column=3, sticky="e")
+        ttk.Spinbox(self, from_=30, to=9999, textvariable=self.dup_max_var, width=5).grid(row=3, column=4, sticky="w")
 
-        # — On-End Animation —
-        ttk.Label(self, text="On-End Animation:", style='Large.TLabel')\
-            .grid(row=4, column=0, sticky="w", padx=12, pady=6)
-        self.on_end_var = tk.StringVar(self, value="default")
-        self.on_end_menu = ttk.OptionMenu(self, self.on_end_var, "default")
-        self.on_end_menu.config(style='Main.TMenubutton', width=W)
-        self.on_end_menu.grid(row=4, column=1, sticky="w", padx=12, pady=6)
-        self.loop_var = tk.BooleanVar(self, True)
-        ttk.Checkbutton(self, text="Loop", variable=self.loop_var,
-                        command=self._update_on_end_state,
-                        style='Large.TCheckbutton')\
-            .grid(row=4, column=2, sticky="w", padx=12, pady=6)
+        # Child depth limits
+        ttk.Label(self, text="Child Depth:", font=font_large).grid(row=4, column=0, sticky="w", padx=16)
+        ttk.Label(self, text="Min:", font=font_large).grid(row=4, column=1, sticky="e")
+        ttk.Spinbox(self, from_=0, to=100, textvariable=self.min_depth_var, width=5).grid(row=4, column=2, sticky="w")
+        ttk.Label(self, text="Max:", font=font_large).grid(row=4, column=3, sticky="e")
+        ttk.Spinbox(self, from_=0, to=100, textvariable=self.max_depth_var, width=5).grid(row=4, column=4, sticky="w")
 
-        # — Audio & Volume —
-        ttk.Label(self, text="Audio (optional):", style='Large.TLabel')\
-            .grid(row=5, column=0, sticky="w", padx=12, pady=6)
-        ttk.Button(self,
-                   text="Select Audio",
-                   command=self.select_audio,
-                   style='Main.TButton',
-                   width=W)\
-            .grid(row=5, column=1, sticky="w", padx=12, pady=6)
-        self.audio_label = ttk.Label(
-            self, text="", style='Link.TLabel',
-            cursor="hand2", width=W
-        )
-        self.audio_label.grid(row=5, column=2, sticky="w", padx=12, pady=6)
-        self.audio_label.bind("<Button-1>", self.open_audio_file)
-        ttk.Label(self, text="Audio Volume:", style='Large.TLabel')\
-            .grid(row=5, column=3, sticky="w", padx=12, pady=6)
-        self.volume_var = tk.IntVar(self, 0)
-        self.volume_spin = tk.Spinbox(
-            self, from_=0, to=100,
-            textvariable=self.volume_var,
-            font=FONT,
-            width=5, fg=SECONDARY_COLOR
-        )
-        self.volume_spin.grid(row=5, column=4,
-                              sticky="w", padx=12, pady=6)
+        self.anim_editor = AnimationEditor(self)
+        self.anim_editor.grid(row=5, column=0, columnspan=5, padx=20, pady=20, sticky="nsew")
 
-        # — Save Button —
-        ttk.Button(self,
-                   text="Save",
-                   command=self.save,
-                   style='Secondary.TButton',
-                   width=W)\
-            .grid(row=6, column=0, columnspan=5,
-                  pady=(20,10), padx=12)
-
-        # — Preview Canvas —
-        self.preview_canvas = tk.Canvas(
-            self, bg='black', bd=2, relief='sunken'
-        )
-        self.preview_canvas.grid(
-            row=7, column=0, columnspan=5,
-            pady=12, padx=12
-        )
-        self.preview_canvas.bind("<Button-1>", self._on_canvas_click)
-
-    def select_frames(self):
-        folder = filedialog.askdirectory()
-        if not folder:
-            return
-        self._frames_changed = True
-        self.default_frames_path = folder
-        self.default_frames_label.config(text=os.path.basename(folder))
-        self._load_preview_frames()
-
-    def _load_preview_frames(self):
-        if self.preview_job:
-            self.after_cancel(self.preview_job)
-            self.preview_job = None
-
-        files = sorted(
-            f for f in os.listdir(self.default_frames_path)
-            if f.lower().endswith('.png')
-        )
-        self.preview_frames = []
-        for idx, fname in enumerate(files):
-            path = os.path.join(self.default_frames_path, fname)
-            img = Image.open(path).convert('RGBA')
-            if idx == 0:
-                self.orig_w, self.orig_h = img.size
-                if self.center_x is None:
-                    self.center_x = self.orig_w // 2
-                    self.center_y = self.orig_h // 2
-            w, h = img.size
-            disp = (int(w * self.scale), int(h * self.scale))
-            img_resized = img.resize(disp, Image.LANCZOS)
-            self.preview_frames.append(ImageTk.PhotoImage(img_resized))
-
-        if self.preview_frames:
-            w_disp, h_disp = self.preview_frames[0]._PhotoImage__size
-            self.preview_canvas.config(width=w_disp, height=h_disp)
-            self.current_preview_idx = 0
-            self._animate_preview()
-
-    def _animate_preview(self):
-        frame = self.preview_frames[self.current_preview_idx]
-        self.preview_canvas.delete("all")
-        self.preview_canvas.create_image(0, 0,
-                                         anchor='nw',
-                                         image=frame)
-        self._draw_center_dot()
-        self.current_preview_idx = (
-            self.current_preview_idx + 1
-        ) % len(self.preview_frames)
-        self.preview_job = self.after(
-            200, self._animate_preview
-        )
-
-    def _draw_center_dot(self):
-        if self.center_dot_id:
-            self.preview_canvas.delete(self.center_dot_id)
-        if self.center_x is None:
-            return
-        dx = int(self.center_x * self.scale)
-        dy = int(self.center_y * self.scale)
-        r = 5
-        self.center_dot_id = self.preview_canvas.create_oval(
-            dx-r, dy-r, dx+r, dy+r,
-            fill=self._draw_color, outline=''
-        )
-
-    def _on_canvas_click(self, event):
-        if not self.orig_w:
-            return
-        disp_x, disp_y = event.x, event.y
-        disp_w = self.preview_canvas.winfo_width()
-        disp_h = self.preview_canvas.winfo_height()
-        disp_x = max(0, min(disp_x, disp_w))
-        disp_y = max(0, min(disp_y, disp_h))
-        self.center_x = int(disp_x / self.scale)
-        self.center_y = int(disp_y / self.scale)
-        self._draw_center_dot()
-
-    def open_frames_folder(self, event):
-        if self.default_frames_path and os.path.isdir(self.default_frames_path):
-            os.startfile(self.default_frames_path)
-
-    def select_audio(self):
-        file = filedialog.askopenfilename(
-            filetypes=[("Audio", "*.wav;*.mp3;*.ogg")]
-        )
-        if file:
-            self.audio_path = file
-            self.audio_label.config(text=os.path.basename(file))
-
-    def open_audio_file(self, event):
-        if self.audio_path and os.path.isfile(self.audio_path):
-            os.startfile(self.audio_path)
-
-    def _update_on_end_state(self):
-        state = "disabled" if self.loop_var.get() else "normal"
-        self.on_end_menu.config(state=state)
-        menu = self.on_end_menu["menu"]
-        end_index = menu.index("end")
-        if end_index is None:
-            return
-        for i in range(end_index + 1):
-            menu.entryconfig(i, state=state)
+        ttk.Button(self, text="Save", command=self.save, style="Big.TButton")\
+            .grid(row=6, column=0, columnspan=5, pady=(20, 10), padx=16, ipadx=10, ipady=6)
 
     def load(self, info_path):
-        """Load JSON, populate fields, and apply child_only flag."""
         self.asset_path = info_path
-        if not info_path:
+        if not info_path or not os.path.exists(info_path):
             return
-        if not os.path.exists(info_path):
-            with open(info_path, "w") as f:
-                f.write("{}")
         with open(info_path, "r") as f:
             data = json.load(f)
 
-        # ensure keys exist
-        changed = False
-        if "types" not in data:
-            data["types"] = ["Player","Object","Background","Enemy"]
-            changed = True
-        if "available_animations" not in data:
-            data["available_animations"] = []
-            changed = True
-        if "child_only" not in data:
-            data["child_only"] = False
-            changed = True
-        if changed:
-            with open(info_path, "w") as f:
-                json.dump(data, f, indent=4)
+        self.name_var.set(data.get("asset_name", ""))
+        types = data.get("types", ["Player", "Object", "Background", "Enemy"])
+        self.type_var.set(data.get("asset_type", types[0]))
+        self.duplicatable_var.set(data.get("duplicatable", False))
 
-        # Asset name & type
-        self.name_entry.delete(0, tk.END)
-        self.name_entry.insert(0, data.get("asset_name", ""))
-        types = data.get("types", [])
-        self.type_var.set(data.get("asset_type", types[0] if types else ""))
+        self.dup_min_var.set(max(30, data.get("duplication_interval_min", 30)))
+        self.dup_max_var.set(max(self.dup_min_var.get(), data.get("duplication_interval_max", 60)))
+        self.min_depth_var.set(max(0, data.get("min_child_depth", 0)))
+        self.max_depth_var.set(max(self.min_depth_var.get(), data.get("max_child_depth", 2)))
+
         menu = self.type_menu["menu"]
         menu.delete(0, "end")
         for t in types:
-            menu.add_command(label=t,
-                             command=lambda v=t: self.type_var.set(v))
+            menu.add_command(label=t, command=lambda v=t: self.type_var.set(v))
 
-        # Child-only
-        self.child_only_var.set(data.get('child_only', False))
-
-        # Default animation & frames
-        default = data.get("default_animation", {})
-        on_start = default.get("on_start", "")
-        self.default_frames_label.config(text=on_start)
-        self.loop_var.set(default.get("loop", True))
-        if on_start:
-            folder = os.path.join(os.path.dirname(info_path), on_start)
-            if os.path.isdir(folder):
-                self.default_frames_path = folder
-                center = data.get("center")
-                if center:
-                    self.center_x = center.get("x")
-                    self.center_y = center.get("y")
-                self._load_preview_frames()
-
-        # On-end options
-        menu = self.on_end_menu["menu"]
-        menu.delete(0, "end")
-        for anim in data.get("available_animations", []):
-            menu.add_command(label=anim,
-                             command=lambda v=anim: self.on_end_var.set(v))
-        self.on_end_var.set(default.get("on_end", "default"))
-        self._update_on_end_state()
-
-        # Audio & volume
-        self.audio_path = default.get("audio_path", "")
-        self.audio_label.config(
-            text=os.path.basename(self.audio_path) if self.audio_path else ""
-        )
-        self.volume_var.set(default.get("volume", 0))
+        anim_data = data.get("animations", {}).get("default", {})
+        asset_folder = os.path.dirname(info_path)
+        self.anim_editor.load("default", anim_data, asset_folder)
 
     def save(self):
-        """Save basic info, including child_only flag and animation settings."""
         if not self.asset_path:
             messagebox.showerror("Error", "No asset selected.")
             return
@@ -363,66 +96,35 @@ class BasicInfoPage(ttk.Frame):
         with open(self.asset_path, "r") as f:
             data = json.load(f)
 
-        # Rename logic
         old_name = os.path.basename(os.path.dirname(self.asset_path))
-        new_name = self.name_entry.get().strip() or old_name
+        new_name = self.name_var.get().strip()
         asset_root = os.path.dirname(os.path.dirname(self.asset_path))
         old_folder = os.path.join(asset_root, old_name)
         new_folder = os.path.join(asset_root, new_name)
-        if new_name != old_name:
+
+        if new_name and new_name != old_name:
             if os.path.exists(new_folder):
-                messagebox.showerror("Error", f"Folder '{new_name}' exists.")
+                messagebox.showerror("Error", f"Folder '{new_name}' already exists.")
                 return
             os.rename(old_folder, new_folder)
             self.asset_path = os.path.join(new_folder, "info.json")
             if self.on_rename:
                 self.on_rename(old_name, new_name)
-            # update references in child_assets of other assets
-            for root, dirs, files in os.walk(asset_root):
-                if "info.json" not in files:
-                    continue
-                path = os.path.join(root, "info.json")
-                with open(path, "r") as jf:
-                    j = json.load(jf)
-                changed = False
-                for child in j.get("child_assets", []):
-                    if child.get("asset") == old_name:
-                        child["asset"] = new_name
-                        changed = True
-                if changed:
-                    with open(path, "w") as jf:
-                        json.dump(j, jf, indent=4)
 
-        # Basic fields
         data["asset_name"] = new_name
         data["asset_type"] = self.type_var.get()
-        data["child_only"] = self.child_only_var.get()
+        data["duplicatable"] = self.duplicatable_var.get()
 
-        # Animations & audio
-        # retrieve existing defaults to preserve missing keys
-        default = data.get("default_animation", {})
-        anim = {
-            "on_start":   default.get("on_start", "default"),
-            "on_end":     "default" if self.loop_var.get() else self.on_end_var.get(),
-            "loop":       self.loop_var.get(),
-            "audio_path": self.audio_path,
-            "volume":     self.volume_var.get()
-        }
-        data["default_animation"] = anim
-        if "default" not in data.get("available_animations", []):
-            data.setdefault("available_animations", []).append("default")
-        if self.center_x is not None and self.center_y is not None:
-            data["center"] = {"x": self.center_x, "y": self.center_y}
+        data["duplication_interval_min"] = max(30, abs(self.dup_min_var.get()))
+        data["duplication_interval_max"] = max(data["duplication_interval_min"], abs(self.dup_max_var.get()))
+        data["min_child_depth"] = max(0, abs(self.min_depth_var.get()))
+        data["max_child_depth"] = max(data["min_child_depth"], abs(self.max_depth_var.get()))
 
-        # Persist JSON
+        data["animations"] = data.get("animations", {})
+        data["animations"]["default"] = self.anim_editor.save()
+        data["available_animations"] = list(data["animations"].keys())
+
         with open(self.asset_path, "w") as f:
             json.dump(data, f, indent=4)
-
-        # Copy frames directory if changed
-        if self._frames_changed and self.default_frames_path:
-            dest = os.path.join(os.path.dirname(self.asset_path), "default")
-            if os.path.exists(dest):
-                shutil.rmtree(dest)
-            shutil.copytree(self.default_frames_path, dest)
 
         messagebox.showinfo("Saved", "Basic info saved.")
