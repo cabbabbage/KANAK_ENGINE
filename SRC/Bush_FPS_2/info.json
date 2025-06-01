@@ -1,0 +1,43 @@
+{
+    "asset_name": "Bush_FPS_2",
+    "asset_type": "Background",
+    "child_only": false,
+    "types": [
+        "Player",
+        "Object",
+        "Background",
+        "Enemy"
+    ],
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": true,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "available_animations": [
+        "default"
+    ],
+    "is_passable": false,
+    "impassable_area": "impassable_area.json",
+    "z_threshold": 20,
+    "size_settings": {
+        "scale_percentage": 36.37548387096774,
+        "variability_percentage": 0.0
+    },
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 0,
+    "visited_tabs": [
+        "Passability",
+        "Spacing"
+    ],
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2
+}

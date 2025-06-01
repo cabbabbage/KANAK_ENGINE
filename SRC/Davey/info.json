@@ -1,59 +1,71 @@
 {
-    "types": [
-        "Player",
-        "Object",
-        "Background",
-        "Enemy"
-    ],
-    "available_animations": [
-        "default"
-    ],
-    "child_only": false,
-    "is_passable": true,
-    "collision_area": null,
-    "z_threshold": 864,
-    "is_interactable": false,
-    "interaction_animation": {
-        "frames_path": "",
-        "on_end": "",
-        "loop": false,
-        "audio_path": "",
-        "volume": 0
-    },
-    "interaction_area": "",
-    "is_attackable": false,
-    "attack_animation": {
-        "frames_path": "",
-        "on_end": "",
-        "loop": false,
-        "audio_path": "",
-        "volume": 0
-    },
-    "attack_area": "",
-    "is_collidable": false,
-    "collision_animation": {
-        "frames_path": "",
-        "on_end": "",
-        "loop": false,
-        "audio_path": "",
-        "volume": 0
-    },
+    "is_passable": false,
+    "impassable_area": "impassable_area.json",
     "asset_name": "Davey",
     "asset_type": "Player",
-    "default_animation": {
-        "frames_path": "default",
-        "on_end": "default",
-        "loop": true,
-        "audio_path": "",
-        "volume": 0
+    "child_only": false,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "right": {
+            "frames_path": "right",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "backward": {
+            "frames_path": "backward",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "forward": {
+            "frames_path": "forward",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "left": {
+            "frames_path": "left",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
     },
-    "center": {
-        "x": 960,
-        "y": 540
-    },
+    "available_animations": [
+        "right",
+        "backward",
+        "forward",
+        "left"
+    ],
+    "z_threshold": 19,
     "size_settings": {
-        "scale_percentage": 34.589595375722546,
+        "scale_percentage": 40.585074626865676,
         "variability_percentage": 0.0
     },
-    "last_scaled_to": 34.589595375722546
+    "visited_tabs": [
+        "Passability",
+        "Spacing"
+    ],
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 500
 }

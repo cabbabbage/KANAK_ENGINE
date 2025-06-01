@@ -1,0 +1,37 @@
+{
+  "asset_name": "Skull_1",
+  "asset_type": "Object",
+  "child_only": false,
+  "types": [
+    "Player",
+    "Object",
+    "Background",
+    "Enemy"
+  ],
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "loop",
+      "loop": true,
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "available_animations": [
+    "default"
+  ],
+  "is_passable": true,
+  "impassable_area": null,
+  "z_threshold": 12,
+  "size_settings": {
+    "scale_percentage": 17.149677419354838,
+    "variability_percentage": 0.0
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 500,
+  "visited_tabs": [
+    "Spacing"
+  ]
+}

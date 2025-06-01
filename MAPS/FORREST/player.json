@@ -1,0 +1,10 @@
+{
+  "assets": [
+    {
+      "name": "Davey",
+      "min_number": 1,
+      "max_number": 1,
+      "is_active": true
+    }
+  ]
+}

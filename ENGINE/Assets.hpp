@@ -1,48 +1,37 @@
-// assets.hpp
-
 #ifndef ASSETS_HPP
 #define ASSETS_HPP
 
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <string>
-#include <random>
-#include <SDL.h>
-#include <filesystem>
-#include <nlohmann/json.hpp>
 #include "asset.hpp"
 #include "area.hpp"
-#include "asset_info.hpp"
+#include <vector>
+#include <unordered_set>
+#include <memory>
+#include <SDL.h>
 
 class Assets {
 public:
-    using Point = std::pair<int, int>;
+    Assets(std::vector<std::unique_ptr<Asset>>&& loaded,
+           Asset* player_ptr,
+           int screen_width,
+           int screen_height,
+           int screen_center_x,
+           int screen_center_y);
 
-    std::vector<Asset> all;
-    std::unordered_map<std::string, AssetInfo*> asset_info_library;
-    Area map_area;
-    Asset* player = nullptr;
+    void update(const std::unordered_set<SDL_Keycode>& keys, int screen_center_x, int screen_center_y);
+    void sort_assets_by_distance_to_screen_center(int cx, int cy);
+    void add_active(Asset* a);
+    void remove_active(Asset* a);
+    void resort_active_asset(Asset* a);
+    void activate(Asset* asset);
 
-    Assets(const std::string& map_json, SDL_Renderer* renderer);
-
-    void update(const std::unordered_set<SDL_Keycode>& keys);
-    void sort_assets_by_distance();
+    std::vector<Asset*> active_assets;
+    Asset* player;
+    int visible_count;
 
 private:
-    std::mt19937 rng{ std::random_device{}() };
-    SDL_Renderer* renderer = nullptr;
-    SDL_Texture* overlay_center_texture;
-
-    void parse_perimeter(const nlohmann::json& root);
-    void create_asset_info(const nlohmann::json& root, SDL_Renderer* renderer);
-    void generate_assets(const nlohmann::json& root);
-    void spawn_child_assets(AssetInfo* parent_info, const Asset& parent);
-    void place_child_assets(); // Deprecated
-    Point get_random_position_within_perimeter();
-    Point get_random_position_within_area(const Area& area);
+    std::vector<std::unique_ptr<Asset>> all; // ✅ FIXED: use unique_ptr here
+    int screen_width;
+    int screen_height;
 };
 
-bool areas_overlap(const Area& a, const Area& b);
-
-#endif
+#endif // ASSETS_HPP

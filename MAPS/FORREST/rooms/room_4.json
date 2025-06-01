@@ -1,0 +1,44 @@
+{
+  "assets": [
+
+    {
+      "name": "Bone",
+      "min_number": 40,
+      "max_number": 50,
+      "is_active": true
+    },
+
+    {
+      "name": "Grass_FPS_2",
+      "min_number": 40,
+      "max_number": 50,
+      "is_active": true
+    },
+
+    {
+      "name": "Bone_1",
+      "min_number": 30,
+      "max_number": 40,
+      "is_active": true
+    },
+ 
+    {
+      "name": "Skull",
+      "min_number": 25,
+      "max_number": 50,
+      "is_active": true
+    },
+    {
+      "name": "Skull_Pile",
+      "min_number": 12,
+      "max_number": 30,
+      "is_active": true
+    },
+    {
+      "name": "Bone_Pile",
+      "min_number": 25,
+      "max_number": 25,
+      "is_active": true
+    }
+  ]
+}

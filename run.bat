@@ -64,9 +64,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Step 5: Copy assets to release folder
-echo Copying SRC assets to release folder...
-xcopy /E /I /Y "SRC" "engine\Release\SRC"
+
 
 :: Step 6: Run executable
 echo Launching built game...

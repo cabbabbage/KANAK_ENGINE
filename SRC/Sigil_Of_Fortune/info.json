@@ -1,0 +1,41 @@
+{
+  "asset_name": "Sigil_Of_Fortune",
+  "asset_type": "Object",
+  "child_only": false,
+  "types": [
+    "Player",
+    "Object",
+    "Background",
+    "Enemy"
+  ],
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "loop",
+      "loop": true,
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "available_animations": [
+    "default"
+  ],
+  "is_passable": true,
+  "impassable_area": null,
+  "child_assets": [
+    {
+      "asset": "Mushroom",
+      "area_file": "child_0_area.json",
+      "z_offset": 0,
+      "min": 15,
+      "max": 20,
+      "skew": 0.0,
+      "terminate_with_parent": false
+    }
+  ],
+  "visited_tabs": [
+    "Region-Based Child Assets"
+  ]
+}

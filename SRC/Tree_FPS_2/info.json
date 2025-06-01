@@ -1,0 +1,62 @@
+{
+    "asset_name": "Tree_FPS_2",
+    "asset_type": "Background",
+    "child_only": false,
+    "types": [
+        "Player",
+        "Object",
+        "Background",
+        "Enemy"
+    ],
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": true,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "available_animations": [
+        "default"
+    ],
+    "is_passable": false,
+    "impassable_area": "impassable_area.json",
+    "z_threshold": 35,
+    "size_settings": {
+        "scale_percentage": 150.0,
+        "variability_percentage": 0.0
+    },
+    "visited_tabs": [
+        "Passability",
+        "Region-Based Child Assets",
+        "Spacing"
+    ],
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 0,
+    "child_assets": [
+        {
+            "asset": "Mushroom_1",
+            "area_file": "child_0_area.json",
+            "z_offset": 1,
+            "min": 0,
+            "max": 3,
+            "terminate_with_parent": false
+        },
+        {
+            "asset": "Grass_1_FPS_2",
+            "area_file": "child_1_area.json",
+            "z_offset": 1,
+            "min": 1,
+            "max": 4,
+            "terminate_with_parent": false
+        }
+    ],
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2
+}

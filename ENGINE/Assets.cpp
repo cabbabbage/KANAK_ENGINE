@@ -1,334 +1,220 @@
-// assets.cpp
-
 #include "assets.hpp"
 #include <algorithm>
-#include <stdexcept>
+#include <limits>
+#include <cmath>
 #include <iostream>
 
-Assets::Assets(const std::string& map_json, SDL_Renderer* renderer)
-    : renderer(renderer) {
+Assets::Assets(std::vector<std::unique_ptr<Asset>>&& loaded,
+               Asset* player_ptr,
+               int screen_width,
+               int screen_height,
+               int screen_center_x,
+               int screen_center_y)
+    : player(nullptr),
+      screen_width(screen_width),
+      screen_height(screen_height),
+      visible_count(0)
+{
+    std::cout << "[Assets] Initializing Assets manager...\n";
 
-    std::ifstream in(map_json);
-    if (!in.is_open()) {
-        throw std::runtime_error("Failed to open map json: " + map_json);
-    }
+    while (!loaded.empty()) {
+        std::unique_ptr<Asset> a = std::move(loaded.back());
+        loaded.pop_back();
 
-    nlohmann::json root;
-    in >> root;
-
-    if (!root.contains("perimeter") || !root["perimeter"].is_array()) {
-        throw std::runtime_error("[Assets] 'perimeter' missing or invalid");
-    }
-
-    parse_perimeter(root);
-    create_asset_info(root, renderer);
-    generate_assets(root);
-    sort_assets_by_distance();
-
-    player = nullptr;
-    for (auto& asset : all) {
-        if (asset.info && asset.info->type == "Player" && asset.info->name == "Davey") {
-            player = &asset;
-            break;
-        }
-    }
-
-    if (!player) {
-        throw std::runtime_error("[Assets] Player asset not found after sorting.");
-    }
-}
-
-void Assets::update(const std::unordered_set<SDL_Keycode>& keys) {
-    int dx = 0, dy = 0;
-
-    for (SDL_Keycode key : keys) {
-        if (key == SDLK_w) dy -= 5;
-        else if (key == SDLK_s) dy += 5;
-        else if (key == SDLK_a) dx -= 5;
-        else if (key == SDLK_d) dx += 5;
-    }
-
-    for (auto& asset : all) {
-        bool player_is_moving = !keys.empty();
-        asset.update((asset.info->type != "Player") || player_is_moving);
-    }
-
-    if (player) {
-        player->set_position(player->pos_X + dx, player->pos_Y + dy);
-
-        int player_z_global = player->pos_Y + player->info->z_threshold;
-        int best_candidate_z = std::numeric_limits<int>::min();
-        int best_candidate_index = 0;
-
-        for (const auto& asset : all) {
-            if (&asset == player || !asset.info) continue;
-
-            int other_z = asset.pos_Y + asset.info->z_threshold;
-
-            if (other_z < player_z_global && other_z > best_candidate_z) {
-                best_candidate_z = other_z;
-                best_candidate_index = asset.z_index;
-            }
-        }
-
-        // Set player behind the one directly beneath it, in z-threshold space
-        player->set_z_index(best_candidate_index + 1);
-    }
-
-
-    sort_assets_by_distance();
-
-    for (auto& asset : all) {
-        if (asset.info && asset.info->type == "Player" && asset.info->name == "Davey") {
-            player = &asset;
-            break;
-        }
-    }
-}
-
-
-void Assets::parse_perimeter(const nlohmann::json& root) {
-    std::vector<Point> perimeter;
-    for (const auto& point : root["perimeter"]) {
-        if (point.is_array() && point.size() == 2 &&
-            point[0].is_number_integer() && point[1].is_number_integer()) {
-            perimeter.emplace_back(point[0].get<int>(), point[1].get<int>());
-        }
-    }
-    if (perimeter.empty()) {
-        throw std::runtime_error("[Assets] Perimeter array is empty or invalid.");
-    }
-
-    map_area = Area(perimeter);
-}
-
-void Assets::create_asset_info(const nlohmann::json& root, SDL_Renderer* renderer) {
-    if (!root.contains("assets") || !root["assets"].is_array()) {
-        throw std::runtime_error("[Assets] 'assets' missing or not an array.");
-    }
-
-    bool player_info_found = false;
-
-    for (const auto& entry : root["assets"]) {
-        if (!entry.contains("name")) {
-            throw std::runtime_error("[Assets] Asset entry missing 'name'");
-        }
-
-        std::string name = entry["name"];
-        if (asset_info_library.find(name) != asset_info_library.end()) continue;
-
-        AssetInfo* info = new AssetInfo(name, renderer);
-
-        if (info->type == "Player") {
-            if (player_info_found) {
-                throw std::runtime_error("[Assets] Multiple AssetInfo entries with asset_type == 'Player'");
-            }
-            player_info_found = true;
-        }
-
-        asset_info_library[name] = info;
-    }
-
-    if (!player_info_found) {
-        throw std::runtime_error("[Assets] No AssetInfo with asset_type == 'Player'");
-    }
-}
-
-void Assets::spawn_child_assets(AssetInfo* parent_info, const Asset& parent) {
-    const int CHILD_OFFSET_X = -90;  // adjust for fine tuning
-    const int CHILD_OFFSET_Y = -90;
-
-    for (const auto& child : parent_info->child_assets) {
-        std::string child_type = child.asset;
-        std::string area_file_path = "SRC/" + parent_info->name + "/" + child.area_file;
-
-        if (!fs::exists(area_file_path)) {
-            std::cerr << "[ChildSpawner] Missing child area file: " << area_file_path << "\n";
+        if (!a || !a->info) {
+            std::cerr << "[Assets] Skipping asset: info is null\n";
             continue;
         }
-
-        Area spawn_area(area_file_path);
-        spawn_area.apply_offset(parent.pos_X, parent.pos_Y);
-
-        if (!asset_info_library.count(child_type)) {
-            asset_info_library[child_type] = new AssetInfo(child_type, renderer);
+        auto it = a->info->animations.find("default");
+        if (it == a->info->animations.end() || it->second.frames.empty()) {
+            std::cerr << "[Assets] Skipping asset '" << a->info->name << "': missing or empty default animation\n";
+            continue;
         }
+        std::cout << "[Assets] Accepted asset: " << a->info->name << "\n";
+        all.push_back(std::move(a));
+    }
 
-        AssetInfo* child_info = asset_info_library[child_type];
 
-        Area spacing_template;
-        spacing_template.points = {
-            {0, 5}, {5, 0}, {0, -5}, {-5, 0}
-        };
-
-        std::uniform_int_distribution<int> count_dist(child.min, child.max);
-        int count = count_dist(rng);
-
-        const int max_attempts = 20 * count;
-        int placed = 0, attempts = 0;
-
-        while (placed < count && attempts++ < max_attempts) {
-            auto [min_x, min_y, max_x, max_y] = spawn_area.get_bounds();
-            std::uniform_int_distribution<int> x_dist(min_x, max_x);
-            std::uniform_int_distribution<int> y_dist(min_y, max_y);
-            int px = x_dist(rng);
-            int py = y_dist(rng);
-
-            Area candidate_spacing = spacing_template;
-            candidate_spacing.set_position(px, py);
-
-            if (!spawn_area.intersects(candidate_spacing)) continue;
-
-            bool overlaps = false;
-            for (const auto& existing : all) {
-                if (!existing.info || !existing.info->has_spacing_area) continue;
-                Area existing_spacing = existing.get_global_spacing_area();
-                if (existing_spacing.intersects(candidate_spacing)) {
-                    overlaps = true;
-                    break;
-                }
-            }
-
-            if (!overlaps) {
-                Asset a(child.z_offset, spawn_area);
-                a.info = child_info;
-
-                const int final_x = px + CHILD_OFFSET_X;
-                const int final_y = py + CHILD_OFFSET_Y;
-                a.set_position(final_x, final_y);
-
-                // Compute and apply z-index
-                if (child.z_offset == 0) {
-                    a.set_z_index(final_y + child_info->z_threshold);
-                } else {
-                    a.set_z_index(parent.z_index + child.z_offset);
-                }
-
-                all.emplace_back(std::move(a));
-                ++placed;
-            }
-        }
-
-        if (placed < count) {
-            std::cerr << "[ChildSpawner] Only placed " << placed << "/" << count
-                      << " child assets of type: " << child_type << "\n";
+    for (auto& asset : all) {
+        if (asset->info->type == "Player") {
+            player = asset.get();
+            std::cout << "[Assets] Found player asset: " << player->info->name << "\n";
+            break;
         }
     }
+
+    sort_assets_by_distance_to_screen_center(screen_center_x, screen_center_y);
+
+    if (player && std::find(active_assets.begin(), active_assets.end(), player) == active_assets.end()) {
+        std::cout << "[Assets] Activating player asset...\n";
+        activate(player);
+    }
+
+    std::cout << "[Assets] Initialization complete. Total assets: " << all.size() << "\n";
 }
 
 
-void Assets::generate_assets(const nlohmann::json& root) {
-    bool player_instance_spawned = false;
+void Assets::update(const std::unordered_set<SDL_Keycode>& keys, int screen_center_x, int screen_center_y) {
+    std::unordered_set<SDL_Keycode> adjusted_keys = keys;
 
-    for (const auto& entry : root["assets"]) {
-        std::string type = entry["name"];
-        int min_n = entry.value("min_number", 1);
-        int max_n = entry.value("max_number", 1);
-        std::uniform_int_distribution<int> count_dist(min_n, max_n);
-        int spawn_count = count_dist(rng);
+    if (player && player->info && player->info->has_passability_area) {
+        Area player_base = player->info->passability_area;
+        Asset* blocking = nullptr;
+        Area blocking_area;
+        bool collision_found = false;
 
-        if (!asset_info_library.count(type)) {
-            throw std::runtime_error("[Assets] No AssetInfo for type: " + type);
-        }
+        float closest_dist_sq = std::numeric_limits<float>::max();
+        for (Asset* asset : active_assets) {
+            if (!asset || asset == player || !asset->info || asset->info->is_passable || !asset->info->has_passability_area) continue;
 
-        AssetInfo* info = asset_info_library[type];
+            Area other_area = asset->info->passability_area;
+            other_area.apply_offset(asset->pos_X, asset->pos_Y);
 
-        for (int i = 0; i < spawn_count; ++i) {
-            bool placed = false;
-
-            for (int attempt = 0; attempt < 3 && !placed; ++attempt) {
-                Point pos = get_random_position_within_perimeter();
-                Asset candidate(0, map_area);
-                candidate.info = info;
-                candidate.set_position(pos.first, pos.second);
-
-                if (info->type == "Object" && candidate.current_animation == "default") {
-                    auto it = info->animations.find("default");
-                    if (it != info->animations.end() && !it->second.frames.empty()) {
-                        std::uniform_int_distribution<int> frame_dist(0, static_cast<int>(it->second.frames.size()) - 1);
-                        candidate.current_frame_index = frame_dist(rng);
-                    }
-                }
-
-                // Construct spacing area
-                Area spacing = info->has_spacing_area
-                    ? candidate.get_global_spacing_area()
-                    : Area({{0,5}, {5,0}, {0,-5}, {-5,0}});
-                if (!info->has_spacing_area) spacing.set_position(pos.first, pos.second);
-
-                // Check for overlap with all previous non-child assets
-                bool overlaps = false;
-                for (const auto& existing : all) {
-                    if (!existing.info || existing.info->child_only) continue;
-
-                    Area other = existing.info->has_spacing_area
-                        ? existing.get_global_spacing_area()
-                        : Area({{0,5}, {5,0}, {0,-5}, {-5,0}});
-                    if (!existing.info->has_spacing_area)
-                        other.set_position(existing.pos_X, existing.pos_Y);
-
-                    if (spacing.intersects(other)) {
-                        overlaps = true;
-                        break;
-                    }
-                }
-
-                if (!overlaps) {
-                    all.emplace_back(std::move(candidate));
-                    Asset& just_added = all.back();
-                    just_added.set_z_index(just_added.pos_Y + info->z_threshold);
-                    placed = true;
-
-                    if (info->type == "Player" && type == "Davey") {
-                        if (player_instance_spawned)
-                            throw std::runtime_error("[Assets] Multiple Player asset instances");
-                        player = &just_added;
-                        player_instance_spawned = true;
-                    }
-
-                    spawn_child_assets(info, just_added);
+            Area test = player_base;
+            test.apply_offset(player->pos_X, player->pos_Y);
+            if (test.intersects(other_area)) {
+                int dx = asset->pos_X - player->pos_X;
+                int dy = asset->pos_Y - player->pos_Y;
+                float dist_sq = dx * dx + dy * dy;
+                if (dist_sq < closest_dist_sq) {
+                    blocking = asset;
+                    blocking_area = other_area;
+                    closest_dist_sq = dist_sq;
+                    collision_found = true;
                 }
             }
+        }
 
-            if (!placed) {
-                std::cerr << "[Spawner] Failed to place asset: " << info->name << " after 3 attempts\n";
-                if (info->type == "Player" && type == "Davey")
-                    std::cerr << "[Spawner] Failed to place player asset Davey after all attempts.\n";
+        if (collision_found) {
+            std::cout << "[Assets] Collision detected with: " << (blocking && blocking->info ? blocking->info->name : "Unknown") << "\n";
+            std::vector<std::pair<SDL_Keycode, std::pair<int, int>>> directions = {
+                {SDLK_w, {0, -5}}, {SDLK_s, {0, 5}},
+                {SDLK_a, {-5, 0}}, {SDLK_d, {5, 0}},
+            };
+
+            for (const auto& [key, offset] : directions) {
+                if (!adjusted_keys.count(key)) continue;
+
+                int test_x = player->pos_X + offset.first;
+                int test_y = player->pos_Y + offset.second;
+
+                Area moved = player_base;
+                moved.apply_offset(test_x, test_y);
+
+                if (moved.intersects(blocking_area)) {
+                    adjusted_keys.erase(key);
+                    std::cout << "[Assets] Erasing blocked movement key: " << SDL_GetKeyName(key) << "\n";
+                }
             }
         }
     }
 
-    if (!player_instance_spawned) {
-        throw std::runtime_error("[Assets] No Asset instance with asset_type == 'Player'");
+    for (auto* asset : active_assets) {
+        if (!asset) continue;
+        asset->update(adjusted_keys);
+    }
+
+    if (!adjusted_keys.empty()) {
+        sort_assets_by_distance_to_screen_center(screen_center_x, screen_center_y);
+        if (player) resort_active_asset(player);
     }
 }
 
+void Assets::activate(Asset* asset) {
+    if (!asset || asset->active) return;
+    asset->active = true;
+    add_active(asset);
+    if (asset->info) {
+        std::cout << "[Activate] " << asset->info->name << "\n";
+    }
 
-void Assets::sort_assets_by_distance() {
-    std::sort(all.begin(), all.end(), [](const Asset& a, const Asset& b) {
-        return (a.pos_Y + a.z_offset) < (b.pos_Y + b.z_offset);
-    });
+    for (auto& child : asset->children) {
+        activate(&child);
+    }
 }
 
-Assets::Point Assets::get_random_position_within_perimeter() {
-    if (map_area.points.size() != 4) return { 0, 0 };
-    int min_x = map_area.points[0].first;
-    int min_y = map_area.points[0].second;
-    int max_x = map_area.points[2].first;
-    int max_y = map_area.points[2].second;
+void Assets::sort_assets_by_distance_to_screen_center(int cx, int cy) {
+    const float active_width = 1.2f * static_cast<float>(screen_width);
+    const float active_height = 1.2f * static_cast<float>(screen_height);
 
-    std::uniform_int_distribution<int> x_dist(min_x, max_x);
-    std::uniform_int_distribution<int> y_dist(min_y, max_y);
-    return { x_dist(rng), y_dist(rng) };
+    for (auto& asset : all) {
+        float dx = static_cast<float>(asset->pos_X - cx);
+        float dy = static_cast<float>(asset->pos_Y - cy);
+        bool now_active = std::abs(dx) < active_width && std::abs(dy) < active_height;
+
+        if (now_active && !asset->active) {
+            std::cout << "[Assets] Activating asset (in range): " << (asset->info ? asset->info->name : "Unknown") << "\n";
+            activate(asset.get());
+        } else if (!now_active && asset->active) {
+            asset->active = false;
+            remove_active(asset.get());
+            if (asset->info) {
+                std::cout << "[Deactivate] " << asset->info->name << "\n";
+            }
+        }
+    }
+
+    visible_count = static_cast<int>(active_assets.size());
 }
 
-Assets::Point Assets::get_random_position_within_area(const Area& area) {
-    auto [min_x, min_y, max_x, max_y] = area.get_bounds();
-    std::uniform_int_distribution<int> x_dist(min_x, max_x);
-    std::uniform_int_distribution<int> y_dist(min_y, max_y);
-    return { x_dist(rng), y_dist(rng) };
+void Assets::resort_active_asset(Asset* a) {
+    if (!a || !a->info) return;
+
+    auto it = std::find(active_assets.begin(), active_assets.end(), a);
+    if (it == active_assets.end()) return;
+
+    int target_z = a->z_index;
+
+    while (it != active_assets.begin()) {
+        auto prev = std::prev(it);
+        int prev_z = (*prev)->z_index;
+        if (prev_z <= target_z) break;
+        std::iter_swap(it, prev);
+        --it;
+    }
+
+    while (std::next(it) != active_assets.end()) {
+        auto next = std::next(it);
+        int next_z = (*next)->z_index;
+        if (target_z <= next_z) break;
+        std::iter_swap(it, next);
+        ++it;
+    }
+
+    std::cout << "[Assets] Resorted active asset: " << a->info->name << " to z=" << a->z_index << "\n";
 }
 
-bool areas_overlap(const Area& a, const Area& b) {
-    return a.intersects(b);
+void Assets::add_active(Asset* a) {
+    if (!a || !a->info) return;
+
+    auto mid = active_assets.begin() + (active_assets.size() / 2);
+    auto it = active_assets.insert(mid, a);
+
+    int target_z = a->z_index;
+
+    while (it != active_assets.begin()) {
+        auto prev = std::prev(it);
+        int prev_z = (*prev)->z_index;
+        if (prev_z <= target_z) break;
+        std::iter_swap(it, prev);
+        --it;
+    }
+
+    while (std::next(it) != active_assets.end()) {
+        auto next = std::next(it);
+        int next_z = (*next)->z_index;
+        if (target_z <= next_z) break;
+        std::iter_swap(it, next);
+        ++it;
+    }
+
+    std::cout << "[Assets] Added active asset: " << a->info->name << " z=" << a->z_index << "\n";
+}
+
+void Assets::remove_active(Asset* a) {
+    auto it = std::find(active_assets.begin(), active_assets.end(), a);
+    if (it != active_assets.end()) {
+        std::cout << "[Assets] Removing active asset: " << (a && a->info ? a->info->name : "Unknown") << "\n";
+        active_assets.erase(it);
+    }
 }

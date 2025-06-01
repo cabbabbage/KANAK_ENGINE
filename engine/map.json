@@ -1,0 +1,12 @@
+{
+  "width":  15000,
+  "height": 15000,
+  "min_rooms": 5,
+  "max_rooms": 10,
+  "min_room_height": 500,
+  "max_room_height": 1000,
+  "min_room_width": 1000,
+  "max_room_width": 1500,
+  "min_trail_width": 100,
+  "max_trail_width": 150
+}

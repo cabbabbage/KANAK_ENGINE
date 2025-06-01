@@ -1,0 +1,41 @@
+{
+    "asset_name": "Leaves",
+    "asset_type": "Background",
+    "types": [
+        "Player",
+        "Object",
+        "Background",
+        "Enemy"
+    ],
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "loop",
+            "loop": true,
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "available_animations": [
+        "default"
+    ],
+    "duplicatable": false,
+    "duplicate_min_time": 1,
+    "duplicate_max_time": 3,
+    "min_child_depth": 1,
+    "max_child_depth": 3,
+    "is_passable": false,
+    "impassable_area": "impassable_area.json",
+    "z_threshold": 0,
+    "size_settings": {
+        "scale_percentage": 16.40357852882704,
+        "variability_percentage": 0.0
+    },
+    "visited_tabs": [
+        "Passability"
+    ],
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60
+}
