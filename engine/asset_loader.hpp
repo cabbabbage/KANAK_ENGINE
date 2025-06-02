@@ -13,7 +13,7 @@
 
 class AssetLoader {
 public:
-    AssetLoader(const std::string& map_json_path, SDL_Renderer* renderer);
+    AssetLoader(const std::string& map_path, SDL_Renderer* renderer);
 
     const std::vector<std::unique_ptr<Asset>>& get_all_assets() const;
     Asset* get_player() const;

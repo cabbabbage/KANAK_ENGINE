@@ -12,8 +12,8 @@ namespace fs = std::filesystem;
 // Global flag to enable area drawing
 bool testing = false;
 
-Engine::Engine(const std::string& map_json)
-    : map_json(map_json), window(nullptr), renderer(nullptr),
+Engine::Engine(const std::string& map_path)
+    : map_path(map_path), window(nullptr), renderer(nullptr),
       game_assets(nullptr), SCREEN_WIDTH(0), SCREEN_HEIGHT(0),
       background_color({69, 101, 74, 255}), debug_font(nullptr) {}
 
@@ -71,7 +71,7 @@ void Engine::init() {
     std::cout << "[Engine] Renderer resolution: " << SCREEN_WIDTH << "x" << SCREEN_HEIGHT << "\n";
 
     try {
-        AssetLoader loader("engine/map.json", renderer);
+        AssetLoader loader(map_path, renderer);
         if (!loader.get_player()) throw std::runtime_error("No player asset found.");
         std::cout << "loading and spawning succsesfull\n";
 

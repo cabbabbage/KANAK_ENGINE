@@ -3,6 +3,8 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 from pages.boundary import BoundaryConfigurator
+from pages.range import Range
+from pages.search import AssetSearchWindow
 from PIL import Image, ImageTk
 
 ASSET_DIR = "SRC"
@@ -35,8 +37,6 @@ class ChildAssetsPage(ttk.Frame):
         self.asset_names = []
 
         style = ttk.Style(self)
-        style.configure('Main.TButton', font=self.FONT, padding=6, background=self.MAIN_COLOR, foreground='black')
-        style.map('Main.TButton', background=[('active', self.SECONDARY_COLOR)])
         style.configure('LargeBold.TLabel', font=self.FONT_BOLD, foreground=self.SECONDARY_COLOR)
         style.configure('Large.TLabel', font=self.FONT)
         style.configure('Large.TCheckbutton', font=self.FONT)
@@ -55,10 +55,8 @@ class ChildAssetsPage(ttk.Frame):
         btn_frame.columnconfigure(0, weight=1)
         btn_frame.columnconfigure(1, weight=1)
 
-        ttk.Button(btn_frame, text="Add Child Region", style='Main.TButton', command=self._add_child_row)\
-            .grid(row=0, column=0, padx=8, sticky="e")
-        ttk.Button(btn_frame, text="Save", style='Main.TButton', command=self.save)\
-            .grid(row=0, column=1, padx=8, sticky="w")
+        tk.Button(btn_frame, text="Add Child Region", command=self._add_child_row, font=self.FONT, bg="#007BFF", fg="white").grid(row=0, column=0, padx=8, sticky="e")
+        tk.Button(btn_frame, text="Save", command=self.save, font=self.FONT, bg="#007BFF", fg="white").grid(row=0, column=1, padx=8, sticky="w")
 
     def _add_child_row(self, data=None):
         idx = len(self.child_frames)
@@ -69,14 +67,12 @@ class ChildAssetsPage(ttk.Frame):
 
         ttk.Label(frm, text="Asset:", style='Large.TLabel').grid(row=0, column=0, sticky="w")
         asset_var = tk.StringVar(value=(data or {}).get('asset', ''))
-        om = ttk.OptionMenu(frm, asset_var, asset_var.get(), *self.asset_names,
-                            command=lambda _v, i=idx: self._update_preview(i))
-        om.grid(row=0, column=1, sticky="we", padx=6)
+        asset_display = ttk.Label(frm, text=asset_var.get(), style='Large.TLabel')
+        asset_display.grid(row=0, column=1, sticky="w", padx=6)
+        tk.Button(frm, text="Pick…", command=lambda i=idx: self._pick_asset(i), font=self.FONT, bg="#007BFF", fg="white").grid(row=0, column=2, sticky="w")
 
         ttk.Label(frm, text="Spawn Area:", style='Large.TLabel').grid(row=1, column=0, sticky="w", pady=4)
-        btn_area = ttk.Button(frm, text="Draw…", style='Main.TButton',
-                              command=lambda i=idx: self._draw_area(i))
-        btn_area.grid(row=1, column=1, sticky="w", padx=6)
+        tk.Button(frm, text="Draw…", command=lambda i=idx: self._draw_area(i), font=self.FONT, bg="#007BFF", fg="white").grid(row=1, column=1, sticky="w", padx=6)
         area_label = ttk.Label(frm, text="(none)", style='Large.TLabel')
         area_label.grid(row=1, column=2, columnspan=2, sticky="w")
 
@@ -85,12 +81,9 @@ class ChildAssetsPage(ttk.Frame):
         ttk.Spinbox(frm, from_=-9999, to=9999, textvariable=z_var, width=8)\
             .grid(row=2, column=1, sticky="w", padx=6)
 
-        min_var = tk.IntVar(value=(data or {}).get('min', 1))
-        max_var = tk.IntVar(value=(data or {}).get('max', 1))
-        ttk.Label(frm, text="Min #:", style='Large.TLabel').grid(row=3, column=0, sticky="w", pady=4)
-        ttk.Spinbox(frm, from_=0, to=100, textvariable=min_var, width=6).grid(row=3, column=1, sticky="w", padx=6)
-        ttk.Label(frm, text="Max #:", style='Large.TLabel').grid(row=3, column=2, sticky="w", pady=4)
-        ttk.Spinbox(frm, from_=0, to=100, textvariable=max_var, width=6).grid(row=3, column=3, sticky="w", padx=6)
+        count_range = Range(frm, set_min=(data or {}).get('min', 1), set_max=(data or {}).get('max', 1),
+                            min_bound=0, max_bound=100, label="Number of Children")
+        count_range.grid(row=3, column=0, columnspan=4, sticky="ew", padx=6, pady=4)
 
         term_var = tk.BooleanVar(value=(data or {}).get('terminate_with_parent', False))
         ttk.Checkbutton(frm, text="Treat as top-level asset", variable=term_var, style='Large.TCheckbutton')\
@@ -99,9 +92,7 @@ class ChildAssetsPage(ttk.Frame):
         cv = tk.Canvas(frm, width=400, height=400, bg='black')
         cv.grid(row=0, column=4, rowspan=5, padx=10, pady=4)
 
-        ttk.Button(frm, text="Remove", style='Main.TButton',
-                   command=lambda i=idx: self._remove_child_row(i))\
-            .grid(row=0, column=3, sticky="e")
+        tk.Button(frm, text="Remove", command=lambda i=idx: self._remove_child_row(i), font=self.FONT, bg="#007BFF", fg="white").grid(row=0, column=3, sticky="e")
 
         entry = {
             'frame': frm,
@@ -109,12 +100,12 @@ class ChildAssetsPage(ttk.Frame):
                 'asset': asset_var,
                 'area': data.get('area_geo') if data else None,
                 'z_offset': z_var,
-                'min': min_var,
-                'max': max_var,
+                'range': count_range,
                 'terminate_with_parent': term_var
             },
             'widgets': {
-                'area_label': area_label
+                'area_label': area_label,
+                'asset_display': asset_display
             },
             'canvas': cv,
             'tkimg': None
@@ -125,6 +116,16 @@ class ChildAssetsPage(ttk.Frame):
             area_label.config(text="(configured)")
 
         self._update_preview(idx)
+
+    def _pick_asset(self, idx):
+        win = AssetSearchWindow(self)
+        win.wait_window()
+        selected = win.selected_asset
+        if selected:
+            entry = self.child_frames[idx]
+            entry['vars']['asset'].set(selected)
+            entry['widgets']['asset_display'].config(text=selected)
+            self._update_preview(idx)
 
     def _remove_child_row(self, idx):
         entry = self.child_frames.pop(idx)
@@ -205,12 +206,13 @@ class ChildAssetsPage(ttk.Frame):
                     json.dump(geo, f, indent=2)
                 used.add(fn)
 
+            min_val, max_val = v['range'].get()
             out.append({
                 'asset': v['asset'].get(),
                 'area_file': fn,
                 'z_offset': v['z_offset'].get(),
-                'min': v['min'].get(),
-                'max': v['max'].get(),
+                'min': min_val,
+                'max': max_val,
                 'terminate_with_parent': v['terminate_with_parent'].get()
             })
 

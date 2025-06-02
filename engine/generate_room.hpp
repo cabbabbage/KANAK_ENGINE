@@ -10,7 +10,7 @@ class GenerateRoom {
 public:
     using Point = std::pair<int, int>;
 
-    GenerateRoom(const std::vector<GenerateRoom*>& existing_rooms,
+    GenerateRoom(std::string map_path, const std::vector<GenerateRoom*>& existing_rooms,
                  int map_width,
                  int map_height,
                  int min_size,
@@ -34,6 +34,7 @@ private:
     int center_y_;
     Area room_area_;
     std::string assets_path_;
+    std::string map_path;
 
     static std::mt19937 rng_;
 };

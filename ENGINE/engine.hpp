@@ -10,17 +10,16 @@
 
 class Engine {
 public:
-    Engine(const std::string& map_json);
+    Engine(const std::string& map_path);
     ~Engine();
 
     void init();
 
 private:
-    std::string map_json;
+    std::string map_path;
     SDL_Window* window;
     SDL_Renderer* renderer;
     TTF_Font* debug_font;
-
     Assets* game_assets;
     int SCREEN_WIDTH;
     int SCREEN_HEIGHT;

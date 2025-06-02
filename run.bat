@@ -28,11 +28,7 @@ if not exist "vcpkg\scripts\buildsystems\vcpkg.cmake" (
     exit /b 1
 )
 
-if not exist "SRC\Map.json" (
-    echo ❌ Missing SRC/Map.json
-    pause
-    exit /b 1
-)
+
 
 echo ✅ All required files found.
 

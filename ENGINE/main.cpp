@@ -11,17 +11,9 @@ int main(int argc, char* argv[]) {
 }
 
 void run() {
-    const std::string map_path = "SRC/Map.json";
+    const std::string map_path = "MAPS/FORREST";
 
-    std::ifstream file(map_path);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open " << map_path << std::endl;
-        return;
-    }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::cout << "[Map.json contents]\n" << buffer.str() << std::endl;
 
     Engine engine(map_path);
     engine.init();

@@ -16,7 +16,7 @@ public:
         std::string assets_path;
     };
 
-    GenerateTrails(const std::vector<GenerateRoom>& rooms,
+    GenerateTrails(std::string map_path, const std::vector<GenerateRoom>& rooms,
                    int map_width,
                    int map_height);
 
@@ -28,7 +28,7 @@ private:
     std::mt19937 rng_;
     int map_width_;
     int map_height_;
-
+    std::string map_path;
     std::vector<Point> buildPolygon(const Point& start, const Point& end);
     std::string pickAssetsPath();
 };

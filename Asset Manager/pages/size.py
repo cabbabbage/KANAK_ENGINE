@@ -3,6 +3,9 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
+from pages.button import BlueButton
+
+
 
 class SizePage(ttk.Frame):
     def __init__(self, parent):
@@ -79,8 +82,7 @@ class SizePage(ttk.Frame):
         self.preview_max.grid(row=6, column=2, columnspan=2, padx=6, pady=6)
 
         # Save button
-        ttk.Button(self, text="Save", command=self.save, style='Main.TButton') \
-            .grid(row=7, column=0, columnspan=4, pady=(20, 10), padx=12)
+        BlueButton(self, "Save", command=self.save, x=0, y=0)
 
     def load(self, info_path):
         self.asset_path = info_path

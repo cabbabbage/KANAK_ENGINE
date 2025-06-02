@@ -7,14 +7,15 @@
 
 namespace fs = std::filesystem;
 
-GenerateTrails::GenerateTrails(const std::vector<GenerateRoom>& rooms,
+GenerateTrails::GenerateTrails(std::string map_path, const std::vector<GenerateRoom>& rooms,
                                int map_width,
                                int map_height)
-    : rng_(std::random_device{}()),
+    : map_path(map_path),
+      rng_(std::random_device{}()),
       map_width_(map_width),
       map_height_(map_height)
 {
-    for (const auto& entry : fs::directory_iterator("trails")) {
+    for (const auto& entry : fs::directory_iterator(map_path + "/trails")) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
         if (path.size() >= 5 && path.substr(path.size() - 5) == ".json") {

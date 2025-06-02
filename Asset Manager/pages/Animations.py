@@ -4,13 +4,14 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 from pages.AnimationConfig import AnimationEditor
+from pages.button import BlueButton
 import pandas as pd
 
 class AnimationsPage(ttk.Frame):
     def __init__(self, master, asset_folder):
         super().__init__(master)
         self.asset_folder = asset_folder
-        self.anim_configs = {}  # trigger_name -> AnimationEditor
+        self.anim_configs = {}
 
         self.triggers_df = pd.read_csv("Asset Manager/triggers.csv")
         self.used_triggers = set()
@@ -28,17 +29,18 @@ class AnimationsPage(ttk.Frame):
         scroll_frame = ttk.Frame(canvas)
         scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.create_window((0, 20), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        self.canvas = canvas
         return scroll_frame
 
     def _build_buttons(self):
-        btn_frame = ttk.Frame(self)
-        btn_frame.pack(fill="x", pady=8)
-        ttk.Button(btn_frame, text="Add New Animation", command=self._prompt_new).pack(side="left", padx=12)
-        ttk.Button(btn_frame, text="Save All", command=self.save_all).pack(side="right", padx=12)
+        footer = ttk.Frame(self)
+        footer.pack(fill="x", side="bottom", pady=10)
+        BlueButton(footer, "Add New Animation", command=self._prompt_new).pack(side="left", padx=20)
+        BlueButton(footer, "Save All", command=self.save_all).pack(side="right", padx=20)
 
     def _load_existing(self):
         info_path = os.path.join(self.asset_folder, "info.json")
@@ -54,7 +56,6 @@ class AnimationsPage(ttk.Frame):
                 continue
             self._add_editor(trigger, anim_data)
 
-
     def _prompt_new(self):
         available = [t for t in self.triggers_df["trigger_name"] if t not in self.anim_configs]
         if not available:
@@ -63,12 +64,13 @@ class AnimationsPage(ttk.Frame):
 
         top = tk.Toplevel(self)
         top.title("Select Trigger Type")
+        top.geometry("400x300")
 
         tk.Label(top, text="Choose a trigger type:").pack(padx=12, pady=10)
         listbox = tk.Listbox(top, height=min(10, len(available)), selectmode=tk.SINGLE)
         for item in available:
             listbox.insert(tk.END, item)
-        listbox.pack(padx=12, pady=6)
+        listbox.pack(padx=12, pady=6, expand=True, fill="both")
 
         def on_select():
             selection = listbox.curselection()
@@ -77,7 +79,7 @@ class AnimationsPage(ttk.Frame):
                 self._add_editor(trigger, {})
                 top.destroy()
 
-        ttk.Button(top, text="Add", command=on_select).pack(pady=8)
+        BlueButton(top, "Add", command=on_select, x=0, y=0)
 
     def _add_editor(self, trigger, anim_data):
         if trigger in self.anim_configs:

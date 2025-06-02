@@ -1,4 +1,6 @@
 # pages/spacing.py
+from pages.button import BlueButton  
+from pages.range import Range
 
 import os
 import json
@@ -8,12 +10,6 @@ from pages.boundary import BoundaryConfigurator
 from PIL import Image, ImageTk, ImageDraw
 
 class SpacingThresholdPage(ttk.Frame):
-    """
-    Define an area within which child assets may NOT spawn.
-    Draw the region, preview it over the asset's default/0.png,
-    save the geometry to spacing_area.json and record just that path.
-    """
-
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -35,7 +31,6 @@ class SpacingThresholdPage(ttk.Frame):
         style.configure('LargeBold.TLabel', font=FONT_BOLD,
                         foreground=SECONDARY_COLOR)
 
-        # layout
         for c in range(3):
             self.columnconfigure(c, weight=1)
 
@@ -44,51 +39,35 @@ class SpacingThresholdPage(ttk.Frame):
 
         ttk.Label(self, text="Forbidden Spawn Region:", style='Large.TLabel')\
             .grid(row=1, column=0, sticky='e', padx=12, pady=6)
-        self.btn_draw = ttk.Button(self, text="Draw…",
-                                   command=self._configure_area,
-                                   style='Main.TButton')
-        self.btn_draw.grid(row=1, column=1, sticky='w', padx=12, pady=6)
-        self.lbl_status = ttk.Label(self, text="(none)", style='Large.TLabel')
-        self.lbl_status.grid(row=1, column=2, sticky='w', padx=12, pady=6)
+        self.btn_draw = BlueButton(self, "Draw…", command=self._configure_area, x=50, y=10)
 
-        # Minimum same-type distance
+        # Minimum same-type distance using Range
         ttk.Label(self, text="Min Distance From Same Type:", style='Large.TLabel')\
             .grid(row=4, column=0, sticky='e', padx=12, pady=6)
-        self.min_dist_var = tk.IntVar(value=0)
-        entry = ttk.Entry(self, textvariable=self.min_dist_var, width=8)
-        entry.grid(row=4, column=1, sticky='w', padx=12, pady=6)
+        self.min_dist_range = Range(self, min_bound=0, max_bound=200, set_min=0, set_max=0, force_fixed=True)
+        self.min_dist_range.grid(row=4, column=1, columnspan=2, sticky='we', padx=12, pady=6)
 
-        # preview canvas
         self.preview = tk.Canvas(self, bg='black', bd=2, relief='sunken')
         self.preview.grid(row=5, column=0, columnspan=3,
                           padx=12, pady=12)
 
-        ttk.Button(self, text="Save",
-                   command=self.save,
-                   style='Main.TButton')\
-            .grid(row=6, column=0, columnspan=3,
-                  pady=(0,10))
+        BlueButton(self, "Save", command=self.save, x=0, y=0)
 
     def _configure_area(self):
-        """Launch BoundaryConfigurator over the asset's default frames."""
         if not self.frames_source:
-            messagebox.showerror("Error",
-                "Select frames folder in Basic Info first.")
+            messagebox.showerror("Error", "Select frames folder in Basic Info first.")
             return
         BoundaryConfigurator(self,
                              base_folder=self.frames_source,
                              callback=self._on_boundary)
 
     def _on_boundary(self, geo):
-        """Normalize and store the boundary, then preview it."""
         if isinstance(geo, list):
             geo = {'type': 'mask', 'points': geo}
         self.area_geo = geo
-        self.lbl_status.config(text="(configured)")
         self._draw_preview()
 
     def _draw_preview(self):
-        """Draw the forbidden region over default/0.png at 50% scale."""
         if not self.asset_path or not self.area_geo:
             return
 
@@ -98,7 +77,6 @@ class SpacingThresholdPage(ttk.Frame):
             return
 
         img = Image.open(p).convert('RGBA')
-        # We want to show everything at half‐size in the preview:
         scale = 0.5
         disp = (int(img.width * scale), int(img.height * scale))
         base = img.resize(disp, Image.LANCZOS)
@@ -108,43 +86,28 @@ class SpacingThresholdPage(ttk.Frame):
         geo = self.area_geo
 
         if geo['type'] == 'circle':
-            # geo['x'], ['y'], ['w'], ['h'] are in ORIGINAL‐image coords.
-            # To place on our ½‐scale preview, multiply by scale.
             cx = int(geo['x'] * scale)
             cy = int(geo['y'] * scale)
-            # 'w' and 'h' represent the FULL diameter in original coords.
-            # So radius_in_display = (geo['w'] / 2) * scale
             rw = int((geo['w'] * scale) / 2)
             rh = int((geo['h'] * scale) / 2)
-            draw.ellipse(
-                (cx - rw, cy - rh, cx + rw, cy + rh),
-                fill=(255, 0, 0, 128)
-            )
-
+            draw.ellipse((cx - rw, cy - rh, cx + rw, cy + rh), fill=(255, 0, 0, 128))
         else:
-            # geo['points'] are offsets from the original_anchor in ORIGINAL coords.
-            # We must re‐add original_anchor, then multiply by scale.
             anchor_x, anchor_y = geo.get('original_anchor', [0, 0])
             for ox, oy in geo.get('points', []):
-                # ox, oy are offsets; convert back to absolute original coords:
                 abs_x = ox + anchor_x
                 abs_y = oy + anchor_y
-                # Then map to preview‐space:
                 dx = int(abs_x * scale)
                 dy = int(abs_y * scale)
                 if 0 <= dx < disp[0] and 0 <= dy < disp[1]:
                     overlay.putpixel((dx, dy), (255, 0, 0, 128))
 
-        # Composite and show:
         comp = Image.alpha_composite(base, overlay)
         self._tk = ImageTk.PhotoImage(comp)
         self.preview.config(width=disp[0], height=disp[1])
         self.preview.delete("all")
         self.preview.create_image(0, 0, anchor='nw', image=self._tk)
 
-
     def load(self, info_path):
-        """Load info.json, set up frames_source & existing spacing_area."""
         self.asset_path = info_path
         if not info_path:
             return
@@ -158,13 +121,11 @@ class SpacingThresholdPage(ttk.Frame):
             messagebox.showerror("Error", f"Could not load info.json:\n{e}")
             return
 
-        # Always use "default" folder for frame source
         self.frames_source = os.path.join(asset_dir, "default")
         if not os.path.isdir(self.frames_source):
             print(f"[Warning] Default frame folder missing: {self.frames_source}")
             self.frames_source = None
 
-        # Load existing spacing_area.json, if any
         fn = data.get('spacing_area')
         if fn:
             full = os.path.join(asset_dir, fn)
@@ -172,33 +133,23 @@ class SpacingThresholdPage(ttk.Frame):
                 try:
                     with open(full, 'r') as f:
                         self.area_geo = json.load(f)
-                    self.lbl_status.config(text="(configured)")
                 except Exception:
                     self.area_geo = None
-                    self.lbl_status.config(text="(none)")
-            else:
-                self.area_geo = None
-                self.lbl_status.config(text="(none)")
-        else:
-            self.area_geo = None
-            self.lbl_status.config(text="(none)")
 
-        # Load existing min spacing
-        self.min_dist_var.set(data.get('min_same_type_distance', 0))
+        # Load range
+        dist = data.get('min_same_type_distance', 0)
+        self.min_dist_range.set(dist, dist)
 
-        print("[DEBUG] frames_source =", self.frames_source)
+
         self._draw_preview()
 
-
     def save(self):
-        """Write out spacing_area.json and path into info.json."""
         if not self.asset_path:
-            messagebox.showerror("Error","No asset selected.")
+            messagebox.showerror("Error", "No asset selected.")
             return
 
         if not self.area_geo:
-            messagebox.showerror("Error",
-                "Draw a forbidden region before saving.")
+            messagebox.showerror("Error", "Draw a forbidden region before saving.")
             return
 
         asset_dir = os.path.dirname(self.asset_path)
@@ -206,11 +157,16 @@ class SpacingThresholdPage(ttk.Frame):
         with open(os.path.join(asset_dir, fn), 'w') as f:
             json.dump(self.area_geo, f, indent=2)
 
-        # update info.json
         with open(self.asset_path, 'r') as f:
             info = json.load(f)
         info['spacing_area'] = fn
-        info['min_same_type_distance'] = self.min_dist_var.get()
+
+        min_val, max_val = self.min_dist_range.get()
+        if min_val == max_val:
+            info['min_same_type_distance'] = min_val
+        else:
+            info['min_same_type_distance'] = [min_val, max_val]
+
         with open(self.asset_path, 'w') as f:
             json.dump(info, f, indent=2)
 

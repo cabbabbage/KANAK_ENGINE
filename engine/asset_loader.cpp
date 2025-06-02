@@ -6,8 +6,8 @@
 
 namespace fs = std::filesystem;
 
-AssetLoader::AssetLoader(const std::string& map_json_path, SDL_Renderer* renderer)
-    : map_path_(map_json_path),
+AssetLoader::AssetLoader(const std::string& map_path, SDL_Renderer* renderer)
+    : map_path_(map_path),
       renderer_(renderer),
       rng_(std::random_device{}())
 {
@@ -29,7 +29,7 @@ AssetLoader::AssetLoader(const std::string& map_json_path, SDL_Renderer* rendere
     auto it = all_assets_.begin();
     while (it != all_assets_.end()) {
         Asset* a = it->get();
-        if (!a || !a->info || a->info->type != "Background") {
+        if (!a || !a->info || a->info->type != "Boundary") {
             ++it;
             continue;
         }
@@ -59,7 +59,7 @@ void AssetLoader::spawn_assets_for_open_space() {
         combined_area.union_with(trail.area);
     }
 
-    std::ifstream in("boundaries.json");
+    std::ifstream in(map_path_ + "/boundaries.json");
     if (!in.is_open()) {
         std::cerr << "[AssetLoader] Failed to open boundaries.json\n";
         return;
@@ -84,7 +84,7 @@ void AssetLoader::spawn_assets_for_open_space() {
 }
 
 void AssetLoader::load_json() {
-    std::ifstream in(map_path_);
+    std::ifstream in(map_path_ + "/map.json");
     if (!in.is_open()) {
         throw std::runtime_error("[AssetLoader] Failed to open " + map_path_);
     }
@@ -122,18 +122,18 @@ void AssetLoader::generate_rooms() {
         int room_w = wr_dist(rng_);
         int radius = (room_h + room_w) / 2;
 
-        rooms_.emplace_back(existing_ptrs, map_width_, map_height_, radius, radius);
+        rooms_.emplace_back(map_path_, existing_ptrs, map_width_, map_height_, radius, radius);
     }
 }
 
 void AssetLoader::generate_trails() {
-    GenerateTrails gt(rooms_, map_width_, map_height_);
+    GenerateTrails gt(map_path_, rooms_, map_width_, map_height_);
     trails_ = gt.getTrails();
 }
 
 void AssetLoader::spawn_assets_for_rooms() {
     for (auto& gr : rooms_) {
-        std::ifstream in(gr.getAssetsPath());
+        std::ifstream in(map_path_ + "/" + gr.getAssetsPath());
         if (!in.is_open()) continue;
 
         nlohmann::json assets_json;
@@ -154,7 +154,7 @@ void AssetLoader::spawn_assets_for_rooms() {
 
 void AssetLoader::spawn_assets_for_trails() {
     for (const auto& trail : trails_) {
-        std::ifstream in(trail.assets_path);
+        std::ifstream in(map_path_ + "/" + trail.assets_path);
         if (!in.is_open()) continue;
 
         nlohmann::json assets_json;
@@ -179,7 +179,7 @@ void AssetLoader::spawn_davey_player() {
     const GenerateRoom& target_room = rooms_.front();
     Area room_area = target_room.getArea();
 
-    std::ifstream in("player.json");
+    std::ifstream in(map_path_ + "/player.json");
     if (!in.is_open()) {
         std::cerr << "[AssetLoader] Failed to open player.json\n";
         return;

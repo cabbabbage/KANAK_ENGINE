@@ -1,0 +1,12 @@
+{
+  "name": "spawn",
+  "min_width": 100,
+  "max_width": 200,
+  "min_height": 10,
+  "max_height": 1000,
+  "edge_smoothness": 0,
+  "geometry": "Random",
+  "is_spawn": true,
+  "is_boss": false,
+  "assets": []
+}

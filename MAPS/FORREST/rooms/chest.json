@@ -1,0 +1,12 @@
+{
+  "name": "chest",
+  "min_width": 100,
+  "max_width": 493,
+  "min_height": 10,
+  "max_height": 1000,
+  "edge_smoothness": 1,
+  "geometry": "Random",
+  "is_spawn": false,
+  "is_boss": false,
+  "assets": []
+}

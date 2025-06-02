@@ -1,0 +1,22 @@
+{
+  "name": "spawn",
+  "min_width": 100,
+  "max_width": 531,
+  "curvyness": 1,
+  "assets": [
+    {
+      "name": "Barrel",
+      "min_number": 0,
+      "max_number": 0,
+      "position": "Center",
+      "exact_position": null,
+      "inherited": false
+    }
+  ],
+  "min_height": 10,
+  "max_height": 1000,
+  "edge_smoothness": 1,
+  "geometry": "Random",
+  "is_spawn": false,
+  "is_boss": false
+}

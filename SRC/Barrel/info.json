@@ -25,12 +25,12 @@
     "duplicate_min_time": 1,
     "duplicate_max_time": 3,
     "min_child_depth": 1,
-    "max_child_depth": 3,
-    "is_passable": false,
-    "impassable_area": "impassable_area.json",
-    "z_threshold": 10,
+    "max_child_depth": 10,
+    "is_passable": true,
+    "impassable_area": null,
+    "z_threshold": 14,
     "size_settings": {
-        "scale_percentage": 30.875634517766496,
+        "scale_percentage": 33.8756345177665,
         "variability_percentage": 0.0
     },
     "visited_tabs": [
@@ -49,5 +49,7 @@
             "max": 3,
             "terminate_with_parent": false
         }
-    ]
+    ],
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60
 }

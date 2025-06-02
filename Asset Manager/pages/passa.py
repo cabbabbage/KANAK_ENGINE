@@ -5,59 +5,29 @@ import json
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from pages.boundary import BoundaryConfigurator
+from pages.button import BlueButton
 from PIL import Image, ImageTk, ImageDraw
 
 class PassabilityPage(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
 
-        # — Theme & fonts —
         FONT             = ('Segoe UI', 14)
         FONT_BOLD        = ('Segoe UI', 18, 'bold')
-        MAIN_COLOR       = "#005f73"  # teal
-        SECONDARY_COLOR  = "#ee9b00"  # amber
+        MAIN_COLOR       = "#005f73"
+        SECONDARY_COLOR  = "#ee9b00"
 
-        # — State vars —
         self.asset_path      = None
         self.frames_source   = None
         self.impassable_area  = None
         self.is_passable_var = tk.BooleanVar(value=True)
 
-
-        W = 20  # widget width
-
-        # — Styles —
-        style = ttk.Style(self)
-        # Configure‐area button style (MAIN_COLOR background, white text)
-        style.configure('Main.TButton',
-                        font=FONT, padding=6,
-                        background=MAIN_COLOR,
-                        foreground='black')
-        style.map('Main.TButton',
-                  background=[('active', '!disabled', MAIN_COLOR)])
-        # Save button style (SECONDARY_COLOR background, white text)
-        style.configure('Secondary.TButton',
-                        font=FONT, padding=6,
-                        background=SECONDARY_COLOR,
-                        foreground='black')
-        style.map('Secondary.TButton',
-                  background=[('active', '!disabled', SECONDARY_COLOR)])
-        # Labels
-        style.configure('Large.TLabel',     font=FONT)
-        style.configure('LargeBold.TLabel',
-                        font=FONT_BOLD,
-                        foreground=SECONDARY_COLOR)
-        style.configure('Large.TCheckbutton', font=FONT)
-
-        # — Layout columns —
         for c in range(3):
             self.columnconfigure(c, weight=1)
 
-        # — Title —
         ttk.Label(self, text="Passability Settings", style='LargeBold.TLabel')\
             .grid(row=0, column=0, columnspan=3, pady=(10,20), padx=12)
 
-        # — Is Passable? —
         ttk.Checkbutton(self,
                         text="Is Passable",
                         variable=self.is_passable_var,
@@ -66,22 +36,16 @@ class PassabilityPage(ttk.Frame):
             .grid(row=1, column=0, columnspan=2,
                   sticky="w", padx=12, pady=6)
 
-        # — Configure Impassable Boundary —
         ttk.Label(self, text="Impassable Area:", style='Large.TLabel')\
             .grid(row=2, column=0, sticky="e", padx=12, pady=6)
-        self.btn_configure = ttk.Button(self,
-                                        text="Configure Area",
-                                        command=self._configure_area,
-                                        style='Main.TButton',
-                                        width=W)
-        self.btn_configure.grid(row=2, column=1, sticky="w",
-                                padx=12, pady=6)
+
+        self.btn_configure = BlueButton(self, "Configure Area", command=self._configure_area, x=50, y=10)
+
 
         self.area_label = ttk.Label(self, text="(none)", style='Large.TLabel')
         self.area_label.grid(row=2, column=2, sticky="w",
                              padx=12, pady=6)
 
-        # — Preview Canvas —
         self.preview_canvas = tk.Canvas(self,
                                         bg='black',
                                         bd=2,
@@ -90,33 +54,25 @@ class PassabilityPage(ttk.Frame):
                                  columnspan=3,
                                  pady=12, padx=12)
 
-        # — Save Button —
-        ttk.Button(self,
-                   text="Save",
+        BlueButton(self,
+                   "Save",
                    command=self.save,
-                   style='Secondary.TButton',
-                   width=W)\
-            .grid(row=4, column=0, columnspan=3,
-                  pady=(20,10), padx=12)
+                   x=0, y=0)
 
-        # initially toggle controls
         self._on_toggle()
 
-
     def _on_toggle(self):
-        """Enable or disable the Configure button & preview."""
         if self.is_passable_var.get():
-            self.btn_configure.state(('disabled',))
+            self.btn_configure.state(['disabled'])
             self.area_label.config(text="(unrestricted)")
             self.preview_canvas.delete("all")
         else:
-            self.btn_configure.state(('!disabled',))
+            self.btn_configure.state(['normal'])
             self.area_label.config(
                 text="(configured)" if self.impassable_area else "(none)"
             )
             if self.impassable_area:
                 self._draw_preview()
-
 
     def _configure_area(self):
         if not self.frames_source:
@@ -131,21 +87,14 @@ class PassabilityPage(ttk.Frame):
             callback=self._boundary_callback
         )
 
-
     def _boundary_callback(self, geo):
-        """Receive geometry (list or dict), normalize, compute z-threshold."""
         if isinstance(geo, list):
             geo = {'type': 'mask', 'points': geo}
         self.impassable_area = geo
-
-
-
         self.area_label.config(text="(configured)")
         self._draw_preview()
 
-
     def _draw_preview(self):
-        """Overlay the impassable shape on default/0.png at 50% scale."""
         if not self.asset_path or not self.impassable_area:
             return
         asset_dir = os.path.dirname(self.asset_path)
@@ -170,7 +119,7 @@ class PassabilityPage(ttk.Frame):
             draw.ellipse((cx-rw, cy-rh, cx+rw, cy+rh),
                          fill=(255,0,0,128))
 
-        else:  # mask
+        else:
             for x,y in geo.get('points', []):
                 dx, dy = int(x*scale), int(y*scale)
                 if 0<=dx<disp[0] and 0<=dy<disp[1]:
@@ -183,7 +132,6 @@ class PassabilityPage(ttk.Frame):
         self.preview_canvas.create_image(0, 0, anchor='nw', image=self.tk_preview)
 
     def load(self, info_path):
-        """Load JSON and repopulate UI."""
         self.asset_path = info_path
         if not info_path:
             return
@@ -199,7 +147,6 @@ class PassabilityPage(ttk.Frame):
             messagebox.showerror("Error", f"Malformed JSON: {info_path}")
             return
 
-        # Ensure required keys
         changed = False
         for k, dft in (('is_passable', True),
                     ('impassable_area', None)):
@@ -210,10 +157,8 @@ class PassabilityPage(ttk.Frame):
             with open(info_path, 'w') as f:
                 json.dump(data, f, indent=4)
 
-        # Load flags
         self.is_passable_var.set(data['is_passable'])
 
-        # Load existing impassable area if present
         area_file = data.get('impassable_area')
         if area_file:
             full = os.path.join(asset_dir, area_file)
@@ -228,7 +173,6 @@ class PassabilityPage(ttk.Frame):
         else:
             self.impassable_area = None
 
-        # Always use "default" folder
         self.frames_source = os.path.join(asset_dir, "default")
         if not os.path.isdir(self.frames_source):
             print(f"[Warning] Default frame folder missing: {self.frames_source}")
@@ -237,18 +181,13 @@ class PassabilityPage(ttk.Frame):
         print("[DEBUG] frames_source =", self.frames_source)
         self._on_toggle()
 
-
-
-
     def save(self):
-
         if not self.asset_path:
             messagebox.showerror("Error", "No asset selected.")
             return
         asset_dir = os.path.dirname(self.asset_path)
         info = json.load(open(self.asset_path,'r'))
 
-        # impassable area file
         if not self.is_passable_var.get():
             if not self.impassable_area:
                 messagebox.showerror(
@@ -260,16 +199,13 @@ class PassabilityPage(ttk.Frame):
                 json.dump(self.impassable_area, f, indent=4)
             info['impassable_area'] = area_file
         else:
-            # remove old file
             old = info.get('impassable_area')
             if old:
                 try: os.remove(os.path.join(asset_dir, old))
                 except: pass
             info['impassable_area'] = None
 
-
         info['is_passable'] = self.is_passable_var.get()
-
 
         with open(self.asset_path,'w') as f:
             json.dump(info, f, indent=4)

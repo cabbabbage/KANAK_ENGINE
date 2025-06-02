@@ -5,13 +5,14 @@
 
 std::mt19937 GenerateRoom::rng_(std::random_device{}());
 
-GenerateRoom::GenerateRoom(const std::vector<GenerateRoom*>& existing_rooms,
+GenerateRoom::GenerateRoom(std::string map_path, const std::vector<GenerateRoom*>& existing_rooms,
                            int map_width,
                            int map_height,
                            int min_size,
                            int max_size,
                            const std::string& optional_assets_json)
-    : map_width_(map_width),
+    : map_path(map_path),
+      map_width_(map_width),
       map_height_(map_height)
 {
     std::uniform_int_distribution<int> radius_dist(min_size, max_size);
@@ -68,7 +69,7 @@ void GenerateRoom::pickAssetsPath(const std::vector<GenerateRoom*>& existing_roo
     }
 
     std::vector<std::string> candidates;
-    for (const auto& entry : std::filesystem::directory_iterator("rooms")) {
+    for (const auto& entry : std::filesystem::directory_iterator(map_path + "/rooms")) {
         if (!entry.is_regular_file()) continue;
         auto full = entry.path().string();
         auto fname = entry.path().filename().string();
