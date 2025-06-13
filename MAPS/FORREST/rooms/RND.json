@@ -1,0 +1,38 @@
+{
+  "name": "RND",
+  "min_width": 1080,
+  "max_width": 1080,
+  "min_height": 1108,
+  "max_height": 1108,
+  "edge_smoothness": 100,
+  "geometry": "Square",
+  "is_spawn": false,
+  "is_boss": false,
+  "inherits_map_assets": false,
+  "assets": [
+    {
+      "name": "Mushroom",
+      "min_number": 307,
+      "max_number": 369,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Mushroom_1",
+      "min_number": 300,
+      "max_number": 400,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Mushroom_2",
+      "min_number": 346,
+      "max_number": 359,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    }
+  ]
+}

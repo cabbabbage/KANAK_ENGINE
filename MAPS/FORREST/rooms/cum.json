@@ -1,12 +1,46 @@
 {
   "name": "cum",
-  "min_width": 100,
-  "max_width": 200,
-  "min_height": 10,
-  "max_height": 1000,
-  "edge_smoothness": 1,
-  "geometry": "Random",
+  "min_width": 1441,
+  "max_width": 1441,
+  "min_height": 1422,
+  "max_height": 1422,
+  "edge_smoothness": 100,
+  "geometry": "Square",
   "is_spawn": false,
   "is_boss": false,
-  "assets": []
+  "assets": [
+    {
+      "name": "Fountain",
+      "min_number": 89,
+      "max_number": 278,
+      "position": "Center",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Bone",
+      "min_number": 346,
+      "max_number": 382,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Skull",
+      "min_number": 330,
+      "max_number": 376,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Book",
+      "min_number": 126,
+      "max_number": 126,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    }
+  ],
+  "inherits_map_assets": true
 }

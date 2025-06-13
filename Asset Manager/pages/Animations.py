@@ -34,15 +34,20 @@ class AnimationsPage(ttk.Frame):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         self.canvas = canvas
+        self.scroll_frame = scroll_frame
         return scroll_frame
 
     def _build_buttons(self):
         footer = ttk.Frame(self)
         footer.pack(fill="x", side="bottom", pady=10)
-        BlueButton(footer, "Add New Animation", command=self._prompt_new).pack(side="left", padx=20)
+        BlueButton(footer, "Add New Animation", command=self._add_empty_editor).pack(side="left", padx=20)
         BlueButton(footer, "Save All", command=self.save_all).pack(side="right", padx=20)
 
     def _load_existing(self):
+        for widget in self.scroll_frame.winfo_children():
+            widget.destroy()
+        self.anim_configs.clear()
+
         info_path = os.path.join(self.asset_folder, "info.json")
         if not os.path.isfile(info_path):
             return
@@ -52,37 +57,17 @@ class AnimationsPage(ttk.Frame):
         animations = data.get("animations", {})
 
         for trigger, anim_data in animations.items():
-            if trigger == "default" or anim_data is None:
+            if anim_data is None:
                 continue
             self._add_editor(trigger, anim_data)
 
-    def _prompt_new(self):
-        available = [t for t in self.triggers_df["trigger_name"] if t not in self.anim_configs]
-        if not available:
-            messagebox.showinfo("No triggers", "All trigger types already used.")
-            return
 
-        top = tk.Toplevel(self)
-        top.title("Select Trigger Type")
-        top.geometry("400x300")
-
-        tk.Label(top, text="Choose a trigger type:").pack(padx=12, pady=10)
-        listbox = tk.Listbox(top, height=min(10, len(available)), selectmode=tk.SINGLE)
-        for item in available:
-            listbox.insert(tk.END, item)
-        listbox.pack(padx=12, pady=6, expand=True, fill="both")
-
-        def on_select():
-            selection = listbox.curselection()
-            if selection:
-                trigger = listbox.get(selection[0])
-                self._add_editor(trigger, {})
-                top.destroy()
-
-        BlueButton(top, "Add", command=on_select, x=0, y=0)
+    def _add_empty_editor(self):
+        self._add_editor("", {})
 
     def _add_editor(self, trigger, anim_data):
-        if trigger in self.anim_configs:
+        temp_id = trigger or f"__temp_{len(self.anim_configs)}"
+        if temp_id in self.anim_configs:
             return
 
         wrapper = ttk.Frame(self.scroll_frame)
@@ -90,7 +75,18 @@ class AnimationsPage(ttk.Frame):
 
         def delete():
             wrapper.destroy()
-            self.anim_configs.pop(trigger, None)
+            self.anim_configs.pop(temp_id, None)
+            # Remove tag from info.json
+            info_path = os.path.join(self.asset_folder, "info.json")
+            if os.path.isfile(info_path):
+                with open(info_path, "r") as f:
+                    data = json.load(f)
+                tags = data.get("tags", [])
+                if trigger in tags:
+                    tags.remove(trigger)
+                    data["tags"] = tags
+                    with open(info_path, "w") as f:
+                        json.dump(data, f, indent=4)
 
         tk.Button(wrapper, text="X", command=delete, fg="red").pack(side="left")
 
@@ -98,7 +94,8 @@ class AnimationsPage(ttk.Frame):
         editor.pack(fill="x", expand=True, padx=8)
         editor.load(trigger, anim_data, self.asset_folder)
 
-        self.anim_configs[trigger] = editor
+        self.anim_configs[temp_id] = editor
+
 
     def save_all(self):
         info_path = os.path.join(self.asset_folder, "info.json")
@@ -107,17 +104,26 @@ class AnimationsPage(ttk.Frame):
             with open(info_path, "r") as f:
                 data = json.load(f)
 
-        data["animations"] = data.get("animations", {})
+        animations_block = {}
+        for temp_id, editor in self.anim_configs.items():
+            saved = editor.save()
+            real_trigger = editor.trigger_name.strip()
+            if saved and real_trigger:
+                animations_block[real_trigger] = saved
 
-        for trigger, editor in self.anim_configs.items():
-            data["animations"][trigger] = editor.save()
+        data["animations"] = animations_block
 
-        data["available_animations"] = list(self.anim_configs.keys())
+        # Add triggers to tags if not already present
+        existing_tags = data.get("tags", [])
+        for trigger in animations_block:
+            if trigger not in existing_tags:
+                existing_tags.append(trigger)
+        data["tags"] = existing_tags
 
         with open(info_path, "w") as f:
             json.dump(data, f, indent=4)
 
-        print("[AnimationsPage] Saved animations:", list(self.anim_configs.keys()))
+        print("[AnimationsPage] Saved animations:", list(animations_block.keys()))
 
     def save(self):
         self.save_all()

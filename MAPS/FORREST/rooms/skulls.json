@@ -1,0 +1,62 @@
+{
+  "name": "skulls",
+  "min_width": 975,
+  "max_width": 975,
+  "min_height": 985,
+  "max_height": 985,
+  "edge_smoothness": 100,
+  "geometry": "Circle",
+  "is_spawn": false,
+  "is_boss": false,
+  "assets": [
+    {
+      "name": "Bone",
+      "min_number": 314,
+      "max_number": 346,
+      "position": "Between Trails",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Bone_1",
+      "min_number": 350,
+      "max_number": 359,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Bone_Pile",
+      "min_number": 320,
+      "max_number": 376,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Skull",
+      "min_number": 190,
+      "max_number": 190,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Skull_1",
+      "min_number": 126,
+      "max_number": 126,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "SKull_pile",
+      "min_number": 304,
+      "max_number": 344,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    }
+  ],
+  "inherits_map_assets": false
+}

@@ -22,7 +22,7 @@ class TrailsPage(ttk.Frame):
         ttk.Button(trail_btns, text="Add Trail", command=self._add_trail).pack(pady=(10, 2))
 
         self.editor_frame = ttk.Frame(self)
-        self.editor_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        self.editor_frame.pack_forget()
 
         self._build_editor()
 
@@ -34,17 +34,6 @@ class TrailsPage(ttk.Frame):
         os.makedirs(self.trails_dir, exist_ok=True)
         self._refresh_trail_list()
 
-        files = sorted([f for f in os.listdir(self.trails_dir) if f.endswith(".json")])
-        if files:
-            first_path = os.path.join(self.trails_dir, files[0])
-            try:
-                with open(first_path) as f:
-                    self.trail_data = json.load(f)
-                    self.current_trail_path = first_path
-                    self._load_editor()
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to load trail: {e}")
-
     def _build_editor(self):
         self.name_var = tk.StringVar()
         ttk.Label(self.editor_frame, text="Trail Name:").pack(anchor="w")
@@ -53,13 +42,9 @@ class TrailsPage(ttk.Frame):
 
         self.width_range = Range(self.editor_frame, min_bound=10, max_bound=1000, label="Width")
         self.width_range.pack(fill=tk.X, pady=6)
-        self.width_range.var_min.trace_add("write", lambda *_: self._save_json())
-        self.width_range.var_max.trace_add("write", lambda *_: self._save_json())
 
-        self.curve_range = Range(self.editor_frame, min_bound=0, max_bound=1, label="Curvyness", force_fixed=True)
+        self.curve_range = Range(self.editor_frame, min_bound=0, max_bound=8, label="Curvyness", force_fixed=True)
         self.curve_range.pack(fill=tk.X, pady=6)
-        self.curve_range.var_min.trace_add("write", lambda *_: self._save_json())
-        self.curve_range.var_max.trace_add("write", lambda *_: self._save_json())
 
         self.asset_editor = AssetEditor(
             self.editor_frame,
@@ -96,6 +81,7 @@ class TrailsPage(ttk.Frame):
                 self.trail_data = json.load(f)
                 self.current_trail_path = path
                 self._load_editor()
+                self.editor_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
@@ -103,27 +89,31 @@ class TrailsPage(ttk.Frame):
         self.name_var.set(self.trail_data["name"])
         self.width_range.set(self.trail_data.get("min_width", 0), self.trail_data.get("max_width", 0))
         self.curve_range.set(*[self.trail_data.get("curvyness", 0)] * 2)
+
+        self.asset_editor.current_path = self.current_trail_path
+        self.asset_editor.inherit_state = self.trail_data.get("inherits_map_assets", False)
+        self.asset_editor.inherit_var.set(self.asset_editor.inherit_state)
         self.asset_editor.load_assets()
 
+        self.width_range.var_max.trace_add("write", lambda *_: self._save_json())
+        self.curve_range.var_max.trace_add("write", lambda *_: self._save_json())
+
     def _add_trail(self):
-        # Ask user for name
         name = simpledialog.askstring("New Trail", "Enter trail name:")
         if not name:
             return
-
         name = name.strip()
         safe_name = "".join(c for c in name if c.isalnum() or c in ("_", "-")).rstrip()
         path = os.path.join(self.trails_dir, f"{safe_name}.json")
-
         if os.path.exists(path):
             messagebox.showerror("Error", f"A trail named '{safe_name}' already exists.")
             return
-
         data = {
             "name": safe_name,
             "min_width": 100,
             "max_width": 200,
-            "curvyness": 0.5,
+            "curvyness": 50,
+            "inherits_map_assets": False,
             "assets": []
         }
         with open(path, "w") as f:
@@ -135,6 +125,7 @@ class TrailsPage(ttk.Frame):
             return
         self.trail_data["min_width"], self.trail_data["max_width"] = self.width_range.get()
         self.trail_data["curvyness"] = self.curve_range.get()[0]
+        self.trail_data["inherits_map_assets"] = self.asset_editor.inherit_state
         try:
             with open(self.current_trail_path, "w") as f:
                 json.dump(self.trail_data, f, indent=2)

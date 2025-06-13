@@ -5,6 +5,9 @@ CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+SRC/
+SRC copy/
+Tarot Game/
 
 # Visual Studio build output
 Debug/

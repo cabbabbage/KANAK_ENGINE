@@ -1,12 +1,22 @@
 {
-  "name": "chest",
-  "min_width": 100,
-  "max_width": 493,
-  "min_height": 10,
-  "max_height": 1000,
-  "edge_smoothness": 1,
-  "geometry": "Random",
+  "name": "chest_room",
+  "min_width": 1308,
+  "max_width": 1308,
+  "min_height": 1318,
+  "max_height": 1318,
+  "edge_smoothness": 100,
+  "geometry": "Circle",
   "is_spawn": false,
   "is_boss": false,
-  "assets": []
+  "assets": [
+    {
+      "name": "Chest",
+      "min_number": 15,
+      "max_number": 15,
+      "position": "Center",
+      "exact_position": null,
+      "inherited": false
+    }
+  ],
+  "inherits_map_assets": false
 }

@@ -1,1 +1,36 @@
-{}
+{
+  "assets": [
+    {
+      "name": "Grass_1_FPS_2",
+      "min_number": 1269,
+      "max_number": 1269,
+      "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Grass_FPS_2",
+      "min_number": 1285,
+      "max_number": 1285,
+      "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Bush_FPS_2",
+      "min_number": 111,
+      "max_number": 111,
+      "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Bush_1_FPS_2",
+      "min_number": 111,
+      "max_number": 111,
+      "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    }
+  ]
+}

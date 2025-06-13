@@ -1,37 +1,42 @@
 {
   "asset_name": "Grass_1_FPS_2",
   "asset_type": "Object",
-  "child_only": false,
-  "types": [
-    "Player",
-    "Object",
-    "Background",
-    "Enemy"
-  ],
   "animations": {
     "default": {
       "frames_path": "default",
       "speed": 1.0,
-      "on_end": "loop",
-      "loop": true,
+      "on_end": "default",
       "randomize": true,
       "audio_path": "",
       "volume": 50
     }
   },
-  "available_animations": [
-    "default"
-  ],
-  "is_passable": true,
   "impassable_area": null,
   "z_threshold": 0,
   "size_settings": {
-    "scale_percentage": 11.081592039800995,
+    "scale_percentage": 4.064873417721518,
     "variability_percentage": 0.0
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 15,
   "visited_tabs": [
     "Spacing"
-  ]
+  ],
+  "tags": [
+    "plant",
+    "nature",
+    "clearing",
+    "moving",
+    "meadow",
+    "leafy",
+    "passable",
+    "green"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2
 }

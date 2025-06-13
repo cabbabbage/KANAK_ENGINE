@@ -1,4 +1,3 @@
-// area.cpp
 #include "area.hpp"
 #include <filesystem>
 #include <fstream>
@@ -6,38 +5,150 @@
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <algorithm>
 
 
 namespace fs = std::filesystem;
 
-Area::Area() = default;
+Area::Area() : pos_X(0), pos_Y(0) {}
 
 Area::Area(const std::vector<Point>& pts)
-    : points(pts) {}
+    : points(pts)
+{
+    if (!points.empty()) {
+        auto [minx, miny, maxx, maxy] = get_bounds();
+        pos_X = (minx + maxx) / 2;
+        pos_Y = maxy;
+    }
+}
 
-// ---------------------------------------------------------
-// New constructor: we accept user_scale (e.g. 0.75 for “75%”).
-// We will load JSON, read “original_dimensions” and “original_anchor”,
-// compute each raw point in full‐res, then multiply by user_scale.
-// Finally we shift the anchor so that “bottom‐center” → (0,0).
-// ---------------------------------------------------------
+// === In area.cpp ===
 
-Area::Area(int center_x, int center_y, int radius, int map_width, int map_height) {
-    if (radius <= 0 || map_width <= 0 || map_height <= 0) {
-        throw std::runtime_error("[Area] Invalid dimensions in ellipse constructor");
+Area::Area(int center_x, int center_y, int w, int h,
+           const std::string& geometry,
+           int edge_smoothness,
+           int map_width, int map_height)
+{
+    if (w <= 0 || h <= 0 || map_width <= 0 || map_height <= 0) {
+        throw std::runtime_error("[Area] Invalid dimensions in Area constructor");
     }
 
-    int vertex_count = 60;
+    if (geometry == "Circle") {
+        generate_circle(center_x, center_y, w, edge_smoothness, map_width, map_height);
+    } else if (geometry == "Square") {
+        generate_square(center_x, center_y, w, h, edge_smoothness, map_width, map_height);
+    } else if (geometry == "Random") {
+        generate_random(center_x, center_y, w, h, edge_smoothness, map_width, map_height);
+    } else {
+        throw std::runtime_error("[Area] Unknown geometry: " + geometry);
+    }
+
+    // After generating points, compute bounds and set anchor at bottom-center
+    auto [minx, miny, maxx, maxy] = get_bounds();
+    pos_X = (minx + maxx) / 2;
+    pos_Y = maxy;
+}
+
+
+
+Area::Area(const std::string& json_path, float scale)
+{
+    if (scale <= 0.0f) {
+        throw std::invalid_argument("[Area] 'scale' must be positive");
+    }
+
+    std::ifstream in(json_path);
+    if (!in.is_open()) {
+        throw std::runtime_error("[Area] Failed to open JSON: " + json_path);
+    }
+
+    nlohmann::json j;
+    in >> j;
+    in.close();
+
+    // Validate JSON
+    if (!j.contains("points") || !j["points"].is_array()) {
+        throw std::runtime_error("[Area] JSON missing 'points' array: " + json_path);
+    }
+    if (!j.contains("original_dimensions") ||
+        !j["original_dimensions"].is_array() ||
+        j["original_dimensions"].size() != 2)
+    {
+        throw std::runtime_error("[Area] JSON missing 'original_dimensions' in: " + json_path);
+    }
+
+    int orig_w = j["original_dimensions"][0].get<int>();
+    int orig_h = j["original_dimensions"][1].get<int>();
+    if (orig_w <= 0 || orig_h <= 0) {
+        throw std::runtime_error("[Area] Invalid 'original_dimensions' in: " + json_path);
+    }
+
+    // Load points (relative to trimmed-image bottom-center), apply scale
+    points.clear();
+    points.reserve(j["points"].size());
+    for (const auto& elem : j["points"]) {
+        if (!elem.is_array() || elem.size() < 2) continue;
+        float rel_x = elem[0].get<float>();
+        float rel_y = elem[1].get<float>();
+
+        int x = static_cast<int>(std::round(rel_x * scale));
+        int y = static_cast<int>(std::round(rel_y * scale));
+        points.emplace_back(x, y);
+    }
+    if (points.empty()) {
+        throw std::runtime_error("[Area] No valid points loaded from: " + json_path);
+    }
+
+    // Compute bounds and set bottom-center anchor
+    auto [minx, miny, maxx, maxy] = get_bounds();
+    pos_X = static_cast<int>(std::lround((minx + maxx) / 2.0));
+    pos_Y = maxy;
+}
+
+void Area::apply_offset(int dx, int dy) {
+    for (auto& p : points) {
+        p.first  += dx;
+        p.second += dy;
+    }
+}
+
+void Area::align(int target_x, int target_y) {
+    int dx = target_x - pos_X;
+    int dy = target_y - pos_Y;
+    apply_offset(dx, dy);
+    pos_X = target_x;
+    pos_Y = target_y;
+}
+
+std::tuple<int, int, int, int> Area::get_bounds() const {
+    int minx = points[0].first;
+    int maxx = points[0].first;
+    int miny = points[0].second;
+    int maxy = points[0].second;
+    for (const auto& p : points) {
+        minx = std::min(minx, p.first);
+        maxx = std::max(maxx, p.first);
+        miny = std::min(miny, p.second);
+        maxy = std::max(maxy, p.second);
+    }
+    return {minx, miny, maxx, maxy};
+}
+
+
+
+void Area::generate_circle(int center_x, int center_y, int radius, int edge_smoothness, int map_width, int map_height) {
+    int clamped_smoothness = std::clamp(edge_smoothness, 0, 100);
+    int vertex_count = std::max(12, 6 + clamped_smoothness * 2);
     std::vector<Point> pts;
-    std::random_device rd;
-    std::mt19937 rng(rd());
-    std::uniform_real_distribution<double> scale_dist(0.8, 1.2); // slight variation per point
+    std::mt19937 rng(std::random_device{}());
+
+    double max_deviation = 0.20 * (100 - clamped_smoothness) / 100.0;
+    std::uniform_real_distribution<double> scale_dist(1.0 - max_deviation, 1.0 + max_deviation);
 
     for (int i = 0; i < vertex_count; ++i) {
         double theta = 2.0 * M_PI * i / vertex_count;
-
         double rx = radius * scale_dist(rng);
-        double ry = radius * scale_dist(rng) * 0.6; // squashed vertically
+        double ry = radius * scale_dist(rng);
 
         double x = center_x + rx * std::cos(theta);
         double y = center_y + ry * std::sin(theta);
@@ -48,98 +159,96 @@ Area::Area(int center_x, int center_y, int radius, int map_width, int map_height
     }
 
     if (pts.empty()) {
-        throw std::runtime_error("[Area] Failed to generate elliptical points");
+        throw std::runtime_error("[Area] Failed to generate circle points");
     }
 
     points = std::move(pts);
 }
 
+void Area::generate_square(int center_x, int center_y, int w, int h, int edge_smoothness, int map_width, int map_height) {
+    int clamped_smoothness = std::clamp(edge_smoothness, 0, 100);
+    double max_deviation = 0.25 * (100 - clamped_smoothness) / 100.0;
 
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<double> x_offset_dist(-max_deviation * w, max_deviation * w);
+    std::uniform_real_distribution<double> y_offset_dist(-max_deviation * h, max_deviation * h);
 
+    int half_w = w / 2;
+    int half_h = h / 2;
 
+    std::vector<Point> base = {
+        {center_x - half_w, center_y - half_h},
+        {center_x + half_w, center_y - half_h},
+        {center_x + half_w, center_y + half_h},
+        {center_x - half_w, center_y + half_h}
+    };
 
-Area::Area(const std::string& json_path, int orig_w, int orig_h, float user_scale) {
-    if (!fs::exists(json_path)) {
-        throw std::runtime_error("[Area] File not found: " + json_path);
+    points.clear();
+    for (const auto& [x, y] : base) {
+        int jx = static_cast<int>(std::round(x + x_offset_dist(rng)));
+        int jy = static_cast<int>(std::round(y + y_offset_dist(rng)));
+        points.emplace_back(std::clamp(jx, 0, map_width), std::clamp(jy, 0, map_height));
     }
-    if (orig_w <= 0 || orig_h <= 0) {
-        throw std::runtime_error("[Area] Invalid original dimensions");
-    }
-    if (user_scale <= 0.0f) {
-        throw std::runtime_error("[Area] scale must be > 0");
-    }
-
-    std::ifstream in(json_path);
-    if (!in.is_open()) {
-        throw std::runtime_error("[Area] Failed to open file: " + json_path);
-    }
-
-    nlohmann::json J;
-    in >> J;
-
-    // 1) Verify JSON’s "original_dimensions" matches what we expect
-    auto od = J["original_dimensions"];
-    if (!od.is_array() || od.size() != 2) {
-        throw std::runtime_error("[Area] original_dimensions missing/invalid");
-    }
-    float json_w = od[0].get<float>();
-    float json_h = od[1].get<float>();
-    if (static_cast<int>(json_w + 0.5f) != orig_w ||
-        static_cast<int>(json_h + 0.5f) != orig_h) {
-        std::cerr << "[Area] Warning: JSON original_dimensions ("
-                  << json_w << "," << json_h
-                  << ") does not match passed in ("
-                  << orig_w << "," << orig_h << ")\n";
-        // We continue anyway; ideally they should match.
-    }
-
-    // 2) Read “original_anchor” from JSON (we assume bottom-center anchor).
-    auto oa = J["original_anchor"];
-    if (!oa.is_array() || oa.size() != 2) {
-        throw std::runtime_error("[Area] original_anchor missing/invalid");
-    }
-    float orig_ax = oa[0].get<float>();
-    float orig_ay = oa[1].get<float>();
-
-    // 3) For each JSON “(rx, ry)”, compute “full‐res absolute” and then multiply by user_scale:
-    //    abs_x = (orig_ax + rx); abs_y = (orig_ay + ry)
-    //    scaled_x = round(abs_x * user_scale), scaled_y = round(abs_y * user_scale)
-    for (const auto& pt : J["points"]) {
-        if (!pt.is_array() || pt.size() != 2) continue;
-        float rx = pt[0].get<float>();
-        float ry = pt[1].get<float>();
-
-        float full_x = orig_ax + rx;
-        float full_y = orig_ay + ry;
-
-        int scaled_x = static_cast<int>(full_x * user_scale + 0.5f);
-        int scaled_y = static_cast<int>(full_y * user_scale + 0.5f);
-        points.emplace_back(scaled_x, scaled_y);
-    }
-
-    if (points.empty()) {
-        throw std::runtime_error("[Area] No valid points found in file: " + json_path);
-    }
-
-    // 4) Finally shift so that “(orig_ax, orig_ay) in full‐res” → (0, 0) in scaled‐local:
-    int dx = static_cast<int>(-orig_ax * user_scale + 0.5f);
-    int dy = static_cast<int>(-orig_ay * user_scale + 0.5f);
-    apply_offset(dx, dy);
 }
 
+void Area::generate_random(int center_x, int center_y, int w, int h, int edge_smoothness, int map_width, int map_height) {
+    int vertex_count = std::max(4, edge_smoothness * 5);
+    std::vector<Point> pts;
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<double> angle_dist(0.0, 2 * M_PI);
+    std::uniform_real_distribution<double> radius_x_dist(w * 0.3, w * 0.5);
+    std::uniform_real_distribution<double> radius_y_dist(h * 0.3, h * 0.5);
+
+    for (int i = 0; i < vertex_count; ++i) {
+        double theta = 2.0 * M_PI * i / vertex_count + angle_dist(rng) * 0.1;
+        double rx = radius_x_dist(rng);
+        double ry = radius_y_dist(rng);
+
+        double x = center_x + rx * std::cos(theta);
+        double y = center_y + ry * std::sin(theta);
+
+        int xi = static_cast<int>(std::round(std::clamp(x, 0.0, static_cast<double>(map_width))));
+        int yi = static_cast<int>(std::round(std::clamp(y, 0.0, static_cast<double>(map_height))));
+        pts.emplace_back(xi, yi);
+    }
+
+    if (pts.empty()) {
+        throw std::runtime_error("[Area] Failed to generate random shape points");
+    }
+
+    points = std::move(pts);
+}
+
+void Area::contract(int inset) {
+    if (inset <= 0) return;
+    for (auto& [x, y] : points) {
+        if (x > inset) x -= inset;
+        if (y > inset) y -= inset;
+    }
+}
+
+
+
+
+double Area::get_area() const {
+    if (points.size() < 3) return 0.0;
+
+    double area = 0.0;
+    size_t n = points.size();
+
+    for (size_t i = 0; i < n; ++i) {
+        const auto& [x0, y0] = points[i];
+        const auto& [x1, y1] = points[(i + 1) % n];
+        area += static_cast<double>(x0 * y1 - x1 * y0);
+    }
+
+    return std::abs(area) * 0.5;
+}
 
 const std::vector<Area::Point>& Area::get_points() const {
     return points;
 }
 
-
-
-void Area::apply_offset(int dx, int dy) {
-    for (auto& p : points) {
-        p.first  += dx;
-        p.second += dy;
-    }
-}
 
 void Area::set_color(Uint8 r, Uint8 g, Uint8 b) {
     color.r = r;
@@ -150,16 +259,39 @@ void Area::set_color(Uint8 r, Uint8 g, Uint8 b) {
 
 void Area::union_with(const Area& other) {
     if (other.points.empty()) return;
-
-    // Naive merge: just include all points, even overlapping
     points.insert(points.end(), other.points.begin(), other.points.end());
+}
+
+bool Area::contains_point(const std::pair<int,int>& pt) const {
+    bool inside = false;
+    int x = pt.first, y = pt.second;
+    size_t n = points.size();
+    if (n < 3) return false;
+    for (size_t i = 0, j = n - 1; i < n; j = i++) {
+        const auto& [xi, yi] = points[i];
+        const auto& [xj, yj] = points[j];
+        bool intersect =
+            ((yi > y) != (yj > y)) &&
+            (x < (xj - xi) * ((y - yi) / float(yj - yi + 1e-9f)) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+bool Area::intersects(const Area& other) const {
+    auto [a0, a1, a2, a3] = get_bounds();
+    auto [b0, b1, b2, b3] = other.get_bounds();
+    return !(a2 < b0 || b2 < a0 || a3 < b1 || b3 < a1);
 }
 
 
 
 
+
+
+
+
 bool Area::contains(int x, int y) const {
-    // Use ray-casting algorithm to determine if the point is inside polygon
     int n = static_cast<int>(points.size());
     if (n < 3) return false;
 
@@ -176,79 +308,81 @@ bool Area::contains(int x, int y) const {
 }
 
 
+// File: Area.cpp
+#include "Area.hpp"
+#include <SDL.h>
+#include <algorithm>
+#include <vector>
 
-bool Area::intersects(const Area& other) const {
-    auto [a0,a1,a2,a3] = get_bounds();
-    auto [b0,b1,b2,b3] = other.get_bounds();
-    return !(a2 < b0 || b2 < a0 || a3 < b1 || b3 < a1);
-}
+SDL_Texture* Area::get_fade_texture(SDL_Renderer* renderer,
+                                     SDL_Color color,
+                                     double expand) const
+{
+    // 1) Compute original bounds
+    auto [ominx, ominy, omaxx, omaxy] = get_bounds();
+    int ow = omaxx - ominx + 1;
+    int oh = omaxy - ominy + 1;
+    if (ow <= 0 || oh <= 0) return nullptr;
 
-bool Area::contains_point(const std::pair<int,int>& pt) const {
-    bool inside = false;
-    int x = pt.first, y = pt.second;
-    size_t n = points.size();
-    if (n < 3) return false;
-    for (size_t i = 0, j = n - 1; i < n; j = i++) {
-        auto [xi, yi] = points[i];
-        auto [xj, yj] = points[j];
-        bool intersect =
-            ((yi > y) != (yj > y)) &&
-            ( x < (xj - xi) * ((y - yi)/float(yj - yi + 1e-9f)) + xi );
-        if (intersect) inside = !inside;
-    }
-    return inside;
-}
+    // 2) Compute expand offset
+    float base_expand = 0.2f * static_cast<float>(std::min(ow, oh));
+    base_expand = std::max(base_expand, 1.0f);
+    int fw = static_cast<int>(std::ceil(base_expand * expand));
 
-std::tuple<int,int,int,int> Area::get_bounds() const {
-    if (points.empty()) {
-        throw std::out_of_range("[Area] get_bounds() on empty points");
-    }
-    int minx = points[0].first, maxx = minx;
-    int miny = points[0].second, maxy = miny;
-    for (const auto& [x,y] : points) {
-        minx = std::min(minx, x);
-        maxx = std::max(maxx, x);
-        miny = std::min(miny, y);
-        maxy = std::max(maxy, y);
-    }
-    return {minx, miny, maxx, maxy};
-}
-
-SDL_Texture* Area::get_image(SDL_Renderer* renderer) const {
-    auto [minx, miny, maxx, maxy] = get_bounds();
-    int w = maxx - minx + 1;
-    int h = maxy - miny + 1;
+    // 3) Determine expanded bounds
+    int minx = ominx - fw;
+    int miny = ominy - fw;
+    int maxx = omaxx + fw;
+    int maxy = omaxy + fw;
+    int w    = maxx - minx + 1;
+    int h    = maxy - miny + 1;
     if (w <= 0 || h <= 0) return nullptr;
 
-    SDL_Texture* tex = SDL_CreateTexture(renderer,
+    // 4) Build local polygon points relative to (minx, miny)
+    std::vector<std::pair<double,double>> poly;
+    poly.reserve(points.size());
+    for (auto& [X,Y] : points)
+        poly.emplace_back(X - minx, Y - miny);
+
+    auto point_in_poly = [&](double px, double py) {
+        bool inside = false;
+        size_t n = poly.size();
+        for (size_t i = 0, j = n - 1; i < n; j = i++) {
+            auto [xi, yi] = poly[i];
+            auto [xj, yj] = poly[j];
+            bool intersect = ((yi > py) != (yj > py)) &&
+                             (px < (xj - xi)*(py - yi)/(yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    };
+
+    // 5) Create render-target texture
+    SDL_Texture* tex = SDL_CreateTexture(
+        renderer,
         SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_TARGET,
-        w, h);
+        w, h
+    );
     if (!tex) return nullptr;
-
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
     SDL_SetRenderTarget(renderer, tex);
-    SDL_SetRenderDrawColor(renderer, 0,0,0,0);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-    size_t n = points.size();
-    for (size_t i = 0, j = n - 1; i < n; j = i++) {
-        SDL_RenderDrawLine(renderer,
-            points[j].first - minx, points[j].second - miny,
-            points[i].first - minx, points[i].second - miny
-        );
+    // 6) Clear to transparent
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+
+    // 7) Fill interior solid
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            if (point_in_poly(x + 0.5, y + 0.5)) {
+                SDL_RenderDrawPoint(renderer, x, y);
+            }
+        }
     }
 
+    // 8) Restore render target
     SDL_SetRenderTarget(renderer, nullptr);
     return tex;
-}
-
-SDL_Surface* Area::rescale_surface(SDL_Surface* surf, float sf) {
-    if (!surf || sf <= 0.0f) return nullptr;
-    int w = static_cast<int>(surf->w * sf);
-    int h = static_cast<int>(surf->h * sf);
-    SDL_Surface* scaled = SDL_CreateRGBSurfaceWithFormat(
-        0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
-    SDL_BlitScaled(surf, nullptr, scaled, nullptr);
-    return scaled;
 }

@@ -1,49 +1,37 @@
 {
-    "asset_name": "Box",
-    "asset_type": "Object",
-    "child_only": false,
-    "types": [
-        "Player",
-        "Object",
-        "Background",
-        "Enemy"
-    ],
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "loop",
-            "loop": true,
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "available_animations": [
-        "default"
-    ],
-    "is_passable": false,
-    "impassable_area": "impassable_area.json",
-    "z_threshold": 25,
-    "size_settings": {
-        "scale_percentage": 34.27918781725889,
-        "variability_percentage": 0.0
-    },
-    "visited_tabs": [
-        "Passability",
-        "Region-Based Child Assets",
-        "Spacing"
-    ],
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 15000,
-    "child_assets": [
-        {
-            "asset": "Candle_FPS_12",
-            "area_file": "child_0_area.json",
-            "z_offset": 1,
-            "min": 1,
-            "max": 1,
-            "terminate_with_parent": false
-        }
-    ]
+  "asset_name": "Box",
+  "asset_type": "Object",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": "impassable_area.json",
+  "z_threshold": 9,
+  "size_settings": {
+    "scale_percentage": 12.69367088607595,
+    "variability_percentage": 0.0
+  },
+  "visited_tabs": [
+    "Passability",
+    "Region-Based Child Assets",
+    "Spacing"
+  ],
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 41,
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "tags": [
+    "passable"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400
 }

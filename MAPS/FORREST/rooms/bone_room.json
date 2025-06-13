@@ -1,0 +1,30 @@
+{
+  "name": "bone_room",
+  "min_width": 966,
+  "max_width": 966,
+  "min_height": 956,
+  "max_height": 956,
+  "edge_smoothness": 100,
+  "geometry": "Square",
+  "is_spawn": false,
+  "is_boss": false,
+  "inherits_map_assets": false,
+  "assets": [
+    {
+      "name": "Bone",
+      "min_number": 251,
+      "max_number": 333,
+      "position": "exact",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Sign",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Perimeter",
+      "exact_position": null,
+      "inherited": false
+    }
+  ]
+}

@@ -1,8 +1,8 @@
+// === File: Asset.hpp ===
 #ifndef ASSET_HPP
 #define ASSET_HPP
 
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include <memory>
 #include <SDL.h>
@@ -11,48 +11,71 @@
 
 class Asset {
 public:
-    Asset(int z_offset, const Area& spawn_area, SDL_Renderer* renderer, Asset* parent = nullptr);
+    Asset(int z_offset,
+          const Area& spawn_area,
+          SDL_Renderer* renderer,
+          Asset* parent = nullptr);
 
-    void finalize_setup();
-    void update(const std::unordered_set<SDL_Keycode>& keys, const Area* compare_area = nullptr);
-    SDL_Texture* get_image() const;
+    /// Rebuilds `areas` from `base_areas` by applying the world-offset.
+    void rebuild_world_areas();
+
+    /// Initializes animations, base_areas, computes parent-offsets, positions, and world-areas.
+    void finalize_setup(int start_pos_X,
+                        int start_pos_Y,
+                        int parent_X = 0,
+                        int parent_Y = 0);
+
+    /// Moves the asset (and all its children) to a new world position.
     void set_position(int x, int y);
-    void set_z_index();
+
+    /// Advances animation frames and updates children recursively.
+    void update();
+
+    /// Switches to a different named animation.
+    void change_animation(const std::string& name);
+
+    /// Returns the current animation frame texture.
+    SDL_Texture* get_current_frame() const;
+    SDL_Texture* get_image() const;
+
+    std::string get_current_animation() const;
     std::string get_type() const;
 
+
+    
     Area get_global_collision_area() const;
     Area get_global_interaction_area() const;
     Area get_global_attack_area() const;
     Area get_global_spacing_area() const;
     Area get_global_passability_area() const;
 
-    void add_child(const Asset& child);
+    void add_child(Asset child);
 
-    bool active = false;
+    Asset* parent;
+    std::shared_ptr<AssetInfo> info;
+    std::string current_animation;
     int pos_X = 0;
     int pos_Y = 0;
     int z_index = 0;
     int z_offset = 0;
+    int offset_from_parent_X = 0;
+    int offset_from_parent_Y = 0;
+    int player_speed_mult = 10;
 
-    std::shared_ptr<AssetInfo> info;
+    SDL_Renderer* renderer = nullptr;
+    Area spawn_area_local;
+
+    std::vector<Area> base_areas;
     std::vector<Area> areas;
     std::vector<Asset> children;
 
+    bool active = false;
+    int opacity = 100;
+    void set_z_index();
 private:
-    std::vector<Area> base_areas;
-    SDL_Renderer* renderer;
-    Asset* parent;
-
-    Area spawn_area_local;
-
-    std::string current_animation;
     int current_frame_index = 0;
     bool static_frame = true;
 
-    void rebuild_world_areas();
-    void randomize_frame();
-    void change_animation(const std::string& animation_name);
-    SDL_Texture* get_current_frame() const;
 };
 
 #endif // ASSET_HPP

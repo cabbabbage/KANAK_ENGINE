@@ -1,3 +1,4 @@
+// Assets.hpp
 #ifndef ASSETS_HPP
 #define ASSETS_HPP
 
@@ -5,12 +6,11 @@
 #include "area.hpp"
 #include <vector>
 #include <unordered_set>
-#include <memory>
 #include <SDL.h>
 
 class Assets {
 public:
-    Assets(std::vector<std::unique_ptr<Asset>>&& loaded,
+    Assets(std::vector<Asset>&& loaded,
            Asset* player_ptr,
            int screen_width,
            int screen_height,
@@ -29,9 +29,17 @@ public:
     int visible_count;
 
 private:
-    std::vector<std::unique_ptr<Asset>> all; // ✅ FIXED: use unique_ptr here
+    std::vector<Asset> all;
+    std::vector<Asset*> closest_assets;
+    int dx = 0, dy = 0;
+    int last_activat_update = 0;
+    int update_interval = 20;
     int screen_width;
     int screen_height;
+
+    void update_closest();
+    void update_direction_movement(int offset_x, int offset_y);
+    bool check_collision(const Area& a, const Area& b);
 };
 
 #endif // ASSETS_HPP

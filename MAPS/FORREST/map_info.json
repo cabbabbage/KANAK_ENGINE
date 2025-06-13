@@ -1,12 +1,27 @@
 {
   "map_name": "FORREST",
-  "map_width_": 2000,
-  "map_height_": 2000,
+  "map_width_": 25928,
+  "map_height_": 25928,
   "min_rooms": 10,
-  "max_rooms": 15,
+  "max_rooms": 12,
   "map_assets": "map_assets.json",
   "map_boundary": "map_boundary.json",
   "rooms": [
+    {
+      "room_path": "rooms\\Key.json",
+      "max_instances": 1,
+      "required": false
+    },
+    {
+      "room_path": "rooms\\RND.json",
+      "max_instances": 1,
+      "required": false
+    },
+    {
+      "room_path": "rooms\\bone_room.json",
+      "max_instances": 1,
+      "required": false
+    },
     {
       "room_path": "rooms\\chest.json",
       "max_instances": 1,
@@ -18,7 +33,27 @@
       "required": false
     },
     {
+      "room_path": "rooms\\skulls.json",
+      "max_instances": 1,
+      "required": false
+    },
+    {
       "room_path": "rooms\\spawn.json",
+      "max_instances": 1,
+      "required": true
+    },
+    {
+      "room_path": "rooms\\stoge.json",
+      "max_instances": 1,
+      "required": false
+    },
+    {
+      "room_path": "rooms\\stumps.json",
+      "max_instances": 1,
+      "required": true
+    },
+    {
+      "room_path": "rooms\\tree.json",
       "max_instances": 1,
       "required": false
     }

@@ -1,8 +1,9 @@
+# === File: pages/child_assets.py ===
 import os
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox
-from pages.boundary import BoundaryConfigurator
+from pages.point_config import PointConfigurator
 from pages.range import Range
 from pages.search import AssetSearchWindow
 from PIL import Image, ImageTk
@@ -23,6 +24,7 @@ class ScrollableFrame(ttk.Frame):
         canvas.configure(yscrollcommand=vsb.set)
         canvas.pack(side='left', fill='both', expand=True)
         vsb.pack(side='right', fill='y')
+
 
 class ChildAssetsPage(ttk.Frame):
     def __init__(self, parent):
@@ -71,8 +73,8 @@ class ChildAssetsPage(ttk.Frame):
         asset_display.grid(row=0, column=1, sticky="w", padx=6)
         tk.Button(frm, text="Pick…", command=lambda i=idx: self._pick_asset(i), font=self.FONT, bg="#007BFF", fg="white").grid(row=0, column=2, sticky="w")
 
-        ttk.Label(frm, text="Spawn Area:", style='Large.TLabel').grid(row=1, column=0, sticky="w", pady=4)
-        tk.Button(frm, text="Draw…", command=lambda i=idx: self._draw_area(i), font=self.FONT, bg="#007BFF", fg="white").grid(row=1, column=1, sticky="w", padx=6)
+        ttk.Label(frm, text="Spawn Point:", style='Large.TLabel').grid(row=1, column=0, sticky="w", pady=4)
+        tk.Button(frm, text="Pick Point…", command=lambda i=idx: self._pick_point(i), font=self.FONT, bg="#007BFF", fg="white").grid(row=1, column=1, sticky="w", padx=6)
         area_label = ttk.Label(frm, text="(none)", style='Large.TLabel')
         area_label.grid(row=1, column=2, columnspan=2, sticky="w")
 
@@ -98,7 +100,7 @@ class ChildAssetsPage(ttk.Frame):
             'frame': frm,
             'vars': {
                 'asset': asset_var,
-                'area': data.get('area_geo') if data else None,
+                'point_data': data.get('point') if data else None,
                 'z_offset': z_var,
                 'range': count_range,
                 'terminate_with_parent': term_var
@@ -112,8 +114,8 @@ class ChildAssetsPage(ttk.Frame):
         }
         self.child_frames.append(entry)
 
-        if data and data.get('area_geo'):
-            area_label.config(text="(configured)")
+        if data and data.get('point'):
+            area_label.config(text=f"({data['point']['x']}, {data['point']['y']}) r={data['point']['radius']}")
 
         self._update_preview(idx)
 
@@ -127,22 +129,24 @@ class ChildAssetsPage(ttk.Frame):
             entry['widgets']['asset_display'].config(text=selected)
             self._update_preview(idx)
 
-    def _remove_child_row(self, idx):
-        entry = self.child_frames.pop(idx)
-        entry['frame'].destroy()
-        for i, e in enumerate(self.child_frames):
-            e['frame'].grid_configure(row=i)
-
-    def _draw_area(self, idx):
+    def _pick_point(self, idx):
         entry = self.child_frames[idx]
         default_folder = os.path.join(os.path.dirname(self.asset_path), 'default')
         if not os.path.isdir(default_folder):
             messagebox.showerror("Error", f"No default in {default_folder}")
             return
-        def cb(geo):
-            entry['vars']['area'] = geo
-            entry['widgets']['area_label'].config(text="(configured)")
-        BoundaryConfigurator(self, base_folder=default_folder, callback=cb)
+        win = PointConfigurator(self, base_folder=default_folder)
+        win.wait_window()
+        result = win.get_selected_point()
+        if result:
+            entry['vars']['point_data'] = result
+            entry['widgets']['area_label'].config(text=f"({result['x']}, {result['y']}) r={result['radius']}")
+
+    def _remove_child_row(self, idx):
+        entry = self.child_frames.pop(idx)
+        entry['frame'].destroy()
+        for i, e in enumerate(self.child_frames):
+            e['frame'].grid_configure(row=i)
 
     def _update_preview(self, idx):
         entry = self.child_frames[idx]
@@ -183,44 +187,26 @@ class ChildAssetsPage(ttk.Frame):
             messagebox.showerror("Error", "No asset selected.")
             return
 
-        base = os.path.dirname(self.asset_path)
         try:
             prior_data = json.load(open(self.asset_path))
             prior_assets = prior_data.get('child_assets', [])
         except:
             prior_assets = []
 
-        used = set()
         out = []
+
         for i, entry in enumerate(self.child_frames):
             v = entry['vars']
-            geo = v['area']
-            prior = prior_assets[i] if i < len(prior_assets) else {}
-
-            if geo is None and 'area_file' in prior:
-                fn = prior['area_file']
-            else:
-                fn = f"child_{i}_area.json"
-                geo = geo or {}
-                with open(os.path.join(base, fn), 'w') as f:
-                    json.dump(geo, f, indent=2)
-                used.add(fn)
-
+            point = v.get('point_data')
             min_val, max_val = v['range'].get()
             out.append({
                 'asset': v['asset'].get(),
-                'area_file': fn,
+                'point': point,
                 'z_offset': v['z_offset'].get(),
                 'min': min_val,
                 'max': max_val,
                 'terminate_with_parent': v['terminate_with_parent'].get()
             })
-
-        for fn in set([c.get('area_file') for c in prior_assets]) - used:
-            try:
-                os.remove(os.path.join(base, fn))
-            except:
-                pass
 
         data = json.load(open(self.asset_path, 'r'))
         data['child_assets'] = out

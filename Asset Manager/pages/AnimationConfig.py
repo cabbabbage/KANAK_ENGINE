@@ -1,4 +1,4 @@
-# === File 1: AnimationEditor.py ===
+# === File: AnimationEditor.py ===
 import os
 import json
 import shutil
@@ -7,6 +7,7 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import pandas as pd
 from pages.boundary import BoundaryConfigurator
+from pages.animation_uploader import AnimationUploader
 
 class AnimationEditor(ttk.LabelFrame):
     def __init__(self, parent):
@@ -18,15 +19,14 @@ class AnimationEditor(ttk.LabelFrame):
 
         self.frames_path = tk.StringVar()
         self.speed_var = tk.StringVar(value="1.0")
-        self.on_end_var = tk.StringVar(value="loop")
+        self.on_end_var = tk.StringVar(value="")
         self.randomize_start_var = tk.BooleanVar(value=False)
         self.audio_path = tk.StringVar()
         self.volume = tk.IntVar(value=50)
+        self.event_data_var = tk.StringVar()
 
-        self.frames = []
         self.preview_canvas = tk.Canvas(self, bg="black", width=320, height=240)
-        self.preview_job = None
-        self.current_frame = 0
+        self.preview_gif = None
 
         self.triggers_df = pd.read_csv("Asset Manager/triggers.csv")
         self.available_triggers = self.triggers_df["trigger_name"].tolist()
@@ -45,7 +45,7 @@ class AnimationEditor(ttk.LabelFrame):
         row += 1
         ttk.Label(self, text="Frames Folder:", font=font_large).grid(row=row, column=0, sticky='w', padx=8, pady=4)
         ttk.Entry(self, textvariable=self.frames_path, width=40, font=font_large).grid(row=row, column=1, sticky='ew', padx=8, pady=4)
-        ttk.Button(self, text="Browse", command=self._select_folder).grid(row=row, column=2, sticky='w', padx=8, pady=4)
+        ttk.Button(self, text="Browse", command=self._use_animation_uploader).grid(row=row, column=2, sticky='w', padx=8, pady=4)
 
         row += 1
         ttk.Label(self, text="Speed:", font=font_large).grid(row=row, column=0, sticky='w', padx=8, pady=4)
@@ -54,8 +54,13 @@ class AnimationEditor(ttk.LabelFrame):
 
         row += 1
         ttk.Label(self, text="On End:", font=font_large).grid(row=row, column=0, sticky='w', padx=8, pady=4)
-        self.on_end_menu = ttk.OptionMenu(self, self.on_end_var, "loop", "loop", "reverse")
+        self.on_end_menu_var = tk.StringVar(value="")
+        self.on_end_menu = ttk.OptionMenu(self, self.on_end_menu_var, "")
         self.on_end_menu.grid(row=row, column=1, sticky='ew', padx=8, pady=4)
+
+        row += 1
+        ttk.Label(self, text="Event Data:", font=font_large).grid(row=row, column=0, sticky='w', padx=8, pady=4)
+        ttk.Entry(self, textvariable=self.event_data_var, font=font_large).grid(row=row, column=1, sticky='ew', padx=8, pady=4)
 
         row += 1
         ttk.Checkbutton(self, text="Randomize Start Frame", variable=self.randomize_start_var).grid(row=row, column=0, columnspan=2, sticky='w', padx=8, pady=4)
@@ -78,7 +83,6 @@ class AnimationEditor(ttk.LabelFrame):
         row = self.triggers_df[self.triggers_df["trigger_name"] == trigger_name]
         if not row.empty:
             raw_val = row["requires_area"].values[0]
-            # Properly convert to boolean: 1/True = True, 0/False = False
             self.requires_area = str(raw_val).strip().lower() in ("1", "true")
             self.top_level_flag = row["top_level_flag"].values[0]
         else:
@@ -90,51 +94,68 @@ class AnimationEditor(ttk.LabelFrame):
         else:
             self.area_button.grid_remove()
 
+        self._update_on_end_options()
+
+    def _update_on_end_options(self):
+        if not self.asset_folder:
+            return
+
+        options = []
+        info_path = os.path.join(self.asset_folder, "info.json")
+        if os.path.isfile(info_path):
+            with open(info_path, "r") as f:
+                try:
+                    data = json.load(f)
+                    keys = list(data.get("animations", {}).keys())
+
+                    if self.trigger_name in keys:
+                        keys.remove(self.trigger_name)
+                        keys.insert(0, self.trigger_name)  # Put self-reference first
+
+                    if "reverse" not in keys:
+                        keys.insert(1, "reverse")  # Explicitly add "reverse" as second option
+
+                    options += keys
+                except Exception:
+                    pass
+
+
+        menu = self.on_end_menu["menu"]
+        menu.delete(0, "end")
+        for opt in options:
+            menu.add_command(label=opt, command=lambda v=opt: self.on_end_menu_var.set(v))
 
     def _select_audio(self):
         file = filedialog.askopenfilename(filetypes=[("WAV files", "*.wav")])
         if file:
             self.audio_path.set(file)
 
-    def _select_folder(self):
-        folder = filedialog.askdirectory()
-        if not folder or not self.asset_folder or not self.trigger_name:
+    def _use_animation_uploader(self):
+        if not self.asset_folder or not self.trigger_name:
+            messagebox.showerror("Missing Info", "Asset folder or trigger type not set.")
+            return
+        uploader = AnimationUploader(self.asset_folder, self.trigger_name)
+        result_folder = uploader.run()
+        if result_folder:
+            self.frames_path.set(self.trigger_name)
+            self._load_gif_preview()
+
+    def _load_gif_preview(self):
+        if not self.asset_folder or not self.trigger_name:
             return
 
-        target_folder = os.path.join(self.asset_folder, self.trigger_name)
-        os.makedirs(target_folder, exist_ok=True)
-        for file in os.listdir(folder):
-            if file.endswith(".png"):
-                shutil.copy2(os.path.join(folder, file), os.path.join(target_folder, file))
-
-        # ✅ Store only relative path
-        self.frames_path.set(self.trigger_name)
-        self._load_preview_frames(target_folder)
-
-
-    def _load_preview_frames(self, folder):
-        self.frames = []
-        for file in sorted(os.listdir(folder)):
-            if file.endswith(".png"):
-                img = Image.open(os.path.join(folder, file)).convert("RGBA")
-                img.thumbnail((320, 240), Image.LANCZOS)
-                self.frames.append(ImageTk.PhotoImage(img))
-        if self.frames:
-            self.current_frame = 0
-            self._animate_preview()
-
-    def _animate_preview(self):
-        if not self.frames:
+        gif_path = os.path.join(self.asset_folder, self.trigger_name, "preview.gif")
+        if not os.path.isfile(gif_path):
             return
+
+        gif = Image.open(gif_path)
+        width = 320
+        height = int((width / gif.width) * gif.height)
+        gif = gif.resize((width, height), Image.LANCZOS)
+
+        self.preview_gif = ImageTk.PhotoImage(gif)
         self.preview_canvas.delete("all")
-        self.preview_canvas.create_image(0, 0, anchor='nw', image=self.frames[self.current_frame])
-        self.current_frame = (self.current_frame + 1) % len(self.frames)
-        try:
-            speed = float(self.speed_var.get())
-        except ValueError:
-            speed = 1.0
-        delay = int(1000 / (24 * max(0.01, speed)))
-        self.preview_job = self.after(delay, self._animate_preview)
+        self.preview_canvas.create_image(0, 0, anchor='nw', image=self.preview_gif)
 
     def load(self, trigger_name: str, anim_data: dict, asset_folder: str):
         self.asset_folder = asset_folder
@@ -143,18 +164,17 @@ class AnimationEditor(ttk.LabelFrame):
 
         self.frames_path.set(anim_data.get("frames_path", ""))
         self.speed_var.set(str(anim_data.get("speed", "1.0")))
-        self.on_end_var.set(anim_data.get("on_end", "loop"))
+        self.on_end_menu_var.set(anim_data.get("on_end", ""))
+        self.event_data_var.set(", ".join(anim_data.get("event_data", [])))
         self.randomize_start_var.set(anim_data.get("randomize", False))
         self.audio_path.set(anim_data.get("audio_path", ""))
         self.volume.set(anim_data.get("volume", 50))
 
-        preview_dir = os.path.join(asset_folder, anim_data.get("frames_path", ""))
-        if os.path.isdir(preview_dir):
-            self._load_preview_frames(preview_dir)
+        self._load_gif_preview()
 
     def save(self):
-        if not self.trigger_name or not self.frames_path.get() or not self.speed_var.get() or not self.on_end_var.get():
-            messagebox.showerror("Missing Data", "Required fields are missing: trigger, frames, speed, or on_end")
+        if not self.trigger_name or not self.frames_path.get() or not self.speed_var.get():
+            messagebox.showerror("Missing Data", "Required fields are missing: trigger, frames, or speed")
             return None
 
         if self.requires_area:
@@ -166,8 +186,8 @@ class AnimationEditor(ttk.LabelFrame):
         return {
             "frames_path": self.frames_path.get(),
             "speed": float(self.speed_var.get()),
-            "on_end": self.on_end_var.get(),
-            "loop": self.on_end_var.get() == "loop",
+            "on_end": self.on_end_menu_var.get(),
+            "event_data": [x.strip() for x in self.event_data_var.get().split(",") if x.strip()],
             "randomize": self.randomize_start_var.get(),
             "audio_path": self.audio_path.get(),
             "volume": self.volume.get(),

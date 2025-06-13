@@ -1,105 +1,166 @@
+// generate_room.cpp
 #include "generate_room.hpp"
+#include "asset_generator.hpp"
 #include <filesystem>
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 std::mt19937 GenerateRoom::rng_(std::random_device{}());
 
-GenerateRoom::GenerateRoom(std::string map_path, const std::vector<GenerateRoom*>& existing_rooms,
+GenerateRoom::GenerateRoom(std::string map_path,
+                           const std::vector<GenerateRoom*>& existing_rooms,
                            int map_width,
                            int map_height,
-                           int min_size,
-                           int max_size,
-                           const std::string& optional_assets_json)
+                           const std::string& json_path,
+                           SDL_Renderer* renderer,
+                           AssetLibrary* asset_library)
     : map_path(map_path),
       map_width_(map_width),
-      map_height_(map_height)
+      map_height_(map_height),
+      renderer_(renderer),
+      asset_library_(asset_library)
 {
-    std::uniform_int_distribution<int> radius_dist(min_size, max_size);
-    const double min_dist = 0.2 * ((map_width_ + map_height_) / 2.0);
+    std::ifstream in(json_path);
+    if (!in.is_open()) throw std::runtime_error("[GenerateRoom] Failed to open room json: " + json_path);
 
-    while (true) {
-        int radius = radius_dist(rng_);
-        std::uniform_int_distribution<int> x_dist(radius, map_width_ - radius);
-        std::uniform_int_distribution<int> y_dist(radius, map_height_ - radius);
-        center_x_ = x_dist(rng_);
-        center_y_ = y_dist(rng_);
-        buildArea(radius);
+    nlohmann::json J;
+    in >> J;
+    assets_path_ = json_path;
+
+    int min_width = J["min_width"];
+    int max_width = J["max_width"];
+    int min_height = J["min_height"];
+    int max_height = J["max_height"];
+    int edge_smoothness = J["edge_smoothness"];
+    std::string geometry = J["geometry"];
+
+    bool is_spawn = J.value("is_spawn", false);
+    bool is_boss = J.value("is_boss", false);
+
+    const double avg_dim = (map_width_ + map_height_) / 2.0;
+    const double center_dist_threshold = 0.20 * avg_dim;
+    const double line_dist_threshold = 0.001 * avg_dim;
+    const int edge_margin_x = static_cast<int>(map_width_ * 0.1);
+    const int edge_margin_y = static_cast<int>(map_height_ * 0.1);
+
+    bool placed = false;
+    int attempts = 0;
+    while (!placed && attempts < 100) {
+        double scale = (attempts >= 20) ? 0.9 : 1.0;
+        int cur_min_w = static_cast<int>(min_width * scale);
+        int cur_max_w = static_cast<int>(max_width * scale);
+        int cur_min_h = static_cast<int>(min_height * scale);
+        int cur_max_h = static_cast<int>(max_height * scale);
+
+        std::uniform_int_distribution<int> w_dist(cur_min_w, cur_max_w);
+        std::uniform_int_distribution<int> h_dist(cur_min_h, cur_max_h);
+        int w = w_dist(rng_);
+        int h = h_dist(rng_);
+
+        if (is_spawn) {
+            std::uniform_int_distribution<int> x_dist(edge_margin_x, map_width_ / 10);
+            center_x_ = x_dist(rng_) + w / 2;
+        } else if (is_boss) {
+            std::uniform_int_distribution<int> x_dist(map_width_ * 9 / 10 - w, map_width_ - edge_margin_x);
+            center_x_ = x_dist(rng_) + w / 2;
+        } else {
+            std::uniform_int_distribution<int> x_dist(0, map_width_ - w);
+            center_x_ = x_dist(rng_) + w / 2;
+        }
+
+        std::uniform_int_distribution<int> y_dist(0, map_height_ - h);
+        center_y_ = y_dist(rng_) + h / 2;
+
+        if (center_x_ < edge_margin_x || center_x_ > map_width_ - edge_margin_x ||
+            center_y_ < edge_margin_y || center_y_ > map_height_ - edge_margin_y) {
+            attempts++;
+            continue;
+        }
+
+        Area candidate(center_x_, center_y_, w, h, geometry, edge_smoothness, map_width_, map_height_);
 
         bool invalid = false;
         for (const auto* other : existing_rooms) {
-            if (room_area_.intersects(other->getArea())) {
+            if (candidate.intersects(other->getArea())) {
                 invalid = true;
                 break;
             }
 
-            const auto& other_bounds = other->getArea().get_points();
-            for (const auto& pt : room_area_.get_points()) {
-                for (const auto& opt : other_bounds) {
-                    double dx = pt.first - opt.first;
-                    double dy = pt.second - opt.second;
+            int ox = other->getCenterX();
+            int oy = other->getCenterY();
+            double dx = center_x_ - ox;
+            double dy = center_y_ - oy;
+            if (std::hypot(dx, dy) < center_dist_threshold) {
+                invalid = true;
+                break;
+            }
+        }
 
-                    double dist = std::hypot(dx, dy);
-                    if (dist < min_dist) {
-                        invalid = true;
-                        break;
-                    }
+        for (size_t i = 0; i < existing_rooms.size(); ++i) {
+            for (size_t j = i + 1; j < existing_rooms.size(); ++j) {
+                int x1 = existing_rooms[i]->getCenterX();
+                int y1 = existing_rooms[i]->getCenterY();
+                int x2 = existing_rooms[j]->getCenterX();
+                int y2 = existing_rooms[j]->getCenterY();
+
+                double dx = x2 - x1;
+                double dy = y2 - y1;
+                double length_sq = dx * dx + dy * dy;
+
+                double t = ((center_x_ - x1) * dx + (center_y_ - y1) * dy) / (length_sq + 1e-9);
+                t = std::max(0.0, std::min(1.0, t));
+                double proj_x = x1 + t * dx;
+                double proj_y = y1 + t * dy;
+
+                double dist_to_line = std::hypot(proj_x - center_x_, proj_y - center_y_);
+                if (dist_to_line < line_dist_threshold) {
+                    invalid = true;
+                    break;
                 }
-                if (invalid) break;
             }
             if (invalid) break;
         }
 
-        if (!invalid) break;
-    }
-
-    pickAssetsPath(existing_rooms, optional_assets_json);
-}
-
-void GenerateRoom::buildArea(int radius) {
-    room_area_ = Area(center_x_, center_y_, radius, map_width_, map_height_);
-}
-
-void GenerateRoom::pickAssetsPath(const std::vector<GenerateRoom*>& existing_rooms,
-                                  const std::string& optional_assets_json)
-{
-    if (!optional_assets_json.empty()) {
-        assets_path_ = optional_assets_json;
-        return;
-    }
-
-    std::vector<std::string> candidates;
-    for (const auto& entry : std::filesystem::directory_iterator(map_path + "/rooms")) {
-        if (!entry.is_regular_file()) continue;
-        auto full = entry.path().string();
-        auto fname = entry.path().filename().string();
-        if (fname.size() >= 5 && fname.substr(fname.size() - 5) == ".json") {
-            candidates.push_back(full);
+        if (!invalid || attempts >= 999) {
+            room_area_ = std::move(candidate);
+            placed = true;
         }
+
+        attempts++;
     }
 
-    if (candidates.empty()) {
-        throw std::runtime_error("[GenerateRoom] No JSON files found in 'rooms/' to assign.");
-    }
+    if (!placed) throw std::runtime_error("[GenerateRoom] Failed to place required room: " + json_path);
 
-    std::uniform_int_distribution<size_t> index_dist(0, candidates.size() - 1);
-    assets_path_ = candidates[index_dist(rng_)];
-}
-
-int GenerateRoom::getCenterX() const {
-    return center_x_;
-}
-
-int GenerateRoom::getCenterY() const {
-    return center_y_;
+    AssetGenerator gen(room_area_, J, renderer_, map_width_, map_height_, asset_library_);
+    room_assets_ = std::move(gen.extract_all_assets());
 }
 
 const Area& GenerateRoom::getArea() const {
     return room_area_;
 }
 
-const std::string& GenerateRoom::getAssetsPath() const {
-    return assets_path_;
+int GenerateRoom::getCenterX() const {
+    return center_x_;
+}
+
+
+bool GenerateRoom::isSpawn() const {
+    return is_spawn_;
+}
+
+bool GenerateRoom::isBoss() const {
+    return is_boss_;
+}
+
+
+int GenerateRoom::getCenterY() const {
+    return center_y_;
+}
+
+std::vector<std::unique_ptr<Asset>> GenerateRoom::getAssets() {
+    return std::move(room_assets_);
 }
 
 GenerateRoom::Point GenerateRoom::getPointInside() const {

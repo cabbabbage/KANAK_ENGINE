@@ -10,18 +10,17 @@
       "displayName": "Windows with VCPKG",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/ENGINE",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     }
   ],
   "buildPresets": [
     {
       "name": "windows-vcpkg-release",
-      "configurePreset": "windows-vcpkg",
-      "configuration": "Release"
+      "configurePreset": "windows-vcpkg"
     }
   ]
 }

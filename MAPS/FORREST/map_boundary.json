@@ -1,1 +1,37 @@
-{}
+{
+  "assets": [
+    {
+      "name": "Big_Rock",
+      "min_number": 111,
+      "max_number": 111,
+      "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Tree",
+      "min_number": 2000,
+      "max_number": 2000,
+      "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Tree_Dark",
+      "min_number": 2000,
+      "max_number": 2000,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Tree_Darker",
+      "min_number": 2000,
+      "max_number": 2000,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    }
+  ],
+  "inherits_map_assets": false
+}

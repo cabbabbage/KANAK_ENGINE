@@ -1,29 +1,17 @@
 {
   "asset_name": "Rock",
   "asset_type": "Object",
-  "child_only": false,
-  "types": [
-    "Player",
-    "Object",
-    "Background",
-    "Enemy"
-  ],
   "animations": {
     "default": {
       "frames_path": "default",
       "speed": 1.0,
-      "on_end": "loop",
-      "loop": true,
+      "on_end": "default",
       "randomize": false,
       "audio_path": "",
       "volume": 50
     }
   },
-  "available_animations": [
-    "default"
-  ],
-  "is_passable": true,
-  "impassable_area": null,
+  "impassable_area": "impassable_area.json",
   "z_threshold": 20,
   "size_settings": {
     "scale_percentage": 31.953548387096774,
@@ -33,5 +21,13 @@
   "min_same_type_distance": 400,
   "visited_tabs": [
     "Spacing"
-  ]
+  ],
+  "tags": [
+    "passable",
+    "static",
+    "medium",
+    "rock"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400
 }

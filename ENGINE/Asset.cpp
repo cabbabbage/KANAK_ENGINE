@@ -1,100 +1,87 @@
-// asset.cpp
+// === File: Asset.cpp ===
 #include "asset.hpp"
 #include <random>
-#include <SDL_image.h>
 #include <iostream>
+#include <algorithm>
+#include <SDL_image.h>
 
 Asset::Asset(int z_offset,
              const Area& spawn_area,
              SDL_Renderer* renderer,
              Asset* parent)
-    : z_offset(z_offset),
-      renderer(renderer),
-      parent(parent),
-      spawn_area_local(spawn_area)
+  : z_offset(z_offset),
+    renderer(renderer),
+    parent(parent),
+    spawn_area_local(spawn_area),
+    opacity(100)
 {
-    rebuild_world_areas();  // base_areas will be built in finalize_setup
+    player_speed_mult = 10;
 }
 
-void Asset::finalize_setup() {
+void Asset::finalize_setup(int start_pos_X,
+                           int start_pos_Y,
+                           int /*parent_X*/,
+                           int /*parent_Y*/)
+{
     if (!info) return;
 
-    auto it_default = info->animations.find("default");
-    if (it_default != info->animations.end() && !it_default->second.frames.empty()) {
-        current_animation = "default";
-        static_frame = (it_default->second.frames.size() == 1);
-        if (it_default->second.randomize && it_default->second.frames.size() > 1) {
-            std::mt19937 gen{ std::random_device{}() };
-            std::uniform_int_distribution<int> dist(0, int(it_default->second.frames.size()) - 1);
-            current_frame_index = dist(gen);
-        } else {
-            current_frame_index = 0;
-        }
-    }
-
-    base_areas.clear();
-
-    {
-        Area a = spawn_area_local;
-        a.set_color(255, 0, 0);
-        base_areas.push_back(a);
-    }
-    if (info->has_collision_area) {
-        Area a = info->collision_area;
-        a.set_color(0, 255, 0);
-        base_areas.push_back(a);
-    }
-    if (info->has_interaction_area) {
-        Area a = info->interaction_area;
-        a.set_color(0, 0, 255);
-        base_areas.push_back(a);
-    }
-    if (info->has_attack_area) {
-        Area a = info->attack_area;
-        a.set_color(255, 255, 0);
-        base_areas.push_back(a);
-    }
-    if (info->has_spacing_area) {
-        Area a = info->spacing_area;
-        a.set_color(255, 0, 255);
-        base_areas.push_back(a);
-    }
-    if (info->has_passability_area) {
-        Area a = info->passability_area;
-        a.set_color(0, 255, 255);
-        base_areas.push_back(a);
-    }
-    for (const auto& child_def : info->child_assets) {
-        Area a = child_def.area;
-        a.set_color(192, 192, 192);
-        base_areas.push_back(a);
-    }
-
-    set_z_index();
-    rebuild_world_areas();
+// Set animation state
+auto it = info->animations.find("start");
+if (it == info->animations.end()) {
+    it = info->animations.find("default");
 }
 
-void Asset::rebuild_world_areas() {
-    areas.clear();
-    for (const Area& local : base_areas) {
-        Area shifted = local;
-        shifted.apply_offset(pos_X, pos_Y);
-        areas.push_back(std::move(shifted));
+if (it != info->animations.end() && !it->second.frames.empty()) {
+    current_animation = it->first;
+    static_frame = (it->second.frames.size() == 1);
+    if (it->second.randomize && it->second.frames.size() > 1) {
+        std::mt19937 g{std::random_device{}()};
+        std::uniform_int_distribution<int> d(0, int(it->second.frames.size()) - 1);
+        current_frame_index = d(g);
+    } else {
+        current_frame_index = 0;
     }
+}
+
+// Always position at the given start coordinates
+pos_X = start_pos_X;
+pos_Y = start_pos_Y;
+
+set_z_index();
 }
 
 void Asset::set_position(int x, int y) {
+    // Ignore any offsets; set absolute position
     pos_X = x;
     pos_Y = y;
     set_z_index();
-    rebuild_world_areas();
+}
+
+void Asset::update() {
+    if (!info) return;
+    auto it = info->animations.find(current_animation);
+    if (it != info->animations.end() && !it->second.frames.empty() && !static_frame) {
+        if (++current_frame_index >= int(it->second.frames.size())) {
+            if (it->second.loop) {
+                current_frame_index = 0;
+            } else if (!it->second.on_end.empty() && info->animations.count(it->second.on_end)) {
+                change_animation(it->second.on_end);
+            } else {
+                current_frame_index = int(it->second.frames.size()) - 1;
+            }
+        }
+    }
+    for (auto& c : children) {
+        c.update();
+    }
 }
 
 void Asset::set_z_index() {
     if (info && info->type == "Player") {
         z_index = pos_Y + info->z_threshold;
     } else if (parent) {
-        z_index = parent->z_index + z_offset;
+        int bz = pos_Y + info->z_threshold;
+        z_index = std::clamp(bz + z_offset, parent->z_index - 1000, parent->z_index + 1000);
     } else if (info) {
         z_index = pos_Y + info->z_threshold;
     } else {
@@ -102,122 +89,65 @@ void Asset::set_z_index() {
     }
 }
 
-void Asset::update(const std::unordered_set<SDL_Keycode>& keys, const Area* /*compare_area*/) {
-    if (!info) return;
-
-    if (info->type == "Player") {
-        int dx = 0, dy = 0;
-
-        if (keys.count(SDLK_w)) {
-            dy -= 5;
-            if (current_animation != "backward") change_animation("backward");
-        } else if (keys.count(SDLK_s)) {
-            dy += 5;
-            if (current_animation != "forward")  change_animation("forward");
-        } else if (keys.count(SDLK_a)) {
-            dx -= 5;
-            if (current_animation != "left")     change_animation("left");
-        } else if (keys.count(SDLK_d)) {
-            dx += 5;
-            if (current_animation != "right")    change_animation("right");
-        } else {
-            if (current_animation != "default")  change_animation("default");
-        }
-
-        if (dx || dy) {
-            set_position(pos_X + dx, pos_Y + dy);
-        }
-    }
-
-    auto it = info->animations.find(current_animation);
-    if (it != info->animations.end() && !it->second.frames.empty() && !static_frame) {
-        ++current_frame_index;
-        if (current_frame_index >= static_cast<int>(it->second.frames.size())) {
-            if (it->second.loop) {
-                current_frame_index = 0;
-            } else if (!it->second.on_end.empty() && info->animations.count(it->second.on_end)) {
-                change_animation(it->second.on_end);
-            } else {
-                current_frame_index = static_cast<int>(it->second.frames.size()) - 1;
-            }
-        }
-    }
-
-    for (Asset& child : children) {
-        child.update(keys);
-    }
-}
-
-void Asset::randomize_frame() {
-    auto it = info->animations.find(current_animation);
-    if (it == info->animations.end() || it->second.frames.size() < 2) return;
-    static std::mt19937 rng{ std::random_device{}() };
-    std::uniform_int_distribution<int> dist(0, int(it->second.frames.size()) - 1);
-    current_frame_index = dist(rng);
-}
-
-void Asset::change_animation(const std::string& animation_name) {
-    if (!info) return;
-    auto it = info->animations.find(animation_name);
+void Asset::change_animation(const std::string& name) {
+    auto it = info->animations.find(name);
     if (it != info->animations.end() && !it->second.frames.empty()) {
-        current_animation = animation_name;
+        current_animation = name;
         current_frame_index = 0;
         static_frame = (it->second.frames.size() == 1);
     }
 }
 
 SDL_Texture* Asset::get_current_frame() const {
-    if (!info) return nullptr;
     auto it = info->animations.find(current_animation);
-    if (it != info->animations.end() && !it->second.frames.empty()) {
+    if (it != info->animations.end() && !it->second.frames.empty())
         return it->second.frames[current_frame_index];
-    }
     return nullptr;
 }
-
-
 
 SDL_Texture* Asset::get_image() const {
     return get_current_frame();
 }
 
+std::string Asset::get_current_animation() const {
+    return current_animation;
+}
+
+std::string Asset::get_type() const {
+    return info ? info->type : "";
+}
+
 Area Asset::get_global_collision_area() const {
-    if (!info || !info->has_collision_area) return Area();
+    if (!info || !info->has_collision_area) return {};
     Area a = info->collision_area;
-    a.apply_offset(pos_X, pos_Y);
+    a.align(pos_X, pos_Y);
     return a;
 }
-
 Area Asset::get_global_interaction_area() const {
-    if (!info || !info->has_interaction_area) return Area();
+    if (!info || !info->has_interaction_area) return {};
     Area a = info->interaction_area;
-    a.apply_offset(pos_X, pos_Y);
+    a.align(pos_X, pos_Y);
     return a;
 }
-
 Area Asset::get_global_attack_area() const {
-    if (!info || !info->has_attack_area) return Area();
+    if (!info || !info->has_attack_area) return {};
     Area a = info->attack_area;
-    a.apply_offset(pos_X, pos_Y);
+    a.align(pos_X, pos_Y);
     return a;
 }
-
 Area Asset::get_global_spacing_area() const {
-    if (!info || !info->has_spacing_area) return Area();
+    if (!info || !info->has_spacing_area) return {};
     Area a = info->spacing_area;
-    a.apply_offset(pos_X, pos_Y);
+    a.align(pos_X, pos_Y);
     return a;
 }
-
 Area Asset::get_global_passability_area() const {
-    if (!info || !info->has_passability_area) return Area();
+    if (!info || !info->has_passability_area) return {};
     Area a = info->passability_area;
-    a.apply_offset(pos_X, pos_Y);
+    a.align(pos_X, pos_Y);
     return a;
 }
 
-void Asset::add_child(const Asset& child) {
-    std::cout << "[Asset] Parent: " << (info ? info->name : "Unknown")
-              << " → Child: " << (child.info ? child.info->name : "Unknown") << "\n";
+void Asset::add_child(Asset child) {
     children.push_back(child);
 }

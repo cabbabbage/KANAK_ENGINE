@@ -1,87 +1,90 @@
-#ifndef ASSET_INFO_HPP
-#define ASSET_INFO_HPP
+#pragma once
 
-#include <fstream>
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <filesystem>
-#include <nlohmann/json.hpp>
 #include <SDL.h>
-#include <SDL_image.h>
-#include <iostream>
+#include <nlohmann/json.hpp>
 #include "area.hpp"
-
-namespace fs = std::filesystem;
 
 struct Animation {
     std::vector<SDL_Texture*> frames;
     bool loop = false;
-    std::string on_end;
     bool randomize = false;
+    std::string on_end;
 };
 
 struct ChildAsset {
     std::string asset;
-    std::string area_file;
-    int z_offset;
-    int min;
-    int max;
-    bool terminate_with_parent;
+    int point_x = 0;
+    int point_y = 0;
+    int radius = 0;
+    int z_offset = 0;
+    int min = 0;
+    int max = 0;
+    bool terminate_with_parent = false;
     Area area;
 };
 
 class AssetInfo {
 public:
-    std::string name;
-    std::string type;
-    int z_threshold = 0;
-    bool is_passable = false;
-    bool is_interactable = false;
-    bool is_attackable = false;
-    bool is_collidable = false;
-    int min_same_type_distance = 0;
-    int max_child_depth = 0;
-    int min_child_depth = 0;
-    int child_depth = 0; // random between min_child_depth and max_child_depth
-    bool duplicatable = false;
-    int duplication_interval_min = 0;
-    int duplication_interval_max = 0;
-    int duplication_interval = 0; // random between min and max
+    explicit AssetInfo(const std::string& asset_folder_name, SDL_Renderer* renderer);
+    ~AssetInfo();
 
-    bool can_invert = true;
-
-    float scale_percentage = 100.0f;
-    float variability_percentage = 0.0f;
-    float scale_factor = 1.0f; // = scale_percentage/100
-
-    std::unordered_map<std::string, Animation> animations;
-    std::vector<ChildAsset> child_assets;
-
-    Area collision_area;
-    Area interaction_area;
-    Area attack_area;
-    Area spacing_area;
-    Area passability_area;
-
-    bool has_collision_area = false;
-    bool has_interaction_area = false;
-    bool has_attack_area = false;
-    bool has_spacing_area = false;
-    bool has_passability_area = false;
-
-    AssetInfo(const std::string& asset_folder_name, SDL_Renderer* renderer);
-
-private:
-    // Updated signature: pass orig_w, orig_h, and (float) scale_factor
     void try_load_area(const nlohmann::json& data,
                        const std::string& key,
                        const std::string& dir,
                        Area& area_ref,
                        bool& flag_ref,
-                       int orig_w,
-                       int orig_h,
-                       float user_scale);
-};
+                       float scale,
+                       int offset_x,
+                       int offset_y);
 
-#endif // ASSET_INFO_HPP
+    std::string name;
+    std::string type;
+    bool has_tag(const std::string& tag) const;
+
+    int z_threshold = 0;
+    bool passable = false;
+    bool can_invert = true;
+    bool interaction = false;
+    bool hit = false;
+    bool collision = false;
+
+    bool duplicatable = false;
+    int duplication_interval_min = 0;
+    int duplication_interval_max = 0;
+    int duplication_interval = 0;
+
+    int min_same_type_distance = 0;
+
+    int min_child_depth = 0;
+    int max_child_depth = 0;
+    int child_depth = 0;
+
+    float scale_percentage = 100.0f;
+    float variability_percentage = 0.0f;
+    float scale_factor = 1.0f;
+
+    int original_canvas_width = 0;
+    int original_canvas_height = 0;
+
+    std::vector<std::string> tags;
+
+    bool has_passability_area = false;
+    bool has_spacing_area = false;
+    bool has_collision_area = false;
+    bool has_interaction_area = false;
+    bool has_attack_area = false;
+
+    Area passability_area;
+    Area spacing_area;
+    Area collision_area;
+    Area interaction_area;
+    Area attack_area;
+
+    std::unordered_map<std::string, Animation> animations;
+    std::vector<ChildAsset> child_assets;
+
+    SDL_BlendMode blendmode = SDL_BLENDMODE_BLEND;
+};

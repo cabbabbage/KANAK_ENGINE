@@ -1,228 +1,232 @@
 #include "asset_loader.hpp"
-#include "generate_trails.hpp"
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <unordered_map>
+#include <algorithm>
+#include <random>
 
 namespace fs = std::filesystem;
 
-AssetLoader::AssetLoader(const std::string& map_path, SDL_Renderer* renderer)
-    : map_path_(map_path),
-      renderer_(renderer),
-      rng_(std::random_device{}())
+AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
+    : map_path_(map_dir), renderer_(renderer), rng_(std::random_device{}())
 {
-    load_json();
-    generate_rooms();
-    generate_trails();
-    spawn_assets_for_rooms();
-    spawn_assets_for_trails();
-    spawn_assets_for_open_space();
-    std::cout << "[AssetLoader] Spawning assets in open world...\n";
-    spawn_davey_player();
-    place_player_in_random_room();
 
-    // Remove Background assets that fall within room or trail areas
-    std::vector<Area> exclusion_areas;
-    for (const auto& room : rooms_) exclusion_areas.push_back(room.getArea());
-    for (const auto& trail : trails_) exclusion_areas.push_back(trail.area);
+    asset_library_ = std::make_unique<AssetLibrary>(renderer_);
+    std::ifstream in(map_path_ + "/map_info.json");
+    if (!in.is_open()) throw std::runtime_error("Could not open map_info.json");
 
-    auto it = all_assets_.begin();
-    while (it != all_assets_.end()) {
-        Asset* a = it->get();
-        if (!a || !a->info || a->info->type != "Boundary") {
-            ++it;
-            continue;
+    nlohmann::json root;
+    in >> root;
+    in.close();
+
+    map_width_ = root["map_width_"];
+    map_height_ = root["map_height_"];
+    int min_rooms = root["min_rooms"];
+    int max_rooms = root["max_rooms"];
+    const std::string map_boundary_file = root["map_boundary"];
+    const auto& room_templates = root["rooms"];
+
+    std::uniform_int_distribution<int> room_dist(min_rooms, max_rooms);
+    int target_room_count = room_dist(rng_);
+
+    std::unordered_map<std::string, int> room_counts;
+    std::vector<std::string> room_paths;
+
+
+    std::ifstream jin(map_path_ + "/" + map_boundary_file);
+    if (jin.is_open()) {
+        nlohmann::json aset;
+        jin >> aset;
+        if (aset.contains("assets")) {
+            int scaled_width = static_cast<int>(map_width_ * 1.5);
+            int scaled_height = static_cast<int>(map_height_ * 1.5);
+            int map_cx = map_width_ / 2;
+            int map_cy = map_height_ / 2;
+
+            Area oversized_area(map_cx, map_cy, scaled_width, scaled_height, "Square", 1, map_width_, map_height_);
+
+            auto [minx, miny, maxx, maxy] = oversized_area.get_bounds();
+            int area_cx = (minx + maxx) / 2;
+            int area_cy = (miny + maxy) / 2;
+            int dx = map_cx - area_cx;
+            int dy = map_cy - area_cy;
+            oversized_area.apply_offset(dx, dy);
+
+            AssetGenerator gen(oversized_area, aset, renderer_, map_width_, map_height_, asset_library_.get(), true);
+   
+            auto result = gen.extract_all_assets();
+
+            for (auto& asset_ptr : result) {
+                if (asset_ptr) {
+                    all_assets_.push_back(std::move(*asset_ptr));
+                }
+            }
+        }
+    }
+
+
+    for (const auto& entry : room_templates) {
+        if (entry.value("required", false)) {
+            std::string path = entry["room_path"];
+            if (room_counts[path] == 0) {
+                room_paths.push_back(path);
+                room_counts[path]++;
+            }
+        }
+    }
+
+    std::vector<nlohmann::json> candidates;
+    for (const auto& entry : room_templates) {
+        std::string path = entry["room_path"];
+        int max_inst = entry["max_instances"];
+        if (room_counts[path] < max_inst) {
+            candidates.push_back(entry);
+        }
+    }
+
+    while ((int)room_paths.size() < target_room_count && !candidates.empty()) {
+        std::uniform_int_distribution<size_t> pick(0, candidates.size() - 1);
+        size_t idx = pick(rng_);
+        const auto& entry = candidates[idx];
+
+        std::string path = entry["room_path"];
+        int max_inst = entry["max_instances"];
+
+        if (++room_counts[path] <= max_inst) {
+            room_paths.push_back(path);
         }
 
-        bool inside = false;
-        for (const auto& area : exclusion_areas) {
-            if (area.contains(a->pos_X, a->pos_Y)) {
-                inside = true;
-                break;
+        if (room_counts[path] >= max_inst) {
+            candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
+                [&](const nlohmann::json& e) {
+                    return e["room_path"] == path;
+                }), candidates.end());
+        }
+    }
+
+    for (const std::string& path : room_paths) {
+        std::vector<GenerateRoom*> existing_ptrs;
+        for (auto& r : rooms_) existing_ptrs.push_back(&r);
+        GenerateRoom new_room(map_path_, existing_ptrs, map_width_, map_height_, map_path_ + "/" + path, renderer_, asset_library_.get());
+
+        auto room_assets = new_room.getAssets();
+        for (auto& asset_ptr : room_assets) {
+            if (asset_ptr) {
+                all_assets_.push_back(std::move(*asset_ptr));
             }
         }
 
-        if (inside) {
-            it = all_assets_.erase(it);
-        } else {
-            ++it;
+        rooms_.push_back(std::move(new_room));
+    }
+
+    trail_gen_ = std::make_unique<GenerateTrails>(map_path_, rooms_, map_width_, map_height_);
+
+    for (const auto& trail_area : trail_gen_->getTrailAreas()) {
+        std::string picked_path;
+
+        try {
+            picked_path = trail_gen_->pickAssetsPath();
+        } catch (const std::exception& e) {
+            continue;
+        }
+
+        std::ifstream trail_in(picked_path);
+        if (!trail_in.is_open()) continue;
+
+        nlohmann::json config;
+        trail_in >> config;
+        trail_in.close();
+
+        AssetGenerator gen(trail_area, config, renderer_, map_width_, map_height_, asset_library_.get());
+        auto generated = gen.extract_all_assets();
+
+        for (auto& asset_ptr : generated) {
+            if (asset_ptr) {
+                all_assets_.push_back(std::move(*asset_ptr));
+            }
         }
     }
-}
 
-void AssetLoader::spawn_assets_for_open_space() {
-    Area combined_area;
+    Area cumulative_area;
     for (const auto& room : rooms_) {
-        combined_area.union_with(room.getArea());
+        cumulative_area.union_with(room.getArea());
     }
-    for (const auto& trail : trails_) {
-        combined_area.union_with(trail.area);
-    }
-
-    std::ifstream in(map_path_ + "/boundaries.json");
-    if (!in.is_open()) {
-        std::cerr << "[AssetLoader] Failed to open boundaries.json\n";
-        return;
+    for (const auto& trail_area : trail_gen_->getTrailAreas()) {
+        cumulative_area.union_with(trail_area);
     }
 
-    nlohmann::json assets_json;
-    in >> assets_json;
-    in.close();
 
-    if (!assets_json.contains("assets") || !assets_json["assets"].is_array()) {
-        std::cerr << "[AssetLoader] boundaries.json missing assets array\n";
-        return;
+
+    std::vector<Area> exclusion_zones;
+    for (const auto& room : rooms_) {
+        exclusion_zones.push_back(room.getArea());
+    }
+    for (const auto& trail_area : trail_gen_->getTrailAreas()) {
+        exclusion_zones.push_back(trail_area);
     }
 
-    AssetGenerator gen(combined_area, assets_json["assets"], renderer_, true, map_width_, map_height_);
-    gen.generate_all();
-
-    auto assets = gen.extract_all_assets();
-    for (auto& a : assets) {
-        all_assets_.push_back(std::move(a));
-    }
-}
-
-void AssetLoader::load_json() {
-    std::ifstream in(map_path_ + "/map.json");
-    if (!in.is_open()) {
-        throw std::runtime_error("[AssetLoader] Failed to open " + map_path_);
-    }
-    in >> root_;
-    in.close();
-
-    map_width_        = root_.value("width", 0);
-    map_height_       = root_.value("height", 0);
-    min_rooms_        = root_.value("min_rooms", 1);
-    max_rooms_        = root_.value("max_rooms", min_rooms_);
-    min_room_h_       = root_.value("min_room_height", 0);
-    max_room_h_       = root_.value("max_room_height", min_room_h_);
-    min_room_w_       = root_.value("min_room_width", 0);
-    max_room_w_       = root_.value("max_room_width", min_room_w_);
-    min_trail_w_      = root_.value("min_trail_width", 0);
-    max_trail_w_      = root_.value("max_trail_width", min_trail_w_);
-}
-
-int AssetLoader::get_screen_center_x() const { return map_width_ / 2; }
-int AssetLoader::get_screen_center_y() const { return map_height_ / 2; }
-
-void AssetLoader::generate_rooms() {
-    std::uniform_int_distribution<int> room_count_dist(min_rooms_, max_rooms_);
-    int room_count = room_count_dist(rng_);
-
-    for (int i = 0; i < room_count; ++i) {
-        std::vector<GenerateRoom*> existing_ptrs;
-        for (auto& r : rooms_) {
-            existing_ptrs.push_back(&r);
+    for (auto it = all_assets_.begin(); it != all_assets_.end(); ) {
+        if (it->info && it->info->type == "Background") {
+            bool inside_any = false;
+            for (const Area& zone : exclusion_zones) {
+                if (zone.contains(it->pos_X, it->pos_Y)) {
+                    inside_any = true;
+                    break;
+                }
+            }
+            if (inside_any) {
+                Asset* bg_ptr = &(*it);
+                for (auto child_it = all_assets_.begin(); child_it != all_assets_.end(); ) {
+                    if (child_it->parent == bg_ptr) {
+                        child_it = all_assets_.erase(child_it);
+                    } else {
+                        ++child_it;
+                    }
+                }
+                it = all_assets_.erase(it);
+                continue;
+            }
         }
-
-        std::uniform_int_distribution<int> hr_dist(min_room_h_, max_room_h_);
-        std::uniform_int_distribution<int> wr_dist(min_room_w_, max_room_w_);
-        int room_h = hr_dist(rng_);
-        int room_w = wr_dist(rng_);
-        int radius = (room_h + room_w) / 2;
-
-        rooms_.emplace_back(map_path_, existing_ptrs, map_width_, map_height_, radius, radius);
+        ++it;
     }
 }
 
-void AssetLoader::generate_trails() {
-    GenerateTrails gt(map_path_, rooms_, map_width_, map_height_);
-    trails_ = gt.getTrails();
-}
-
-void AssetLoader::spawn_assets_for_rooms() {
-    for (auto& gr : rooms_) {
-        std::ifstream in(map_path_ + "/" + gr.getAssetsPath());
-        if (!in.is_open()) continue;
-
-        nlohmann::json assets_json;
-        in >> assets_json;
-        in.close();
-
-        if (!assets_json.contains("assets") || !assets_json["assets"].is_array()) continue;
-
-        AssetGenerator gen(gr.getArea(), assets_json["assets"], renderer_, false, map_width_, map_height_);
-        gen.generate_all();
-
-        auto assets = gen.extract_all_assets();
-        for (auto& a : assets) {
-            all_assets_.push_back(std::move(a));
-        }
-    }
-}
-
-void AssetLoader::spawn_assets_for_trails() {
-    for (const auto& trail : trails_) {
-        std::ifstream in(map_path_ + "/" + trail.assets_path);
-        if (!in.is_open()) continue;
-
-        nlohmann::json assets_json;
-        in >> assets_json;
-        in.close();
-
-        if (!assets_json.contains("assets") || !assets_json["assets"].is_array()) continue;
-
-        AssetGenerator gen(trail.area, assets_json["assets"], renderer_, false, map_width_, map_height_);
-        gen.generate_all();
-
-        auto assets = gen.extract_all_assets();
-        for (auto& a : assets) {
-            all_assets_.push_back(std::move(a));
-        }
-    }
-}
-
-void AssetLoader::spawn_davey_player() {
-    if (rooms_.empty()) return;
-
-    const GenerateRoom& target_room = rooms_.front();
-    Area room_area = target_room.getArea();
-
-    std::ifstream in(map_path_ + "/player.json");
-    if (!in.is_open()) {
-        std::cerr << "[AssetLoader] Failed to open player.json\n";
-        return;
-    }
-
-    nlohmann::json player_json;
-    in >> player_json;
-    in.close();
-
-    if (!player_json.contains("assets") || !player_json["assets"].is_array()) {
-        std::cerr << "[AssetLoader] player.json missing assets array\n";
-        return;
-    }
-
-    AssetGenerator gen(room_area, player_json["assets"], renderer_, false, map_width_, map_height_);
-    gen.generate_all();
-
-    auto assets = gen.extract_all_assets();
-    if (!assets.empty()) {
-        std::unique_ptr<Asset> player_asset = std::move(assets[0]);
-        player_ = player_asset.get();
-        all_assets_.push_back(std::move(player_asset));
-    } else {
-        std::cerr << "[AssetLoader] Failed to spawn player from player.json\n";
-    }
-}
-
-void AssetLoader::place_player_in_random_room() {
-    if (!player_ || rooms_.empty()) return;
-
-    std::uniform_int_distribution<size_t> room_dist(0, rooms_.size() - 1);
-    size_t idx = room_dist(rng_);
-    const GenerateRoom& chosen = rooms_[idx];
-    int px = chosen.getCenterX();
-    int py = chosen.getCenterY();
-
-    player_->set_position(px, py);
-}
-
-const std::vector<std::unique_ptr<Asset>>& AssetLoader::get_all_assets() const {
+const std::vector<Asset>& AssetLoader::get_all_assets() const {
     return all_assets_;
 }
 
-Asset* AssetLoader::get_player() const {
-    return player_;
+std::vector<Asset> AssetLoader::extract_all_assets() {
+    return std::move(all_assets_);
+}
+
+int AssetLoader::get_screen_center_x() const {
+    return map_width_ / 2;
+}
+
+int AssetLoader::get_screen_center_y() const {
+    return map_height_ / 2;
+}
+
+std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
+    std::vector<Area> result;
+    for (const auto& room : rooms_) {
+        result.push_back(room.getArea());
+    }
+    for (const auto& trail : trail_gen_->getTrailAreas()) {
+        result.push_back(trail);
+    }
+    return result;
+}
+
+Asset* AssetLoader::get_player() {
+    for (auto& asset : all_assets_) {
+        if (!asset.info) {
+            continue;
+        }
+        if (asset.info->type == "Player") {
+            return &asset;
+        }
+    }
+    return nullptr;
 }

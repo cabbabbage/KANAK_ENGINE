@@ -1,0 +1,13 @@
+{
+  "name": "stoge",
+  "min_width": 871,
+  "max_width": 871,
+  "min_height": 956,
+  "max_height": 956,
+  "edge_smoothness": 100,
+  "geometry": "Circle",
+  "is_spawn": false,
+  "is_boss": false,
+  "inherits_map_assets": true,
+  "assets": []
+}

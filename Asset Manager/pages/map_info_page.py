@@ -19,10 +19,10 @@ class MapInfoPage(ttk.Frame):
 
         self.name_var = tk.StringVar()
 
-        self.width_range = Range(form, set_min=0, set_max=0, force_fixed=True, label="Map Width")
-        self.height_range = Range(form, set_min=0, set_max=0, force_fixed=True, label="Map Height")
-        self.min_room_range = Range(form, set_min=0, set_max=0, force_fixed=True, label="Min Rooms")
-        self.max_room_range = Range(form, set_min=0, set_max=0, force_fixed=True, label="Max Rooms")
+        self.width_range = Range(form, min_bound=10000, max_bound=50000, force_fixed=True, label="Map Width")
+        self.height_range = Range(form, min_bound=10000, max_bound=50000, force_fixed=True, label="Map Height")
+        self.min_room_range = Range(form, min_bound=0, max_bound=20, force_fixed=True, label="Min Rooms")
+        self.max_room_range = Range(form, min_bound=0, max_bound=20, force_fixed=True, label="Max Rooms")
 
         self._add_entry(form, "Map Name:", self.name_var, 0)
         self._add_range(form, self.width_range, 1)
@@ -56,7 +56,7 @@ class MapInfoPage(ttk.Frame):
 
     def _add_range(self, container, widget, row):
         widget.grid(row=row, column=0, columnspan=2, sticky="ew", pady=4)
-        widget.var_max.trace_add("write", lambda *_: self._save_json())
+        # trace_add moved to end of load_data()
 
     def load_data(self, data, json_path=None):
         self.current_path = json_path
@@ -71,9 +71,10 @@ class MapInfoPage(ttk.Frame):
             data = {}
 
         self.data = data
+
         self.data.setdefault("map_name", self.original_folder_name)
-        self.data.setdefault("map_width_", 0)
-        self.data.setdefault("map_height_", 0)
+        self.data.setdefault("map_width_", 10000)
+        self.data.setdefault("map_height_", 10000)
         self.data.setdefault("min_rooms", 0)
         self.data.setdefault("max_rooms", 0)
         self.data.setdefault("map_assets", "map_assets.json")
@@ -86,6 +87,12 @@ class MapInfoPage(ttk.Frame):
         self.height_range.set(self.data["map_height_"], self.data["map_height_"])
         self.min_room_range.set(self.data["min_rooms"], self.data["min_rooms"])
         self.max_room_range.set(self.data["max_rooms"], self.data["max_rooms"])
+
+        # === Deferred trace_add setup ===
+        self.width_range.var_max.trace_add("write", lambda *_: self._save_json())
+        self.height_range.var_max.trace_add("write", lambda *_: self._save_json())
+        self.min_room_range.var_max.trace_add("write", lambda *_: self._save_json())
+        self.max_room_range.var_max.trace_add("write", lambda *_: self._save_json())
 
         self.trail_listbox.delete(0, tk.END)
         for trail in self.data.get("trails", []):

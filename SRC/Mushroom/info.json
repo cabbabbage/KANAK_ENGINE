@@ -1,37 +1,40 @@
 {
-    "asset_name": "Mushroom",
-    "asset_type": "Object",
-    "child_only": true,
-    "types": [
-        "Player",
-        "Object",
-        "Background",
-        "Enemy"
-    ],
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "loop",
-            "loop": true,
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "available_animations": [
-        "default"
-    ],
-    "is_passable": true,
-    "impassable_area": null,
-    "z_threshold": 8,
-    "size_settings": {
-        "scale_percentage": 14.04676616915423,
-        "variability_percentage": 0.0
-    },
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 50,
-    "visited_tabs": [
-        "Spacing"
-    ]
+  "asset_name": "Mushroom",
+  "asset_type": "Object",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": null,
+  "z_threshold": 2,
+  "size_settings": {
+    "scale_percentage": 4.1547231270358305,
+    "variability_percentage": 0.0
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 103,
+  "visited_tabs": [
+    "Spacing"
+  ],
+  "tags": [
+    "small",
+    "plant",
+    "mushroom",
+    "nature",
+    "passable",
+    "red"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2
 }
