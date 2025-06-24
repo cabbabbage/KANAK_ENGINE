@@ -13,7 +13,7 @@ Asset::Asset(int z_offset,
     renderer(renderer),
     parent(parent),
     spawn_area_local(spawn_area),
-    opacity(100)
+    gradient_opacity(100)
 {
     player_speed_mult = 10;
 }
@@ -99,15 +99,23 @@ void Asset::change_animation(const std::string& name) {
 }
 
 SDL_Texture* Asset::get_current_frame() const {
-    auto it = info->animations.find(current_animation);
-    if (it != info->animations.end() && !it->second.frames.empty())
-        return it->second.frames[current_frame_index];
+    // Check for per-instance custom shadowed frames
+    auto it_custom = custom_frames.find(current_animation);
+    if (it_custom != custom_frames.end() && !it_custom->second.empty())
+        return it_custom->second[current_frame_index];
+
+    // Fallback to shared asset info frames
+    auto it_info = info->animations.find(current_animation);
+    if (it_info != info->animations.end() && !it_info->second.frames.empty())
+        return it_info->second.frames[current_frame_index];
+
     return nullptr;
 }
 
 SDL_Texture* Asset::get_image() const {
     return get_current_frame();
 }
+
 
 std::string Asset::get_current_animation() const {
     return current_animation;

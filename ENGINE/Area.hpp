@@ -35,7 +35,7 @@ public:
 
     void contract(int inset);
 
-
+    void generate_static_faded_areas();
 
     // Point access
     const std::vector<Point>& get_points() const;
@@ -53,10 +53,6 @@ public:
                          int edge_smoothness,
                          int map_width, int map_height);
 
-    // Rendering support
-    SDL_Texture* get_fade_texture(SDL_Renderer* renderer,
-                                  SDL_Color color,
-                                  double expand) const;
 
     // Utilities
     void set_color(Uint8 r, Uint8 g, Uint8 b);

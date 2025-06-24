@@ -27,9 +27,9 @@ public:
     std::vector<Asset*> active_assets;
     Asset* player;
     int visible_count;
-
-private:
     std::vector<Asset> all;
+private:
+
     std::vector<Asset*> closest_assets;
     int dx = 0, dy = 0;
     int last_activat_update = 0;
