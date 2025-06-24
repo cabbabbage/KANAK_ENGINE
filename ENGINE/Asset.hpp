@@ -16,7 +16,9 @@ public:
           SDL_Renderer* renderer,
           Asset* parent = nullptr);
 
-    /// Rebuilds `areas` from `base_areas` by applying the world-offset.
+    std::unordered_map<std::string, std::vector<SDL_Texture*>> custom_frames;
+
+
     void rebuild_world_areas();
 
     /// Initializes animations, base_areas, computes parent-offsets, positions, and world-areas.
@@ -68,12 +70,16 @@ public:
     std::vector<Area> base_areas;
     std::vector<Area> areas;
     std::vector<Asset> children;
+    mutable SDL_Texture* cached_lit_texture = nullptr;
+    mutable int last_cached_opacity = -1;
 
     bool active = false;
-    int opacity = 100;
+    int gradient_opacity = 80;
+    bool has_base_shadow = false;
     void set_z_index();
-private:
     int current_frame_index = 0;
+private:
+
     bool static_frame = true;
 
 };
