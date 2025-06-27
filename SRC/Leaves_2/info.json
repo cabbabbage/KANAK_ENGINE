@@ -1,0 +1,30 @@
+{
+  "impassable_area": null,
+  "asset_name": "Leaves_2",
+  "asset_type": "Background",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "z_threshold": -100,
+  "size_settings": {
+    "scale_percentage": 11.18481012658228,
+    "variability_percentage": 0.0
+  },
+  "tags": [
+    "passable"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400
+}

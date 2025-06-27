@@ -116,6 +116,9 @@ void AssetSpawnPlanner::build_spawn_queue(double area) {
         int quantity = std::uniform_int_distribution<int>(min_num, max_num)(rng);
         quantity = static_cast<int>(std::round(quantity * (area / REPRESENTATIVE_SPAWN_AREA)));
         if (quantity < 1) quantity = 1;
+        if (pos == "center" || pos == "Center"){
+            quantity = 1;
+        }
 
         SpawnInfo info_obj;
         info_obj.name = type;

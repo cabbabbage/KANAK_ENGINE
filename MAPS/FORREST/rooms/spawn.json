@@ -13,17 +13,9 @@
       "inherited": false
     },
     {
-      "name": "Sigil_Of_Fortune",
-      "min_number": 1,
-      "max_number": 1,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
       "name": "okkkkk_babyyy",
-      "min_number": 55,
-      "max_number": 55,
+      "min_number": 25,
+      "max_number": 25,
       "position": "Perimeter",
       "exact_position": null,
       "inherited": false

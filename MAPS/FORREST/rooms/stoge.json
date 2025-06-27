@@ -9,5 +9,22 @@
   "is_spawn": false,
   "is_boss": false,
   "inherits_map_assets": true,
-  "assets": []
+  "assets": [
+    {
+      "name": "Chest",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Center",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Lavender_flower",
+      "min_number": 20,
+      "max_number": 50,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    }
+  ]
 }

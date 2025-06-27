@@ -11,14 +11,6 @@
   "inherits_map_assets": false,
   "assets": [
     {
-      "name": "Mushroom",
-      "min_number": 307,
-      "max_number": 369,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
       "name": "Mushroom_1",
       "min_number": 300,
       "max_number": 400,

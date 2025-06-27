@@ -1,0 +1,33 @@
+{
+  "impassable_area": null,
+  "asset_name": "light_2",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 35,
+  "max_child_depth": 35,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "z_threshold": 558,
+  "size_settings": {
+    "scale_percentage": 57.959493670886076,
+    "variability_percentage": 0.0
+  },
+  "blend_mode": "SDL_BLENDMODE_BLEND",
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 0,
+  "tags": [
+    "passable"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400
+}

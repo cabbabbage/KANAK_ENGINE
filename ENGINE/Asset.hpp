@@ -8,6 +8,9 @@
 #include <SDL.h>
 #include "area.hpp"
 #include "asset_info.hpp"
+#include "generate_light.hpp"
+#include "generate_light.hpp"
+
 
 class Asset {
 public:
@@ -43,7 +46,14 @@ public:
     std::string get_current_animation() const;
     std::string get_type() const;
 
+    bool is_lit = false;
+    bool is_shaded = false;
 
+
+    SDL_Texture* base_shadow_texture = nullptr;
+    SDL_Texture* light_texture = nullptr;
+    std::vector<SDL_Texture*> gradient_textures;
+    std::vector<SDL_Texture*> casted_shadows;
     
     Area get_global_collision_area() const;
     Area get_global_interaction_area() const;
@@ -74,7 +84,7 @@ public:
     mutable int last_cached_opacity = -1;
 
     bool active = false;
-    int gradient_opacity = 80;
+    double gradient_opacity = 80;
     bool has_base_shadow = false;
     void set_z_index();
     int current_frame_index = 0;

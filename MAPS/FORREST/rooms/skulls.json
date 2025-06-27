@@ -11,7 +11,7 @@
   "assets": [
     {
       "name": "Bone",
-      "min_number": 314,
+      "min_number": 119,
       "max_number": 346,
       "position": "Between Trails",
       "exact_position": null,
@@ -19,16 +19,16 @@
     },
     {
       "name": "Bone_1",
-      "min_number": 350,
-      "max_number": 359,
+      "min_number": 14,
+      "max_number": 150,
       "position": "",
       "exact_position": null,
       "inherited": false
     },
     {
       "name": "Bone_Pile",
-      "min_number": 320,
-      "max_number": 376,
+      "min_number": 0,
+      "max_number": 225,
       "position": "",
       "exact_position": null,
       "inherited": false
@@ -51,7 +51,7 @@
     },
     {
       "name": "SKull_pile",
-      "min_number": 304,
+      "min_number": 0,
       "max_number": 344,
       "position": "",
       "exact_position": null,

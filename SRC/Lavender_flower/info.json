@@ -1,0 +1,28 @@
+{
+  "impassable_area": null,
+  "asset_name": "Lavender_flower",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "z_threshold": 14,
+  "size_settings": {
+    "scale_percentage": 7.412658227848102,
+    "variability_percentage": 0.0
+  },
+  "tags": [],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400
+}

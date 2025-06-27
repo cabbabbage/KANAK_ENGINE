@@ -1,9 +1,9 @@
 {
   "map_name": "FORREST",
-  "map_width_": 19512,
-  "map_height_": 19512,
-  "min_rooms": 6,
-  "max_rooms": 7,
+  "map_width_": 32066,
+  "map_height_": 32066,
+  "min_rooms": 9,
+  "max_rooms": 11,
   "map_assets": "map_assets.json",
   "map_boundary": "map_boundary.json",
   "rooms": [
@@ -31,6 +31,11 @@
       "room_path": "rooms\\cum.json",
       "max_instances": 1,
       "required": false
+    },
+    {
+      "room_path": "rooms\\fountain.json",
+      "max_instances": 1,
+      "required": true
     },
     {
       "room_path": "rooms\\skulls.json",

@@ -29,7 +29,10 @@ AssetGenerator(const Area& spawn_area,
                int map_width,
                int map_height,
                AssetLibrary* asset_library,
-               bool batch = false);
+               bool batch = false,
+               const std::string& map_dir = "",
+               const std::string& room_dir = "");
+
 
 
 
@@ -37,6 +40,20 @@ AssetGenerator(const Area& spawn_area,
     void spawn_all_children();
 
 private:
+    void output_and_log(const std::string& asset_name,
+                        int quantity,
+                        int spawned,
+                        int attempts,
+                        int max_attempts,
+                        const std::string& method);
+    void progress(const std::shared_ptr<AssetInfo>& info, int current, int total);
+
+    std::string map_dir_;
+    std::string room_dir_;
+
+    std::chrono::steady_clock::time_point start_time_;
+
+
 // === In asset_generator.hpp ===
     std::unordered_map<std::string, std::shared_ptr<AssetInfo>> asset_info_library_;
     AssetLibrary* asset_library_ = nullptr;
