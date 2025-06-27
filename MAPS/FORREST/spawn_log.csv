@@ -2,55 +2,70 @@
 
 
 BOUNDARY
-Big_Rock,0.083,5549,67192,distributed_batch,2400.931,3,-211.757
-Tree_Darker,0.081,98460,1210651,distributed_batch,2406.191,3,-218.602
-Tree,0.082,99199,1210651,distributed_batch,2417.231,3,-216.512
-Tree_Dark,0.082,99290,1210651,distributed_batch,2424.429,3,-216.244
+Big_Rock,0.082,9190,111768,distributed_batch,2243.092,5,-542.830
+Tree_Darker,0.081,164104,2013808,distributed_batch,2246.565,5,-546.176
+Tree,0.082,164880,2013808,distributed_batch,2257.056,5,-547.103
+Tree_Dark,0.082,164960,2013808,distributed_batch,2264.537,5,-546.069
 
 
 
 MAPS/FORREST/rooms\fountain.json
-Lavender_flower,0.693,250,361,distributed,2.113,3,0.309
+Lavender_flower,0.714,412,577,distributed,1.823,5,-0.173
+Fountain,1.000,1,1,center,0.056,1,0.000
 
 
 
 MAPS/FORREST/rooms\tree.json
-Skull,0.965,166,172,random,1.722,3,-0.140
-Lavender_flower,0.792,122,154,distributed,0.959,3,-0.027
+Skull,0.968,272,281,random,1.517,5,-0.359
+Lavender_flower,0.775,196,253,distributed,0.850,5,-0.280
 
 
 
 MAPS/FORREST/rooms\stoge.json
-Lavender_flower,1.000,48,48,random,0.485,3,-0.122
+Lavender_flower,1.000,69,69,random,0.399,5,-0.157
+Chest,1.000,1,1,center,0.059,1,0.000
 
 
 
 MAPS/FORREST/rooms\Key.json
-Box,1.000,12,12,random,0.215,3,-0.085
+Box,1.000,18,18,random,0.177,5,-0.069
+Key,1.000,1,1,center,0.045,1,0.000
 
 
 
 MAPS/FORREST/rooms\stumps.json
-Stump,0.395,62,157,random,2.135,2,0.463
+Stump,0.425,93,219,random,1.898,3,-0.710
 
 
 
 MAPS/FORREST/rooms\skulls.json
-Bone,0.006,30,5340,random,45.827,3,-5.094
-Bone_1,0.020,33,1660,random,14.899,3,-11.006
-Bone_Pile,0.031,44,1410,random,12.642,3,-8.210
-Skull,0.942,339,360,random,3.847,3,-0.806
-Skull_1,0.014,31,2250,random,23.218,3,-1.741
-SKull_pile,0.009,25,2650,random,27.612,3,-20.638
+Bone,0.006,51,7880,random,37.383,5,-11.016
+Bone_1,0.027,51,1910,random,9.958,5,-9.095
+Bone_Pile,0.021,72,3410,random,16.153,5,0.905
+Skull,0.946,565,597,random,3.644,5,-0.140
+Skull_1,0.014,54,3750,random,21.356,5,-3.027
+SKull_pile,0.007,41,6270,random,34.389,5,16.660
 
 
 
 TRAILS
-Grass_1_FPS_2,0.977,11150,11411,random,15.446,29,-1.365
-Grass_FPS_2,0.955,10010,10479,random,20.433,29,14.689
-Mushroom_2,0.651,291,447,random,1.039,29,0.132
+Grass_1_FPS_2,0.976,20466,20979,random,14.323,54,13.095
+Grass_FPS_2,0.956,18184,19029,random,18.939,54,16.900
+Mushroom_2,0.674,502,745,random,0.875,54,0.394
 
 
 
 MAPS/FORREST/rooms\cum.json
-Lavender_flower,0.802,154,192,distributed,3.275,1,0.000
+Lavender_flower,0.830,448,540,distributed,2.945,3,-0.592
+Chest,1.000,1,1,center,0.035,1,0.000
+
+
+
+MAPS/FORREST/rooms\RND.json
+Mushroom_1,0.009,15,1650,random,14.930,2,2.013
+Mushroom_2,0.010,16,1670,random,15.970,2,1.221
+
+
+
+MAPS/FORREST/rooms\chest.json
+Chest,1.000,1,1,center,0.058,1,0.000

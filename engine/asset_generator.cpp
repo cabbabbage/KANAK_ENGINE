@@ -259,12 +259,16 @@ void AssetGenerator::spawn_item_exact(const SpawnInfo& item, const Area* area) {
 void AssetGenerator::spawn_item_center(const SpawnInfo& item, const Area* area) {
     if (!item.info) {
         std::cerr << "[AssetGenerator] Failed to spawn asset: info is null\n";
+        output_and_log(item.name, item.quantity, 0, 0, 1, "center");
         return;
     }
 
     Point center = get_area_center(*area);
-
     Asset* result = spawn(item.name, item.info, *area, center.first, center.second, 0, nullptr);
+    int spawned = (result != nullptr) ? 1 : 0;
+
+    progress(item.info, spawned, item.quantity);
+    output_and_log(item.name, item.quantity, spawned, 1, 1, "center");
 
     if (item.info->type == "Player") {
         if (result) {
@@ -274,7 +278,6 @@ void AssetGenerator::spawn_item_center(const SpawnInfo& item, const Area* area) 
         }
     }
 }
-
 
 
 

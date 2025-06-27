@@ -91,10 +91,17 @@ void AssetSpawnPlanner::build_spawn_queue(double area) {
 
     for (const auto& entry : merged_assets_) {
         std::string type = entry.value("name", "");
-        if (type.empty()) continue;
+        if (type.empty()) {
+            std::cerr << "[AssetSpawnPlanner] WARNING: JSON entry missing 'name', skipping.\n";
+            continue;
+        }
 
         auto info = asset_library_->get(type);
-        if (!info) continue;
+        if (!info) {
+            std::cerr << "[AssetSpawnPlanner] WARNING: Asset '" << type
+                      << "' not found in library, skipping.\n";
+            continue;
+        }
 
         std::string pos = "random";
         int x = -1, y = -1;
@@ -116,7 +123,7 @@ void AssetSpawnPlanner::build_spawn_queue(double area) {
         int quantity = std::uniform_int_distribution<int>(min_num, max_num)(rng);
         quantity = static_cast<int>(std::round(quantity * (area / REPRESENTATIVE_SPAWN_AREA)));
         if (quantity < 1) quantity = 1;
-        if (pos == "center" || pos == "Center"){
+        if (pos == "center" || pos == "Center") {
             quantity = 1;
         }
 
