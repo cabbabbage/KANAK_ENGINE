@@ -1,28 +1,55 @@
 {
-  "impassable_area": null,
-  "asset_name": "Lavender_flower",
-  "asset_type": "Object",
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2,
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "randomize": false,
-      "audio_path": "",
-      "volume": 50
+    "impassable_area": null,
+    "asset_name": "Lavender_flower",
+    "asset_type": "Object",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "z_threshold": 14,
+    "size_settings": {
+        "scale_percentage": 7.412658227848102,
+        "variability_percentage": 0.0
+    },
+    "tags": [
+        "passable"
+    ],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "lighting_info": {
+        "has_light_source": true,
+        "light_intensity": 69,
+        "light_color": [
+            128,
+            0,
+            255
+        ],
+        "radius": 307,
+        "fall_off": 100,
+        "jitter_min": 0,
+        "jitter_max": 0,
+        "flicker": false
+    },
+    "shading_info": {
+        "has_shading": false,
+        "has_base_shadow": null,
+        "base_shadow_intensity": null,
+        "has_gradient_shadow": null,
+        "number_of_gradient_shadows": null,
+        "gradient_shadow_intensity": null,
+        "has_casted_shadows": null,
+        "number_of_casted_shadows": null,
+        "cast_shadow_intensity": null
     }
-  },
-  "z_threshold": 14,
-  "size_settings": {
-    "scale_percentage": 7.412658227848102,
-    "variability_percentage": 0.0
-  },
-  "tags": [],
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400
 }

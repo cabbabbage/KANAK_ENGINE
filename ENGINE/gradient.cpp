@@ -117,63 +117,74 @@ SDL_Surface* Gradient::buildGradientSurface(const std::vector<SDL_Color>& colors
     int h = mask->h;
     int diag = static_cast<int>(std::ceil(std::sqrt(w * w + h * h)));
 
+    // Create a square surface for the diagonal gradient
     SDL_Surface* temp = SDL_CreateRGBSurfaceWithFormat(0, diag, diag, 32, SDL_PIXELFORMAT_RGBA32);
     if (!temp) throw std::runtime_error("Failed to create temp gradient surface");
-
     SDL_FillRect(temp, nullptr, SDL_MapRGBA(temp->format, 0, 0, 0, 0));
 
-    int segments = std::max(1, int(colors.size()) - 1);
-    double midY = midpointPercent / 100.0 * diag;
+    // Compute fade band based on final image height
+    double pct = midpointPercent / 100.0;
+    int fadeBand = std::max(1, int(std::round(pct * h)));
 
+    // Determine where fade starts on the temp surface so that, after cropping,
+    // it corresponds to the bottom `midpointPercent` of the final image.
+    double cropOffsetY = (diag - h) / 2.0;
+    double fadeStartY = cropOffsetY + (h - fadeBand);
+
+    int segments = std::max(1, int(colors.size()) - 1);
+
+    // Fill the temp surface row by row
     for (int y = 0; y < diag; ++y) {
-        double rel = (y - midY + diag / 2.0) / diag;
+        double rel = double(y - fadeStartY) / double(fadeBand - 1);
         rel = std::clamp(rel, 0.0, 1.0);
         double pos = rel * segments;
         int idx = std::min(segments - 1, int(pos));
         double frac = pos - idx;
 
-        SDL_Color c1 = colors[idx], c2 = colors[idx + 1];
+        SDL_Color c1 = colors[idx];
+        SDL_Color c2 = colors[idx + 1];
         SDL_Color col {
-            Uint8(c1.r + (c2.r - c1.r) * frac),
-            Uint8(c1.g + (c2.g - c1.g) * frac),
-            Uint8(c1.b + (c2.b - c1.b) * frac),
-            Uint8(std::lround((c1.a + (c2.a - c1.a) * frac) * opacity))
+            Uint8( std::lround(c1.r + (c2.r - c1.r) * frac) ),
+            Uint8( std::lround(c1.g + (c2.g - c1.g) * frac) ),
+            Uint8( std::lround(c1.b + (c2.b - c1.b) * frac) ),
+            Uint8( std::lround((c1.a + (c2.a - c1.a) * frac) * opacity) )
         };
-
 
         Uint32 pixel = SDL_MapRGBA(temp->format, col.r, col.g, col.b, col.a);
         Uint32* row = static_cast<Uint32*>(temp->pixels) + y * (temp->pitch / 4);
-        for (int x = 0; x < diag; ++x) row[x] = pixel;
+        for (int x = 0; x < diag; ++x) {
+            row[x] = pixel;
+        }
     }
 
+    // Rotate to match requested direction
     double angle = 0.0;
     switch (direction % 360) {
-        case 0:   angle = 0; break;
-        case 90:  angle = -90; break;
-        case 180: angle = 180; break;
-        case 270: angle = 90; break;
+        case 0:   angle =   0; break;
+        case 90:  angle =  -90; break;
+        case 180: angle =  180; break;
+        case 270: angle =   90; break;
         default:  angle = -double(direction % 360); break;
     }
-
     SDL_Surface* rotated = rotozoomSurface(temp, angle, 1.0, SMOOTHING_ON);
     SDL_FreeSurface(temp);
     if (!rotated) throw std::runtime_error("Failed to rotate gradient surface");
 
+    // Crop the center w×h region
     SDL_Surface* final = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
     if (!final) {
         SDL_FreeSurface(rotated);
         throw std::runtime_error("Failed to create final gradient surface");
     }
-
-    SDL_Rect src = {
+    SDL_Rect src {
         (rotated->w - w) / 2,
         (rotated->h - h) / 2,
-        w,
-        h
+        w, h
     };
     SDL_BlitSurface(rotated, &src, final, nullptr);
     SDL_FreeSurface(rotated);
 
+    // Apply mask alpha
     Uint32* fpx = static_cast<Uint32*>(final->pixels);
     Uint32* mpx = static_cast<Uint32*>(mask->pixels);
     int total = w * h;
@@ -187,8 +198,6 @@ SDL_Surface* Gradient::buildGradientSurface(const std::vector<SDL_Color>& colors
 
     return final;
 }
-
-
 
 void Gradient::setActive(bool value) {
     active_ = value;

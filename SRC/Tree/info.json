@@ -1,42 +1,42 @@
 {
-    "asset_name": "Tree",
-    "asset_type": "Background",
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 0,
-    "max_child_depth": 2,
-    "tags": [
-        "spawn",
-        "impassable",
-        "default"
-    ],
-    "z_threshold": 28,
-    "size_settings": {
-        "scale_percentage": 38.65489130434783,
-        "variability_percentage": 0.0
+  "asset_name": "Tree",
+  "asset_type": "Background",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "tags": [
+    "spawn",
+    "impassable",
+    "default"
+  ],
+  "z_threshold": 28,
+  "size_settings": {
+    "scale_percentage": 38.65489130434783,
+    "variability_percentage": 0.0
+  },
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
     },
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": true,
-            "audio_path": "",
-            "volume": 50
-        },
-        "spawn": {
-            "frames_path": "spawn",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "impassable_area": "impassable_area.json"
+    "spawn": {
+      "frames_path": "spawn",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": "impassable_area.json"
 }

@@ -361,22 +361,36 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         {
             const std::vector<SDL_Color> grad_colors = {
                 SDL_Color{0, 0, 0,   0},
-                SDL_Color{0, 0, 0, 200}
+                SDL_Color{0, 0, 0, 255}
             };
+                // inside your setup block, replace the loop with just one gradient:
+// …inside your asset-info setup, after you pick base_sprite…
+
+            // clear out any old gradients
             anim.gradients.clear();
-            for (int gi = 0; gi < 3; ++gi) {
-                auto grad = std::make_unique<Gradient>(
-                    renderer,
-                    anim.frames,
-                    grad_colors,
-                    0,      // direction
-                    1.0f,   // opacity
-                    50.0f   // midpointPercent
-                );
-                if (gi == 0) grad->setActive(true);
-                anim.gradients.push_back(std::move(grad));
+
+            // define one fade from opaque black → transparent
+            static const std::vector<SDL_Color> fade_colors = {
+                {  0,   0,   0, 255},  // black opaque
+                {  0,   0,   0,   0}   // black transparent
+            };
+
+            // build one gradient: bottom 20% black fading up
+            auto fade = std::make_unique<Gradient>(
+                renderer,       // SDL_Renderer*
+                anim.frames,    // the frame-textures
+                fade_colors,    // our two-stop gradient
+                180,            // direction: 180° = bottom → top
+                1.0f,           // global opacity
+                110.0f           // midpointPercent = 20%
+            );
+            fade->setActive(true);
+            anim.gradients.push_back(std::move(fade));
+
+
             }
-        }
+        
+        
 
         std::cout << "[AssetInfo] Loaded " << frame_count
                   << " frames (and gradients) for animation '" << trigger << "'\n";

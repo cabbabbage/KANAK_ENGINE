@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 600,
-  "max_width": 600,
+  "min_width": 750,
+  "max_width": 750,
   "curvyness": 1,
   "assets": [
     {
@@ -14,15 +14,39 @@
     },
     {
       "name": "okkkkk_babyyy",
-      "min_number": 25,
-      "max_number": 25,
+      "min_number": 60,
+      "max_number": 60,
       "position": "Perimeter",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Sigil_Of_Fortune",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Center",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Grass_FPS_2",
+      "min_number": 100,
+      "max_number": 200,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Grass_1_FPS_2",
+      "min_number": 100,
+      "max_number": 200,
+      "position": "",
       "exact_position": null,
       "inherited": false
     }
   ],
-  "min_height": 600,
-  "max_height": 600,
+  "min_height": 750,
+  "max_height": 750,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": true,

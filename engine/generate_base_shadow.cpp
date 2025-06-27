@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <sstream>
 
-static constexpr int max_fade_distance = 800;
+static constexpr int max_fade_distance = 1200;
 static constexpr int max_fade_intensity = 100;
 static constexpr int PERIMETER_SKIP_STEP = 5;
 static constexpr int PRINT_RATE = 20;

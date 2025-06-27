@@ -1,7 +1,7 @@
 {
   "name": "basic",
-  "min_width": 451,
-  "max_width": 451,
+  "min_width": 450,
+  "max_width": 450,
   "curvyness": 6,
   "assets": [
     {
