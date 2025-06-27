@@ -24,6 +24,9 @@ find_package(SDL2_mixer CONFIG REQUIRED)
 find_package(SDL2_ttf CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(sdl2-gfx CONFIG REQUIRED)
+
+
 
 # SDL2_gfx does NOT provide a config file, so we locate it manually
 set(SDL2_GFX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/include/SDL2")

@@ -12,7 +12,9 @@
     }
   },
   "impassable_area": null,
-  "tags": [],
+  "tags": [
+    "passable"
+  ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400
 }

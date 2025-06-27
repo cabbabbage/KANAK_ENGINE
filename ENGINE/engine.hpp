@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <SDL.h>
+#include <SDL_image.h>          // ← for IMG_Animation
 #include "area.hpp"
 #include "Assets.hpp"
 #include "fade_textures.hpp"

@@ -22,7 +22,9 @@
     "scale_percentage": 18.88,
     "variability_percentage": 0.0
   },
-  "tags": [],
+  "tags": [
+    "passable"
+  ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400
 }

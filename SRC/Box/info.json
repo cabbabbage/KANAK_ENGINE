@@ -12,9 +12,9 @@
     }
   },
   "impassable_area": "impassable_area.json",
-  "z_threshold": 9,
+  "z_threshold": 6,
   "size_settings": {
-    "scale_percentage": 12.69367088607595,
+    "scale_percentage": 9.487341772151899,
     "variability_percentage": 0.0
   },
   "visited_tabs": [

@@ -13,16 +13,8 @@
     {
       "name": "Bone",
       "min_number": 251,
-      "max_number": 333,
-      "position": "exact",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Sign",
-      "min_number": 1,
-      "max_number": 1,
-      "position": "Perimeter",
+      "max_number": 1539,
+      "position": "Distributed",
       "exact_position": null,
       "inherited": false
     }

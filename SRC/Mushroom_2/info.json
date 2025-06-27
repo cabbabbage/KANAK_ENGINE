@@ -18,17 +18,42 @@
     "variability_percentage": 0.0
   },
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 400,
+  "min_same_type_distance": 29,
   "visited_tabs": [
     "Spacing"
   ],
   "tags": [
-    "purple",
     "plant",
-    "passable",
     "nature",
+    "purple",
+    "passable",
     "mushroom"
   ],
   "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400
+  "rnd_spawn_max": 400,
+  "lighting_info": {
+    "has_light_source": true,
+    "light_intensity": 26,
+    "light_color": [
+      128,
+      0,
+      255
+    ],
+    "radius": 141,
+    "fall_off": 97,
+    "jitter_min": 0,
+    "jitter_max": 0,
+    "flicker": false
+  },
+  "shading_info": {
+    "has_shading": false,
+    "has_base_shadow": null,
+    "base_shadow_intensity": null,
+    "has_gradient_shadow": null,
+    "number_of_gradient_shadows": null,
+    "gradient_shadow_intensity": null,
+    "has_casted_shadows": null,
+    "number_of_casted_shadows": null,
+    "cast_shadow_intensity": null
+  }
 }
