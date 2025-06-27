@@ -38,7 +38,7 @@
   "rnd_spawn_max": 400,
   "lighting_info": {
     "has_light_source": true,
-    "light_intensity": 58,
+    "light_intensity": 81,
     "light_color": [
       255,
       255,

@@ -32,7 +32,7 @@ Engine::Engine(const std::string& map_path)
       game_assets(nullptr),
       SCREEN_WIDTH(0),
       SCREEN_HEIGHT(0),
-      background_color({69, 101, 74, 255}),
+      background_color({30, 50, 32, 150}),
       overlay_texture(nullptr) {}
 
 Engine::~Engine() {
@@ -242,7 +242,7 @@ void Engine::render_visible() {
         SDL_SetTextureColorMod(light, 255, 255, 255);
         int flicker_alpha = 20;
         if (asset->info->flicker)
-            flicker_alpha = std::max(10, 20 + (rand() % 10));
+            flicker_alpha = std::max(10, 20 + (rand() % 8));
         SDL_SetTextureAlphaMod(light, flicker_alpha);
         render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
     }

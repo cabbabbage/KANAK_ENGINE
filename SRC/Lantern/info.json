@@ -12,15 +12,8 @@
       "frames_path": "default",
       "speed": 1.0,
       "on_end": "rest",
+      "event_data": [],
       "randomize": true,
-      "audio_path": "",
-      "volume": 50
-    },
-    "rest": {
-      "frames_path": "rest",
-      "speed": 1.0,
-      "on_end": "rest",
-      "randomize": false,
       "audio_path": "",
       "volume": 50
     }
@@ -33,8 +26,34 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 200,
   "tags": [
-    "passable"
+    "passable",
+    "default"
   ],
   "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400
+  "rnd_spawn_max": 400,
+  "lighting_info": {
+    "has_light_source": true,
+    "light_intensity": 81,
+    "light_color": [
+      255,
+      255,
+      255
+    ],
+    "radius": 748,
+    "fall_off": 86,
+    "jitter_min": 0,
+    "jitter_max": 0,
+    "flicker": false
+  },
+  "shading_info": {
+    "has_shading": false,
+    "has_base_shadow": null,
+    "base_shadow_intensity": null,
+    "has_gradient_shadow": null,
+    "number_of_gradient_shadows": null,
+    "gradient_shadow_intensity": null,
+    "has_casted_shadows": null,
+    "number_of_casted_shadows": null,
+    "cast_shadow_intensity": null
+  }
 }
