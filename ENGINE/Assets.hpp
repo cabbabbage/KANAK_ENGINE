@@ -33,7 +33,7 @@ private:
     std::vector<Asset*> closest_assets;
     int dx = 0, dy = 0;
     int last_activat_update = 0;
-    int update_interval = 20;
+    int update_interval = 40;
     int screen_width;
     int screen_height;
 

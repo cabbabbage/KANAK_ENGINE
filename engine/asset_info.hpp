@@ -7,12 +7,21 @@
 #include <nlohmann/json.hpp>
 #include "area.hpp"
 
+#include "gradient.hpp"
+
+#include <memory>  // for std::unique_ptr
+
 struct Animation {
     std::vector<SDL_Texture*> frames;
+    // store pointers to Gradient so they own their own resources
+    std::vector<std::unique_ptr<Gradient>> gradients;
     std::string on_end;
     bool randomize = false;
     bool loop = false;
 };
+
+
+
 
 struct ChildAsset {
     std::string asset;
@@ -28,6 +37,7 @@ struct ChildAsset {
 
 class AssetInfo {
 public:
+    void apply_base_gradient(SDL_Renderer* renderer);
     std::string name;
     std::string type;
     int z_threshold = 0;

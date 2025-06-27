@@ -47,15 +47,22 @@ if not exist "vcpkg\scripts\buildsystems\vcpkg.cmake" (
 set "VCPKG_TRIPLET=x64-windows"
 set "DEPENDENCIES=sdl2 sdl2-image sdl2-mixer sdl2-ttf sdl2-gfx nlohmann-json glad"
 
-if not exist "vcpkg\installed\!VCPKG_TRIPLET!" (
-    echo Installing vcpkg dependencies: !DEPENDENCIES!  (triplet: !VCPKG_TRIPLET!)
-    vcpkg\vcpkg install !DEPENDENCIES! --triplet !VCPKG_TRIPLET!
+echo Checking for missing vcpkg dependencies (triplet: !VCPKG_TRIPLET!)...
+
+for %%D in (!DEPENDENCIES!) do (
+    vcpkg\vcpkg list | findstr /i "%%D:x64-windows" >nul
     if errorlevel 1 (
-        echo [ERROR] vcpkg install failed.
-        pause & exit /b 1
+        echo [INFO] Installing missing package: %%D
+        vcpkg\vcpkg install %%D --triplet !VCPKG_TRIPLET!
+        if errorlevel 1 (
+            echo [ERROR] Failed to install %%D
+            pause & exit /b 1
+        )
+    ) else (
+        echo [OK] %%D already installed.
     )
 )
-echo ✅ Dependencies installed.
+echo ✅ All dependencies verified or installed.
 
 :: === Step 3: Clean old build cache ===
 echo Cleaning previous CMake cache...
@@ -93,7 +100,6 @@ if exist "%EXE1%" (
 ) else (
     echo Executable not found at "%EXE1%" or "%EXE2%"
 )
-
 
 pause
 endlocal

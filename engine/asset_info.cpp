@@ -130,44 +130,113 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
     }
 }
 
+
+
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
     if (!data.contains("lighting_info") || !data["lighting_info"].is_object()) return;
     const auto& l = data["lighting_info"];
 
-    has_light_source = l.value("has_light_source", false);
-    light_intensity = l.value("light_intensity", 0);
-    light_color = {0, 0, 0, 0};
+    if (l.contains("has_light_source") && l["has_light_source"].is_boolean())
+        has_light_source = l["has_light_source"].get<bool>();
+    else
+        has_light_source = false;
 
-    if (l.contains("light_color") && l["light_color"].is_array() && l["light_color"].size() == 3) {
+    if (l.contains("light_intensity") && l["light_intensity"].is_number())
+        light_intensity = l["light_intensity"].get<int>();
+    else
+        light_intensity = 0;
+
+    light_color = {0, 0, 0, 0};
+    if (l.contains("light_color") && l["light_color"].is_array() && l["light_color"].size() == 3
+        && l["light_color"][0].is_number_integer()
+        && l["light_color"][1].is_number_integer()
+        && l["light_color"][2].is_number_integer())
+    {
         light_color.r = l["light_color"][0].get<int>();
         light_color.g = l["light_color"][1].get<int>();
         light_color.b = l["light_color"][2].get<int>();
         light_color.a = 255;
     }
 
-    radius = l.value("radius", 100);
-    fall_off = l.value("fall_off", 0);
-    jitter_min = l.value("jitter_min", 0);
-    jitter_max = l.value("jitter_max", 0);
-    flicker = l.value("flicker", false);
+    if (l.contains("radius") && l["radius"].is_number())
+        radius = l["radius"].get<int>();
+    else
+        radius = 100;
+
+    if (l.contains("fall_off") && l["fall_off"].is_number())
+        fall_off = l["fall_off"].get<int>();
+    else
+        fall_off = 0;
+
+    if (l.contains("jitter_min") && l["jitter_min"].is_number())
+        jitter_min = l["jitter_min"].get<int>();
+    else
+        jitter_min = 0;
+
+    if (l.contains("jitter_max") && l["jitter_max"].is_number())
+        jitter_max = l["jitter_max"].get<int>();
+    else
+        jitter_max = 0;
+
+    if (l.contains("flicker") && l["flicker"].is_boolean())
+        flicker = l["flicker"].get<bool>();
+    else
+        flicker = false;
 }
 
 void AssetInfo::load_shading_info(const nlohmann::json& data) {
     if (!data.contains("shading_info") || !data["shading_info"].is_object()) return;
     const auto& s = data["shading_info"];
 
-    has_shading = s.value("has_shading", false);
-    has_base_shadow = s.value("has_base_shadow", false);
-    base_shadow_intensity = s.value("base_shadow_intensity", 0);
+    if (s.contains("has_shading") && s["has_shading"].is_boolean())
+        has_shading = s["has_shading"].get<bool>();
+    else
+        has_shading = false;
 
-    has_gradient_shadow = s.value("has_gradient_shadow", false);
-    number_of_gradient_shadows = s.value("number_of_gradient_shadows", 0);
-    gradient_shadow_intensity = s.value("gradient_shadow_intensity", 0);
+    if (s.contains("has_base_shadow") && s["has_base_shadow"].is_boolean())
+        has_base_shadow = s["has_base_shadow"].get<bool>();
+    else
+        has_base_shadow = false;
 
-    has_casted_shadows = s.value("has_casted_shadows", false);
-    number_of_casted_shadows = s.value("number_of_casted_shadows", 0);
-    cast_shadow_intensity = s.value("cast_shadow_intensity", 0);
+    if (s.contains("base_shadow_intensity") && s["base_shadow_intensity"].is_number())
+        base_shadow_intensity = s["base_shadow_intensity"].get<int>();
+    else
+        base_shadow_intensity = 0;
+
+    if (s.contains("has_gradient_shadow") && s["has_gradient_shadow"].is_boolean())
+        has_gradient_shadow = s["has_gradient_shadow"].get<bool>();
+    else
+        has_gradient_shadow = false;
+
+    if (s.contains("number_of_gradient_shadows") && s["number_of_gradient_shadows"].is_number())
+        number_of_gradient_shadows = s["number_of_gradient_shadows"].get<int>();
+    else
+        number_of_gradient_shadows = 0;
+
+    if (s.contains("gradient_shadow_intensity") && s["gradient_shadow_intensity"].is_number())
+        gradient_shadow_intensity = s["gradient_shadow_intensity"].get<int>();
+    else
+        gradient_shadow_intensity = 0;
+
+    if (s.contains("has_casted_shadows") && s["has_casted_shadows"].is_boolean())
+        has_casted_shadows = s["has_casted_shadows"].get<bool>();
+    else
+        has_casted_shadows = false;
+
+    if (s.contains("number_of_casted_shadows") && s["number_of_casted_shadows"].is_number())
+        number_of_casted_shadows = s["number_of_casted_shadows"].get<int>();
+    else
+        number_of_casted_shadows = 0;
+
+    if (s.contains("cast_shadow_intensity") && s["cast_shadow_intensity"].is_number())
+        cast_shadow_intensity = s["cast_shadow_intensity"].get<int>();
+    else
+        cast_shadow_intensity = 0;
 }
+
+
+
+
 
 void AssetInfo::load_collision_areas(const nlohmann::json& data,
                                      const std::string& dir_path,
@@ -289,13 +358,32 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
             base_sprite = anim.frames[0];
         }
 
-        std::ostringstream oss;
-        oss << "[AssetInfo] Loaded " << frame_count
-            << " frames for animation '" << trigger << "'\r";
-        std::cout << std::left << std::setw(60) << oss.str() << std::flush;
+        {
+            const std::vector<SDL_Color> grad_colors = {
+                SDL_Color{0, 0, 0,   0},
+                SDL_Color{0, 0, 0, 200}
+            };
+            anim.gradients.clear();
+            for (int gi = 0; gi < 3; ++gi) {
+                auto grad = std::make_unique<Gradient>(
+                    renderer,
+                    anim.frames,
+                    grad_colors,
+                    0,      // direction
+                    1.0f,   // opacity
+                    50.0f   // midpointPercent
+                );
+                if (gi == 0) grad->setActive(true);
+                anim.gradients.push_back(std::move(grad));
+            }
+        }
+
+        std::cout << "[AssetInfo] Loaded " << frame_count
+                  << " frames (and gradients) for animation '" << trigger << "'\n";
 
         animations[trigger] = std::move(anim);
     }
+
 }
 
 void AssetInfo::try_load_area(const nlohmann::json& data,

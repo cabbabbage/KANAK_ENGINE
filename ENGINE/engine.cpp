@@ -19,7 +19,7 @@
 #include <utility>
 
 namespace fs = std::filesystem;
-static constexpr SDL_Color SLATE_COLOR = {69, 101, 74, 120};
+static constexpr SDL_Color SLATE_COLOR = {69, 101, 74, 255};
 
 
 
@@ -32,7 +32,7 @@ Engine::Engine(const std::string& map_path)
       game_assets(nullptr),
       SCREEN_WIDTH(0),
       SCREEN_HEIGHT(0),
-      background_color({69, 101, 74, 120}),
+      background_color({69, 101, 74, 255}),
       overlay_texture(nullptr) {}
 
 Engine::~Engine() {
@@ -87,15 +87,15 @@ void Engine::init() {
         return;
     }
 
-    std::cout << "Generating Fade Textures\n ********************************************* \n";
-    {
-        FadeTextureGenerator fade_gen(renderer, background_color, 1);  // expand factor can be tweaked
-        static_faded_areas.clear();
-        for (const auto& [tex, rect] : fade_gen.generate_all(roomTrailAreas)) {
-            static_faded_areas[tex] = rect;
-        }
+   // std::cout << "Generating Fade Textures\n ********************************************* \n";
+   // {
+        //FadeTextureGenerator fade_gen(renderer, background_color, 1);  // expand factor can be tweaked
+       // static_faded_areas.clear();
+     //   for (const auto& [tex, rect] : fade_gen.generate_all(roomTrailAreas)) {
+         //   static_faded_areas[tex] = rect;
+   //     }
 
-    }
+ //   }
 
     std::cout << "Generating Base Shadows\n ********************************************* \n";
     GenerateBaseShadow(renderer, roomTrailAreas, game_assets);
@@ -151,8 +151,6 @@ void render_light_distorted(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Rect c
     SDL_RenderCopyEx(renderer, tex, nullptr, &scaled, rotation, nullptr, SDL_FLIP_NONE);
 }
 
-
-
 void Engine::render_visible() {
     const int cx = SCREEN_WIDTH / 2;
     const int cy = SCREEN_HEIGHT / 2;
@@ -164,12 +162,10 @@ void Engine::render_visible() {
     SDL_RenderClear(renderer);
    
     for (const auto& [tex, dst] : static_faded_areas) {
-        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);  // Ensure alpha blending
+        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
         SDL_Rect shifted = { dst.x - px + cx, dst.y - py + cy - 40, dst.w, dst.h };
         SDL_RenderCopy(renderer, tex, nullptr, &shifted);
     }
-
-
 
     // === [2] Draw soft light highlights *behind* each lit asset ===
     for (const auto* asset : game_assets->active_assets) {
@@ -185,19 +181,13 @@ void Engine::render_visible() {
         };
 
         SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
-
-        // Slight saturation boost: warm tint toward candlelight (orange-yellow)
         SDL_SetTextureColorMod(light, 255, 235, 180);
-
-        // Flicker alpha with a slightly brighter base
-        int flicker_alpha = 32;  // base alpha boost
+        int flicker_alpha = 32;
         if (asset->info->flicker)
-            flicker_alpha = std::clamp(28 + (rand() % 12), 10, 48);  // 28–48 range
-
+            flicker_alpha = std::clamp(28 + (rand() % 12), 10, 48);
         SDL_SetTextureAlphaMod(light, flicker_alpha);
         render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
-
 
     // === [3] Draw all assets with gradient-based darkness modulation ===
     for (const auto* asset : game_assets->active_assets) {
@@ -214,7 +204,6 @@ void Engine::render_visible() {
             w, h
         };
 
-        // Steepen falloff using power curve for stronger shadows
         float curved_opacity = std::pow(asset->gradient_opacity, 1.5f);
         int darkness = static_cast<int>(255 * curved_opacity);
 
@@ -222,6 +211,18 @@ void Engine::render_visible() {
         SDL_SetTextureColorMod(tex, darkness, darkness, darkness);
         SDL_SetTextureAlphaMod(tex, 255);
         SDL_RenderCopy(renderer, tex, nullptr, &dest);
+
+        // === Overlay any active gradients for this frame ===
+        const auto& anim = asset->info->animations.at(asset->get_current_animation());
+        for (const auto& gradPtr : anim.gradients) {
+            if (!gradPtr || !gradPtr->active_) continue;
+            SDL_Texture* gradTex = gradPtr->getGradient(asset->current_frame_index);
+            if (!gradTex) continue;
+
+            SDL_SetTextureBlendMode(gradTex, SDL_BLENDMODE_BLEND);
+            SDL_RenderCopy(renderer, gradTex, nullptr, &dest);
+            // do NOT destroy gradTex here; it's cached and freed by Gradient
+        }
     }
 
     // === [4] Draw soft light highlights *in front* of each lit asset ===
@@ -239,52 +240,51 @@ void Engine::render_visible() {
 
         SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
         SDL_SetTextureColorMod(light, 255, 255, 255);
-
-        // Flicker effect (optional)
         int flicker_alpha = 20;
         if (asset->info->flicker)
             flicker_alpha = std::max(10, 20 + (rand() % 10));
-
         SDL_SetTextureAlphaMod(light, flicker_alpha);
         render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
 
     // === [5] Create full-screen lightmap ===
-    SDL_Texture* lightmap = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_Texture* lightmap = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        SCREEN_WIDTH, SCREEN_HEIGHT
+    );
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_ADD);
     SDL_SetRenderTarget(renderer, lightmap);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-for (const auto* asset : game_assets->active_assets) {
-    if (!asset || !asset->is_lit || !asset->light_texture) continue;
+    for (const auto* asset : game_assets->active_assets) {
+        if (!asset || !asset->is_lit || !asset->light_texture) continue;
 
-    SDL_Texture* light = asset->light_texture;
-    int lw, lh;
-    SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
-    SDL_Rect dest = {
-        asset->pos_X - px + cx - lw / 2,
-        asset->pos_Y - py + cy - lh / 2,
-        lw, lh
-    };
+        SDL_Texture* light = asset->light_texture;
+        int lw, lh;
+        SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
+        SDL_Rect dest = {
+            asset->pos_X - px + cx - lw / 2,
+            asset->pos_Y - py + cy - lh / 2,
+            lw, lh
+        };
 
-    SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
+        SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
+        int flicker_alpha = 255;
+        if (asset->info->flicker)
+            flicker_alpha = 200 + (rand() % 56);
 
-    int flicker_alpha = 255;
-    if (asset->info->flicker)
-        flicker_alpha = 200 + (rand() % 56);  // 200–255
-
-    if (asset->info->type == "Player" || asset->info->type == "player") {
-        SDL_SetTextureAlphaMod(light, flicker_alpha);            // ← missing
-        double angle = -0.05 * SDL_GetTicks() * 0.001;
-        double degrees = angle * (180.0 / M_PI);
-        SDL_RenderCopyEx(renderer, light, nullptr, &dest, degrees, nullptr, SDL_FLIP_NONE);
-    } else {
         SDL_SetTextureAlphaMod(light, flicker_alpha);
-        SDL_RenderCopy(renderer, light, nullptr, &dest);
+        if (asset->info->type == "Player" || asset->info->type == "player") {
+            double angle = -0.05 * SDL_GetTicks() * 0.001;
+            double degrees = angle * (180.0 / M_PI);
+            SDL_RenderCopyEx(renderer, light, nullptr, &dest, degrees, nullptr, SDL_FLIP_NONE);
+        } else {
+            SDL_RenderCopy(renderer, light, nullptr, &dest);
+        }
     }
-}
-
 
     // === [7] Blend lightmap back over the scene using MOD ===
     SDL_SetRenderTarget(renderer, nullptr);
@@ -292,13 +292,7 @@ for (const auto* asset : game_assets->active_assets) {
     SDL_RenderCopy(renderer, lightmap, nullptr, nullptr);
     SDL_DestroyTexture(lightmap);
 
-    // === [8] Optional overlay ===
-    if (overlay_texture) {
-        SDL_Rect full = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-        SDL_RenderCopy(renderer, overlay_texture, nullptr, &full);
-    }
 
- 
 
     SDL_RenderPresent(renderer);
 }
