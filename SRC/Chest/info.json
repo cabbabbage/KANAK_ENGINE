@@ -1,64 +1,64 @@
 {
-    "asset_name": "Chest",
-    "asset_type": "Object",
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        },
-        "interaction": {
-            "frames_path": "interaction",
-            "speed": 1.0,
-            "on_end": "interaction",
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50,
-            "area_path": "interaction_area.json"
-        }
+  "asset_name": "Chest",
+  "asset_type": "Object",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
     },
-    "impassable_area": null,
-    "z_threshold": 11,
-    "size_settings": {
-        "scale_percentage": 36.41290322580645,
-        "variability_percentage": 0.0
-    },
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 1000,
-    "visited_tabs": [
-        "Spacing"
-    ],
-    "tags": [
-        "passable"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "lighting_info": {
-        "has_light_source": true,
-        "light_intensity": 58,
-        "light_color": [
-            255,
-            255,
-            0
-        ],
-        "radius": 587,
-        "fall_off": 100,
-        "jitter_min": 0,
-        "jitter_max": 0,
-        "flicker": false
-    },
-    "shading_info": {
-        "has_shading": false,
-        "has_base_shadow": null,
-        "base_shadow_intensity": null,
-        "has_gradient_shadow": null,
-        "number_of_gradient_shadows": null,
-        "gradient_shadow_intensity": null,
-        "has_casted_shadows": null,
-        "number_of_casted_shadows": null,
-        "cast_shadow_intensity": null
+    "interaction": {
+      "frames_path": "interaction",
+      "speed": 1.0,
+      "on_end": "interaction",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "area_path": "interaction_area.json"
     }
+  },
+  "impassable_area": null,
+  "z_threshold": 11,
+  "size_settings": {
+    "scale_percentage": 36.41290322580645,
+    "variability_percentage": 0.0
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 1000,
+  "visited_tabs": [
+    "Spacing"
+  ],
+  "tags": [
+    "passable"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "lighting_info": {
+    "has_light_source": true,
+    "light_intensity": 58,
+    "light_color": [
+      255,
+      255,
+      0
+    ],
+    "radius": 587,
+    "fall_off": 100,
+    "jitter_min": 0,
+    "jitter_max": 0,
+    "flicker": false
+  },
+  "shading_info": {
+    "has_shading": false,
+    "has_base_shadow": null,
+    "base_shadow_intensity": null,
+    "has_gradient_shadow": null,
+    "number_of_gradient_shadows": null,
+    "gradient_shadow_intensity": null,
+    "has_casted_shadows": null,
+    "number_of_casted_shadows": null,
+    "cast_shadow_intensity": null
+  }
 }

@@ -19,7 +19,7 @@
 #include <utility>
 
 namespace fs = std::filesystem;
-static constexpr SDL_Color SLATE_COLOR = {69, 101, 74, 150};
+static constexpr SDL_Color SLATE_COLOR = {30, 50, 32, 150};
 
 
 
