@@ -5,6 +5,8 @@
 #include <utility>
 #include "area.hpp"
 
+
+
 class FadeTextureGenerator {
 public:
     FadeTextureGenerator(SDL_Renderer* renderer, SDL_Color color, double expand);

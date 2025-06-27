@@ -1,14 +1,38 @@
 {
   "name": "basic",
-  "min_width": 388,
-  "max_width": 388,
+  "min_width": 451,
+  "max_width": 451,
   "curvyness": 6,
   "assets": [
     {
       "name": "okkkkk_babyyy",
-      "min_number": 10,
-      "max_number": 10,
+      "min_number": 6,
+      "max_number": 6,
       "position": "Perimeter",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Grass_1_FPS_2",
+      "min_number": 149,
+      "max_number": 406,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Grass_FPS_2",
+      "min_number": 134,
+      "max_number": 375,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Mushroom_2",
+      "min_number": 4,
+      "max_number": 10,
+      "position": "",
       "exact_position": null,
       "inherited": false
     }

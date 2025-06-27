@@ -21,7 +21,7 @@
     {
       "name": "Box",
       "min_number": 5,
-      "max_number": 100,
+      "max_number": 20,
       "position": "Null",
       "exact_position": null,
       "inherited": false

@@ -47,7 +47,7 @@ GenerateRoom::GenerateRoom(std::string map_path,
 
     bool placed = false;
     int attempts = 0;
-    while (!placed && attempts < 100) {
+    while (!placed && attempts < 1000) {
         double scale = (attempts >= 20) ? 0.9 : 1.0;
         int cur_min_w = static_cast<int>(min_width * scale);
         int cur_max_w = static_cast<int>(max_width * scale);
@@ -133,7 +133,7 @@ GenerateRoom::GenerateRoom(std::string map_path,
 
     if (!placed) throw std::runtime_error("[GenerateRoom] Failed to place required room: " + json_path);
 
-    AssetGenerator gen(room_area_, J, renderer_, map_width_, map_height_, asset_library_);
+    AssetGenerator gen(room_area_, J, renderer_, map_width_, map_height_, asset_library_, false, map_path, json_path);
     room_assets_ = std::move(gen.extract_all_assets());
 }
 

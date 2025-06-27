@@ -1,6 +1,7 @@
 #include "asset_library.hpp"
 #include <filesystem>
 #include <iostream>
+#include <iomanip>  // required for std::setw
 
 namespace fs = std::filesystem;
 
@@ -18,6 +19,9 @@ void AssetLibrary::load_all_from_SRC() {
         return;
     }
 
+    int loaded = 0;
+    int failed = 0;
+
     for (const auto& entry : fs::directory_iterator(base_path)) {
         if (!entry.is_directory()) continue;
 
@@ -25,12 +29,18 @@ void AssetLibrary::load_all_from_SRC() {
         try {
             auto info = std::make_shared<AssetInfo>(name, renderer_);
             info_by_name_[name] = info;
-        } catch (const std::exception& e) {
-            std::cerr << "[AssetLibrary] Failed to load asset '" << name << "': " << e.what() << "\n";
+            ++loaded;
+        } catch (const std::exception&) {
+            ++failed;
         }
+
+        std::cout << "[AssetLibrary] Loaded: " << loaded
+                  << "   Failed: " << failed
+                  << "   Current: " << std::left << std::setw(20) << name
+                  << "\r" << std::flush;
     }
 
-    std::cout << "[AssetLibrary] Loaded " << info_by_name_.size() << " assets.\n";
+    std::cout << std::endl << "[AssetLibrary] Loaded " << info_by_name_.size() << " assets.\n";
 }
 
 std::shared_ptr<AssetInfo> AssetLibrary::get(const std::string& name) const {

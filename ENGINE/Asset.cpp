@@ -25,30 +25,40 @@ void Asset::finalize_setup(int start_pos_X,
 {
     if (!info) return;
 
-// Set animation state
-auto it = info->animations.find("start");
-if (it == info->animations.end()) {
-    it = info->animations.find("default");
-}
+    // Set animation state
+    auto it = info->animations.find("start");
+    if (it == info->animations.end()) {
+        it = info->animations.find("default");
+    }
 
-if (it != info->animations.end() && !it->second.frames.empty()) {
-    current_animation = it->first;
-    static_frame = (it->second.frames.size() == 1);
-    if (it->second.randomize && it->second.frames.size() > 1) {
-        std::mt19937 g{std::random_device{}()};
-        std::uniform_int_distribution<int> d(0, int(it->second.frames.size()) - 1);
-        current_frame_index = d(g);
-    } else {
-        current_frame_index = 0;
+    if (it != info->animations.end() && !it->second.frames.empty()) {
+        current_animation = it->first;
+        static_frame = (it->second.frames.size() == 1);
+        if (it->second.randomize && it->second.frames.size() > 1) {
+            std::mt19937 g{std::random_device{}()};
+            std::uniform_int_distribution<int> d(0, int(it->second.frames.size()) - 1);
+            current_frame_index = d(g);
+        } else {
+            current_frame_index = 0;
+        }
+    }
+
+    // Always position at the given start coordinates
+    pos_X = start_pos_X;
+    pos_Y = start_pos_Y;
+
+    set_z_index();
+
+    // === Lighting & Shading Setup ===
+    is_lit = info->has_light_source;
+    is_shaded = info->has_shading;
+
+    if (is_lit && renderer) {
+        GenerateLight light_gen(renderer);
+        light_texture = light_gen.generate(this);
     }
 }
 
-// Always position at the given start coordinates
-pos_X = start_pos_X;
-pos_Y = start_pos_Y;
-
-set_z_index();
-}
 
 void Asset::set_position(int x, int y) {
     // Ignore any offsets; set absolute position

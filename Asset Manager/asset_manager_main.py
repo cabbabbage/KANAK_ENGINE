@@ -13,6 +13,8 @@ from pages.child import ChildAssetsPage
 from pages.spacing import SpacingThresholdPage
 from pages.tags import TagsPage
 from pages.blend_page import BlendModePage
+from pages.shading import ShadingPage
+from pages.lighting import LightingPage
 from tkinter import simpledialog  
 
 ASSET_DIR = "SRC"
@@ -101,6 +103,8 @@ class AssetOrganizerApp(tk.Toplevel):
         add_page(ChildAssetsPage,       "Region-Based Child Assets")
         add_page(TagsPage,              "Tags")
         add_page(BlendModePage,         "Blending")
+        add_page(LightingPage, "Lighting")
+        add_page(ShadingPage, "Shading")
 
         self._refresh_asset_list()
 

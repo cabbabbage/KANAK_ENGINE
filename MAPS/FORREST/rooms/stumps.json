@@ -2,8 +2,8 @@
   "name": "stumps",
   "min_width": 994,
   "max_width": 994,
-  "min_height": 956,
-  "max_height": 956,
+  "min_height": 928,
+  "max_height": 928,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": false,
@@ -12,17 +12,17 @@
   "assets": [
     {
       "name": "Stump",
-      "min_number": 825,
-      "max_number": 825,
+      "min_number": 50,
+      "max_number": 50,
       "position": "",
       "exact_position": null,
       "inherited": false
     },
     {
       "name": "okkkkk_babyyy",
-      "min_number": 1746,
-      "max_number": 1746,
-      "position": "Distributed",
+      "min_number": 10,
+      "max_number": 10,
+      "position": "Null",
       "exact_position": null,
       "inherited": false
     }

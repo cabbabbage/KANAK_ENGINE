@@ -1,43 +1,27 @@
 {
   "name": "cum",
-  "min_width": 1441,
-  "max_width": 1441,
-  "min_height": 1422,
-  "max_height": 1422,
+  "min_width": 1013,
+  "max_width": 1013,
+  "min_height": 1070,
+  "max_height": 1070,
   "edge_smoothness": 100,
-  "geometry": "Square",
+  "geometry": "Circle",
   "is_spawn": false,
   "is_boss": false,
   "assets": [
     {
-      "name": "Fountain",
-      "min_number": 89,
-      "max_number": 278,
+      "name": "Chest",
+      "min_number": 1,
+      "max_number": 1,
       "position": "Center",
       "exact_position": null,
       "inherited": false
     },
     {
-      "name": "Bone",
-      "min_number": 346,
-      "max_number": 382,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Skull",
-      "min_number": 330,
-      "max_number": 376,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Book",
-      "min_number": 126,
-      "max_number": 126,
-      "position": "",
+      "name": "Lavender_flower",
+      "min_number": 164,
+      "max_number": 349,
+      "position": "Distributed",
       "exact_position": null,
       "inherited": false
     }

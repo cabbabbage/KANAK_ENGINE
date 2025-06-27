@@ -4,6 +4,8 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <sstream>
+
 
 namespace fs = std::filesystem;
 
@@ -15,7 +17,9 @@ AssetGenerator::AssetGenerator(const Area& spawn_area,
                                int map_width,
                                int map_height,
                                AssetLibrary* asset_library,
-                               bool batch)
+                               bool batch,
+                               const std::string& map_dir,
+                               const std::string& room_dir)
     : spawn_area_(spawn_area),
       renderer_(renderer),
       assets_json_(assets_json),
@@ -23,8 +27,11 @@ AssetGenerator::AssetGenerator(const Area& spawn_area,
       map_height_(map_height),
       asset_library_(asset_library),
       rng_(std::random_device{}()),
-      batch(batch)
+      batch(batch),
+      map_dir_(map_dir),
+      room_dir_(room_dir)
 {
+
     AssetSpawnPlanner planner(assets_json_, spawn_area_.get_area(), renderer_, *asset_library_);
     spawn_queue_ = planner.get_spawn_queue();
     asset_info_library_ = asset_library_->all();
@@ -32,6 +39,7 @@ AssetGenerator::AssetGenerator(const Area& spawn_area,
     std::vector<SpawnInfo> boundaries;
 
     for (const SpawnInfo& queue_item : spawn_queue_) {
+        start_time_ = std::chrono::steady_clock::now();  
         if (!queue_item.info) continue;
 
         const std::string& pos = queue_item.spawn_position;
@@ -54,56 +62,6 @@ AssetGenerator::AssetGenerator(const Area& spawn_area,
     if (!boundaries.empty()) {
         spawn_distributed_batch(boundaries, &spawn_area_);
     }
-
-    spawn_all_children();
-}
-
-
-void AssetGenerator::spawn_all_children() {
-    std::vector<Asset*> parents;
-    for (const auto& uptr : all_) {
-        Asset* parent = uptr.get();
-        if (!parent || !parent->info || parent->info->child_assets.empty()) continue;
-        parents.push_back(parent);
-    }
-
-    for (Asset* parent : parents) {
-        const int base_x = parent->pos_X;
-        const int base_y = parent->pos_Y;
-
-        for (const ChildAsset& def : parent->info->child_assets) {
-            int attempts = 0;
-            bool placed = false;
-
-            while (attempts < 10 && !placed) {
-                int dx = std::uniform_int_distribution<int>(-def.radius, def.radius)(rng_);
-                int dy = std::uniform_int_distribution<int>(-def.radius, def.radius)(rng_);
-                int cx = base_x + def.point_x + dx;
-                int cy = base_y + def.point_y + dy;
-
-                if (!spawn_area_.contains_point({cx, cy})) {
-                    ++attempts;
-                    continue;
-                }
-
-                auto it = asset_info_library_.find(def.asset);
-                if (it == asset_info_library_.end() || !it->second) {
-                    std::cerr << "[ChildSpawn] No info for child asset type: " << def.asset << "\n";
-                    break;
-                }
-
-                std::shared_ptr<AssetInfo> child_info = it->second;
-                std::unique_ptr<Asset> child = std::make_unique<Asset>(child_info->z_threshold, spawn_area_, renderer_, parent);
-                child->info = child_info;
-                child->finalize_setup(base_x, base_y + 100);
-
-                Asset copy = *child;  // Dangerous deep copy
-                parent->add_child(copy);  // Your busted interface
-
-                placed = true;
-            }
-        }
-    }
 }
 
 
@@ -120,6 +78,8 @@ void AssetGenerator::spawn_item_random(const SpawnInfo& item, const Area* area) 
     int max_attempts = item.quantity * 10;
 
     while (spawned < item.quantity && attempts < max_attempts) {
+        
+
         Point pos = get_point_within_area(*area);
 
         bool spacing_failed = false;
@@ -143,12 +103,10 @@ void AssetGenerator::spawn_item_random(const SpawnInfo& item, const Area* area) 
         }
 
         ++attempts;
-    }
+        progress(item.info, attempts, max_attempts);
 
-    if (spawned < item.quantity) {
-        std::cout << "[spawn_item_random] Only spawned " << spawned
-                  << " of " << item.quantity << " for asset '" << item.name << "'\n";
     }
+    output_and_log(item.name, item.quantity, spawned, attempts, max_attempts, "random");
 }
 
 
@@ -158,12 +116,21 @@ void AssetGenerator::spawn_distributed_batch(const std::vector<SpawnInfo>& items
 
     const int GRID_SPACING = 100;
 
-    // Calculate total quantity and create mutable working list
+    // Track original quantities and placements
+    std::unordered_map<std::string, int> original_quantities;
+    std::unordered_map<std::string, int> placed_quantities;
+    std::unordered_map<std::string, std::shared_ptr<AssetInfo>> asset_infos;
+
+    // Create working pool
     int total_quantity = 0;
     std::vector<SpawnInfo> pool = items;
     for (const auto& item : pool) {
-        if (item.info && item.quantity > 0)
+        if (item.info && item.quantity > 0) {
             total_quantity += item.quantity;
+            original_quantities[item.name] = item.quantity;
+            placed_quantities[item.name] = 0;
+            asset_infos[item.name] = item.info;
+        }
     }
     if (total_quantity <= 0) return;
 
@@ -201,6 +168,10 @@ void AssetGenerator::spawn_distributed_batch(const std::vector<SpawnInfo>& items
 
             --selected.quantity;
             --total_quantity;
+            ++placed_quantities[selected.name];
+
+            // 🔄 Progress update for selected asset
+            progress(selected.info, placed_quantities[selected.name], original_quantities[selected.name]);
 
             if (selected.quantity <= 0) {
                 pool.erase(pool.begin() + chosen_index);
@@ -208,14 +179,15 @@ void AssetGenerator::spawn_distributed_batch(const std::vector<SpawnInfo>& items
         }
     }
 
-    // Any leftovers
-    for (const auto& leftover : pool) {
-        if (leftover.quantity > 0) {
-            std::cout << "[spawn_distributed_batch] Leftover: " << leftover.quantity
-                      << " of '" << leftover.name << "'\n";
-        }
+    std::cout << std::endl;
+
+    // Log each asset's result individually
+    for (const auto& [name, attempted] : original_quantities) {
+        int placed = placed_quantities[name];
+        output_and_log(name, attempted, placed, attempted, attempted, "distributed_batch");
     }
 }
+
 
 
 void AssetGenerator::spawn_item_distributed(const SpawnInfo& item, const Area* area) {
@@ -248,14 +220,16 @@ void AssetGenerator::spawn_item_distributed(const SpawnInfo& item, const Area* a
 
             spawn(item.name, item.info, *area, cx, cy, 0, nullptr);
             ++spawned;
+            progress(item.info, spawned, item.quantity);
         }
     }
 
-    if (spawned < item.quantity) {
-        std::cout << "[spawn_item_distributed] Only placed " << spawned
-                  << " of " << item.quantity << " for '" << item.name << "'\n";
-    }
+    output_and_log(item.name, item.quantity, spawned, item.quantity, item.quantity, "distributed");
+
 }
+
+
+
 
 
 void AssetGenerator::spawn_item_exact(const SpawnInfo& item, const Area* area) {
@@ -283,25 +257,24 @@ void AssetGenerator::spawn_item_exact(const SpawnInfo& item, const Area* area) {
 
 
 void AssetGenerator::spawn_item_center(const SpawnInfo& item, const Area* area) {
-    if (!item.info) return;
-
-    Point center = get_area_center(*area);
-
-    bool check_spacing = item.info->has_spacing_area;
-    bool check_distance = item.info->min_same_type_distance > 0;
-
-    if (!check_spacing && !check_distance) {
-        spawn(item.name, item.info, *area, center.first, center.second, 0, nullptr);
+    if (!item.info) {
+        std::cerr << "[AssetGenerator] Failed to spawn asset: info is null\n";
         return;
     }
 
-    std::vector<Asset*> nearest = get_closest_assets(center.first, center.second, 5);
+    Point center = get_area_center(*area);
 
-    if (check_spacing && check_spacing_overlap(item.info, center.first, center.second, nearest)) return;
-    if (check_distance && check_min_type_distance(item.info, center)) return;
+    Asset* result = spawn(item.name, item.info, *area, center.first, center.second, 0, nullptr);
 
-    spawn(item.name, item.info, *area, center.first, center.second, 0, nullptr);
+    if (item.info->type == "Player") {
+        if (result) {
+            std::cout << "[AssetGenerator] Player asset '" << item.name << "' successfully spawned at center\n";
+        } else {
+            std::cerr << "[AssetGenerator] Failed to spawn Player asset '" << item.name << "'\n";
+        }
+    }
 }
+
 
 
 
@@ -355,6 +328,7 @@ void AssetGenerator::spawn_item_perimeter(const SpawnInfo& item, const Area* are
 
 
 
+
 bool AssetGenerator::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
                                            int test_pos_X,
                                            int test_pos_Y,
@@ -368,13 +342,15 @@ bool AssetGenerator::check_spacing_overlap(const std::shared_ptr<AssetInfo>& inf
         if (!other || !other->info || !other->info->has_spacing_area) continue;
         Area other_area = other->get_global_spacing_area();
         if (test_area.intersects(other_area)) {
-            std::cout << "[SpacingCheck] Overlap with asset at (" << other->pos_X << "," << other->pos_Y << ")\n";
             return true;
         }
     }
 
+
+
     return false;
 }
+
 
 
 AssetGenerator::Point AssetGenerator::get_area_center(const Area& area) const {
@@ -402,9 +378,6 @@ bool AssetGenerator::check_min_type_distance(const std::shared_ptr<AssetInfo>& i
         int dist_sq = dx * dx + dy * dy;
 
         if (dist_sq < min_dist_sq) {
-            std::cout << "[DistanceCheck] Rejected '" << info->name
-                      << "' — too close to (" << existing->pos_X << "," << existing->pos_Y << ")"
-                      << " dist^2=" << dist_sq << " < min^2=" << min_dist_sq << "\n";
             return true;
         }
     }
@@ -470,5 +443,143 @@ std::vector<Asset*> AssetGenerator::get_closest_assets(int x, int y, int max_cou
     return closest;
 }
 
+void AssetGenerator::output_and_log(const std::string& asset_name,
+                                    int quantity,
+                                    int spawned,
+                                    int attempts,
+                                    int max_attempts,
+                                    const std::string& method) {
+    // === Time calculation ===
+    auto end_time_ = std::chrono::steady_clock::now();
+    double duration_ms = std::chrono::duration<double, std::milli>(end_time_ - start_time_).count();
+
+    // === CSV Logging ===
+    const std::string csv_path = map_dir_ + "/spawn_log.csv";
+
+    std::ifstream infile(csv_path);
+    std::vector<std::string> lines;
+
+    if (infile.is_open()) {
+        std::string line;
+        while (std::getline(infile, line)) {
+            lines.push_back(line);
+        }
+        infile.close();
+    }
+
+    // Ensure room section exists
+    int room_line_index = -1;
+    for (size_t i = 0; i < lines.size(); ++i) {
+        if (lines[i].empty() && i + 3 < lines.size()
+            && lines[i + 1].empty() && lines[i + 2].empty()
+            && lines[i + 3] == room_dir_) {
+            room_line_index = static_cast<int>(i + 3);
+            break;
+        }
+    }
+
+    if (room_line_index == -1) {
+        lines.emplace_back("");
+        lines.emplace_back("");
+        lines.emplace_back("");
+        room_line_index = static_cast<int>(lines.size());
+        lines.push_back(room_dir_);
+    }
+
+    // Find or insert asset line in room section
+    int insert_index = room_line_index + 1;
+    int asset_line_index = -1;
+    while (insert_index < static_cast<int>(lines.size()) && !lines[insert_index].empty()) {
+        std::istringstream ss(lines[insert_index]);
+        std::string first_col;
+        std::getline(ss, first_col, ',');
+        if (first_col == asset_name) {
+            asset_line_index = insert_index;
+            break;
+        }
+        ++insert_index;
+    }
+
+    int total_success = spawned;
+    int total_attempts = attempts;
+    double new_percent = total_attempts > 0 ? static_cast<double>(total_success) / total_attempts : 0.0;
+
+    double average_time = duration_ms;
+    int times_generated = 1;
+    double delta_time = 0.0;
+
+    if (asset_line_index != -1) {
+        std::istringstream ss(lines[asset_line_index]);
+        std::string name, percent_str, success_str, attempts_str, method_str, avg_time_str, times_gen_str;
+        std::getline(ss, name, ',');
+        std::getline(ss, percent_str, ',');
+        std::getline(ss, success_str, ',');
+        std::getline(ss, attempts_str, ',');
+        std::getline(ss, method_str, ',');
+        std::getline(ss, avg_time_str, ',');
+        std::getline(ss, times_gen_str, ',');
+
+        if (method_str == method) {
+            total_success += std::stoi(success_str);
+            total_attempts += std::stoi(attempts_str);
+            new_percent = total_attempts > 0 ? static_cast<double>(total_success) / total_attempts : 0.0;
+
+            double prev_avg_time = std::stod(avg_time_str);
+            int prev_generations = std::stoi(times_gen_str);
+
+            average_time = (prev_avg_time * prev_generations + duration_ms) / (prev_generations + 1);
+            times_generated = prev_generations + 1;
+
+            delta_time = duration_ms - prev_avg_time;
+        } else {
+            total_success = spawned;
+            total_attempts = attempts;
+            new_percent = total_attempts > 0 ? static_cast<double>(total_success) / total_attempts : 0.0;
+            average_time = duration_ms;
+            times_generated = 1;
+            delta_time = 0.0;
+        }
+    } else {
+        asset_line_index = insert_index;
+        lines.insert(lines.begin() + asset_line_index, "");  // placeholder
+    }
+
+    std::ostringstream updated_line;
+    updated_line << asset_name << ","
+                 << std::fixed << std::setprecision(3) << new_percent << ","
+                 << total_success << ","
+                 << total_attempts << ","
+                 << method << ","
+                 << std::fixed << std::setprecision(3) << average_time << ","
+                 << times_generated << ","
+                 << std::fixed << std::setprecision(3) << delta_time;
+
+    lines[asset_line_index] = updated_line.str();
+
+    std::ofstream outfile(csv_path);
+    if (outfile.is_open()) {
+        for (const std::string& line : lines) {
+            outfile << line << "\n";
+        }
+        outfile.close();
+    }
+}
 
 
+
+
+void AssetGenerator::progress(const std::shared_ptr<AssetInfo>& info, int current, int total) {
+    const int bar_width = 50;
+    double percent = (total > 0) ? static_cast<double>(current) / total : 0.0;
+    int filled = static_cast<int>(percent * bar_width);
+
+    std::string bar(filled, '#');
+    bar.resize(bar_width, '-');
+
+    std::ostringstream oss;
+    oss << "[Checking] " << std::left << std::setw(20) << info->name
+        << "[" << bar << "] "
+        << std::setw(3) << static_cast<int>(percent * 100) << "%\r";
+
+    std::cout << oss.str() << std::flush;
+}

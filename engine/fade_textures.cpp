@@ -2,6 +2,12 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <algorithm>
+
+template <typename T>
+T clamp(T value, T min_val, T max_val) {
+    return std::max(min_val, std::min(value, max_val));
+}
 
 FadeTextureGenerator::FadeTextureGenerator(SDL_Renderer* renderer, SDL_Color color, double expand)
     : renderer_(renderer), color_(color), expand_(expand) {}
@@ -64,20 +70,44 @@ std::vector<std::pair<SDL_Texture*, SDL_Rect>> FadeTextureGenerator::generate_al
 
         SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
         SDL_SetRenderTarget(renderer_, tex);
-        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
-        SDL_RenderClear(renderer_);
-        SDL_SetRenderDrawColor(renderer_, color_.r, color_.g, color_.b, 255);
+        SDL_SetRenderDrawColor(renderer_, color_.r, color_.g, color_.b, color_.a);
 
-        for (int y = 0; y < h; ++y) {
-            for (int x = 0; x < w; ++x) {
-                if (point_in_poly(x + 0.5, y + 0.5)) {
-                    SDL_RenderDrawPoint(renderer_, x, y);
+        SDL_RenderClear(renderer_);
+
+        const float fade_radius = static_cast<float>(fw + 50);
+
+        const int step = 5;  // Lower resolution = ~4x faster, smooths with alpha
+
+        for (int y = 0; y < h; y += step) {
+            for (int x = 0; x < w; x += step) {
+                double gx = x + 0.5;
+                double gy = y + 0.5;
+                bool inside = point_in_poly(gx, gy);
+
+                float alpha = 0.0f;
+                if (inside) {
+                    alpha = 1.0f;
+                } else {
+                    float cx = static_cast<float>(ominx + ow / 2 - minx);
+                    float cy = static_cast<float>(ominy + oh / 2 - miny);
+                    float dx = gx - cx;
+                    float dy = gy - cy;
+                    float dist = std::sqrt(dx * dx + dy * dy);
+                    float falloff = 1.0f - clamp(dist / fade_radius, 0.0f, 1.0f);
+                    alpha = falloff * falloff; // smoother fade
+                }
+
+                if (alpha > 0.01f) {
+                    Uint8 a = static_cast<Uint8>(clamp(alpha, 0.0f, 1.0f) * 255);
+                    SDL_SetRenderDrawColor(renderer_, color_.r, color_.g, color_.b, a);
+                    for (int dy = 0; dy < step; ++dy)
+                        for (int dx = 0; dx < step; ++dx)
+                            SDL_RenderDrawPoint(renderer_, x + dx, y + dy);
                 }
             }
         }
 
         SDL_SetRenderTarget(renderer_, nullptr);
-
         SDL_Rect dst = { minx, miny, w, h };
         results.emplace_back(tex, dst);
 
