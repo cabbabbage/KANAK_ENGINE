@@ -99,7 +99,7 @@ AssetInfo::~AssetInfo() {
 void AssetInfo::load_base_properties(const nlohmann::json& data) {
     type = data.value("asset_type", "Object");
     if (type == "Player") {
-        std::cout << "[AssetInfo] Player asset '" << name << "' loaded\n";
+        std::cout << "[AssetInfo] Player asset '" << name << "' loaded\n\n";
     }
 
     z_threshold = data.value("z_threshold", 0);

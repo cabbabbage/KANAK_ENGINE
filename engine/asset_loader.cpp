@@ -104,6 +104,13 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
                 }), candidates.end());
         }
     }
+
+    // Output list of rooms to be generated
+    std::cout << "Rooms to generate (" << room_paths.size() << "):\n";
+    for (const auto& p : room_paths) {
+        std::cout << "  - " << p << "\n";
+    }
+
     std::cout << "Generating ROOM Assets \n";
     for (const std::string& path : room_paths) {
         std::vector<GenerateRoom*> existing_ptrs;
@@ -119,6 +126,11 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
 
         rooms_.push_back(std::move(new_room));
     }
+
+
+
+
+
     std::cout << "Generating TRAIL Assets \n";
     trail_gen_ = std::make_unique<GenerateTrails>(map_path_, rooms_, map_width_, map_height_);
 

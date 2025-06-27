@@ -2,50 +2,55 @@
 
 
 BOUNDARY
-Big_Rock,0.081,1842,22827,distributed_batch,2509.263,1,0.000
-Tree_Darker,0.081,33200,411291,distributed_batch,2509.720,1,0.000
-Tree,0.082,33917,411291,distributed_batch,2519.793,1,0.000
-Tree_Dark,0.082,33779,411291,distributed_batch,2527.122,1,0.000
+Big_Rock,0.083,5549,67192,distributed_batch,2400.931,3,-211.757
+Tree_Darker,0.081,98460,1210651,distributed_batch,2406.191,3,-218.602
+Tree,0.082,99199,1210651,distributed_batch,2417.231,3,-216.512
+Tree_Dark,0.082,99290,1210651,distributed_batch,2424.429,3,-216.244
 
 
 
 MAPS/FORREST/rooms\fountain.json
-Lavender_flower,0.816,80,98,distributed,1.940,1,0.000
+Lavender_flower,0.693,250,361,distributed,2.113,3,0.309
 
 
 
 MAPS/FORREST/rooms\tree.json
-Skull,0.934,57,61,random,1.731,1,0.000
-Lavender_flower,0.849,45,53,distributed,1.121,1,0.000
+Skull,0.965,166,172,random,1.722,3,-0.140
+Lavender_flower,0.792,122,154,distributed,0.959,3,-0.027
 
 
 
 MAPS/FORREST/rooms\stoge.json
-Lavender_flower,1.000,19,19,random,0.578,1,0.000
+Lavender_flower,1.000,48,48,random,0.485,3,-0.122
 
 
 
 MAPS/FORREST/rooms\Key.json
-Box,1.000,3,3,random,0.261,1,0.000
+Box,1.000,12,12,random,0.215,3,-0.085
 
 
 
 MAPS/FORREST/rooms\stumps.json
-Stump,0.437,31,71,random,1.903,1,0.000
+Stump,0.395,62,157,random,2.135,2,0.463
 
 
 
 MAPS/FORREST/rooms\skulls.json
-Bone,0.005,9,1790,random,46.507,1,0.000
-Bone_1,0.021,11,520,random,14.491,1,0.000
-Bone_Pile,0.024,16,670,random,19.180,1,0.000
-Skull,0.934,113,121,random,4.474,1,0.000
-Skull_1,0.013,10,750,random,24.820,1,0.000
-SKull_pile,0.005,8,1680,random,53.588,1,0.000
+Bone,0.006,30,5340,random,45.827,3,-5.094
+Bone_1,0.020,33,1660,random,14.899,3,-11.006
+Bone_Pile,0.031,44,1410,random,12.642,3,-8.210
+Skull,0.942,339,360,random,3.847,3,-0.806
+Skull_1,0.014,31,2250,random,23.218,3,-1.741
+SKull_pile,0.009,25,2650,random,27.612,3,-20.638
 
 
 
 TRAILS
-Grass_1_FPS_2,0.977,4697,4809,random,20.165,10,-8.775
-Grass_FPS_2,0.952,4074,4279,random,27.082,10,-4.899
-Mushroom_2,0.613,130,212,random,1.582,10,0.474
+Grass_1_FPS_2,0.977,11150,11411,random,15.446,29,-1.365
+Grass_FPS_2,0.955,10010,10479,random,20.433,29,14.689
+Mushroom_2,0.651,291,447,random,1.039,29,0.132
+
+
+
+MAPS/FORREST/rooms\cum.json
+Lavender_flower,0.802,154,192,distributed,3.275,1,0.000
