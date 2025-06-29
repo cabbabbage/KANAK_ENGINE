@@ -70,27 +70,27 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 500,
     "tags": [
-        "backward",
-        "player",
         "right",
-        "default",
         "forward",
-        "passable",
+        "player",
+        "default",
+        "left",
         "start",
-        "left"
+        "backward",
+        "passable"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
     "lighting_info": {
         "has_light_source": true,
-        "light_intensity": 62,
+        "light_intensity": 75,
         "light_color": [
             255,
             255,
             255
         ],
-        "radius": 566,
-        "fall_off": 87,
+        "radius": 1001,
+        "fall_off": 94,
         "jitter_min": 0,
         "jitter_max": 0,
         "flicker": false

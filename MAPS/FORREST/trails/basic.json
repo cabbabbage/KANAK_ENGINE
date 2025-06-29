@@ -8,7 +8,7 @@
       "name": "okkkkk_babyyy",
       "min_number": 6,
       "max_number": 6,
-      "position": "Perimeter",
+      "position": "Null",
       "exact_position": null,
       "inherited": false
     },
@@ -32,6 +32,14 @@
       "name": "Mushroom_2",
       "min_number": 4,
       "max_number": 10,
+      "position": "",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "lantern",
+      "min_number": 2,
+      "max_number": 2,
       "position": "",
       "exact_position": null,
       "inherited": false

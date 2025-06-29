@@ -2,84 +2,86 @@
 
 
 BOUNDARY
-Big_Rock,0.082,77198,942984,distributed_batch,1951.001,43,120.240
-Tree_Darker,0.082,1388581,16990607,distributed_batch,1952.552,43,119.215
-Tree,0.082,1387574,16990607,distributed_batch,1964.226,43,119.801
-Tree_Dark,0.082,1391431,16990607,distributed_batch,1972.062,43,119.574
+Big_Rock,0.082,104113,1269553,distributed_batch,2032.155,58,390.851
+Tree_Darker,0.082,1869275,22874706,distributed_batch,2034.650,58,388.815
+Tree,0.082,1868815,22874706,distributed_batch,2046.858,58,396.377
+Tree_Dark,0.082,1872731,22874706,distributed_batch,2054.980,58,394.968
 
 
 
 MAPS/FORREST/rooms\fountain.json
-Lavender_flower,0.756,3662,4843,distributed,235.140,42,4654.813
-Fountain,1.000,39,39,center,0.036,39,0.005
+Lavender_flower,0.753,4859,6451,distributed,1615.396,58,2634.124
+Fountain,1.000,54,54,center,54.232,54,136.326
 
 
 
 MAPS/FORREST/rooms\tree.json
-Skull,0.969,1935,1997,random,1.345,37,-0.002
-Lavender_flower,0.787,1419,1804,distributed,44.148,37,1604.053
+Skull,0.969,2718,2806,random,1.373,52,0.219
+Lavender_flower,0.775,1965,2535,distributed,751.526,52,1993.915
 
 
 
 MAPS/FORREST/rooms\stoge.json
-Lavender_flower,1.000,551,551,random,39.560,37,441.455
-Chest,1.000,33,33,center,10.211,33,161.897
+Lavender_flower,1.000,769,769,random,319.204,52,1117.331
+Chest,1.000,48,48,center,75.986,48,153.396
 
 
 
 MAPS/FORREST/rooms\Key.json
-Box,0.977,127,130,random,0.153,36,0.081
-Key,1.000,32,32,center,0.057,32,0.004
+Box,0.977,169,173,random,0.157,48,0.096
+Key,1.000,44,44,center,65.820,44,220.960
 
 
 
 MAPS/FORREST/rooms\stumps.json
-Stump,0.399,1036,2597,random,1.799,34,0.085
-okkkkk_babyyy,0.963,183,190,random,810.301,31,-555.552
+Stump,0.402,1489,3707,random,1.872,49,1.200
+okkkkk_babyyy,0.964,271,281,random,594.675,46,-452.701
 
 
 
 MAPS/FORREST/rooms\skulls.json
-Bone,0.008,433,53250,random,27.175,40,-12.167
-Bone_1,0.020,392,20098,random,11.005,40,10.001
-Bone_Pile,0.025,533,21601,random,12.171,40,14.951
-Skull,0.960,4457,4643,random,3.538,40,1.233
-Skull_1,0.014,409,29580,random,19.643,40,0.992
-SKull_pile,0.006,307,48840,random,32.237,40,7.691
+Bone,0.008,604,74860,random,28.490,56,-5.593
+Bone_1,0.019,546,28198,random,11.422,56,-1.666
+Bone_Pile,0.023,773,34262,random,14.556,56,20.423
+Skull,0.959,6244,6509,random,3.663,56,0.652
+Skull_1,0.014,570,41440,random,20.496,56,3.586
+SKull_pile,0.007,426,62662,random,30.386,56,-27.294
 
 
 
 TRAILS
-Grass_1_FPS_2,0.977,170457,174538,random,13.110,455,4.826
-Grass_FPS_2,0.962,154223,160350,random,17.330,455,24.764
-Mushroom_2,0.722,4247,5879,random,24.520,455,97.664
+Grass_1_FPS_2,0.977,229076,234399,random,12.941,631,12.165
+Grass_FPS_2,0.963,211531,219613,random,17.502,631,43.859
+Mushroom_2,0.760,5765,7583,random,34.398,631,41.323
+okkkkk_babyyy,0.999,1227,1228,random,180.892,165,198.054
+lantern,0.155,383,2478,random,784.803,165,1102.791
 
 
 
 MAPS/FORREST/rooms\cum.json
-Lavender_flower,0.824,4828,5862,distributed,347.071,37,5620.635
-Chest,1.000,35,35,center,8.979,35,160.180
+Lavender_flower,0.821,6588,8029,distributed,2545.366,51,8284.731
+Chest,1.000,49,49,center,70.058,49,162.058
 
 
 
 MAPS/FORREST/rooms\RND.json
-Mushroom_1,0.009,268,28700,random,15.344,36,-1.855
-Mushroom_2,0.030,801,26862,random,189.499,36,724.246
+Mushroom_1,0.009,378,41040,random,16.197,51,3.606
+Mushroom_2,0.072,2036,28221,random,277.699,51,114.318
 
 
 
 MAPS/FORREST/rooms\chest.json
-Chest,1.000,31,31,center,5.708,31,175.337
+Chest,1.000,44,44,center,68.497,44,164.094
 
 
 
 MAPS/FORREST/rooms\spawn.json
-Davey,1.000,35,35,center,89.566,35,91.990
-Sigil_Of_Fortune,1.000,4,4,center,0.099,4,0.005
-Grass_FPS_2,0.984,63,64,random,2.054,1,0.000
-Grass_1_FPS_2,1.000,62,62,random,1.859,1,0.000
+Davey,1.000,51,51,center,122.982,51,714.181
+Sigil_Of_Fortune,1.000,20,20,center,0.107,20,-0.014
+Grass_FPS_2,0.975,978,1003,random,1.926,17,0.790
+Grass_1_FPS_2,0.973,902,927,random,1.970,17,1.475
 
 
 
 MAPS/FORREST/rooms\bone_room.json
-Bone,1.000,118,118,distributed,2.003,1,0.000
+Bone,1.000,2427,2427,distributed,3.039,16,-0.373

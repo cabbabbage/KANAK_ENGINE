@@ -1,5 +1,5 @@
 {
-  "impassable_area": null,
+  "impassable_area": "impassable_area.json",
   "asset_name": "Tree_Darker",
   "asset_type": "Background",
   "duplicatable": false,
@@ -25,7 +25,7 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 21,
   "tags": [
-    "passable"
+    "impassable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400

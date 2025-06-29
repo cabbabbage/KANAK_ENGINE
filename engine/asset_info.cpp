@@ -381,7 +381,7 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
                 anim.frames,    // the frame-textures
                 fade_colors,    // our two-stop gradient
                 180,            // direction: 180° = bottom → top
-                1.0f,           // global opacity
+                0.80f,           // global opacity
                 110.0f           // midpointPercent = 20%
             );
             fade->setActive(true);

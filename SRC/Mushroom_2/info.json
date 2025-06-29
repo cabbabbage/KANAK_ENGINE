@@ -23,24 +23,24 @@
     "Spacing"
   ],
   "tags": [
-    "plant",
     "nature",
-    "purple",
+    "plant",
     "passable",
-    "mushroom"
+    "mushroom",
+    "purple"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
   "lighting_info": {
     "has_light_source": true,
-    "light_intensity": 26,
+    "light_intensity": 15,
     "light_color": [
       128,
       0,
       255
     ],
-    "radius": 141,
-    "fall_off": 97,
+    "radius": 97,
+    "fall_off": 100,
     "jitter_min": 0,
     "jitter_max": 0,
     "flicker": false
