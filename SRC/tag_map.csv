@@ -8,7 +8,7 @@ collision,Barrel
 default,Barrel,Davey,Tree,Tree_Dark,lantern,okkkkk_babyyy
 forward,Davey
 green,Grass_1_FPS_2,Grass_FPS_2
-impassable,Barrel,Tree
+impassable,Barrel,Tree,Tree_Dark,Tree_Darker
 leafy,Grass_1_FPS_2,Grass_FPS_2
 left,Davey
 meadow,Grass_1_FPS_2,Grass_FPS_2
@@ -16,7 +16,7 @@ medium,Rock
 moving,Bush_FPS_2,Grass_1_FPS_2,Grass_FPS_2
 mushroom,Mushroom,Mushroom_1,Mushroom_2
 nature,Bush_FPS_2,Grass_1_FPS_2,Grass_FPS_2,Mushroom,Mushroom_1,Mushroom_2,Tree_Dark
-passable,Big_Rock,Bone_Pile,Book,Book_1,Box,Bush_FPS_2,Chest,Davey,Flame_FPS_12,Fountain,Grass_1_FPS_2,Grass_FPS_2,Key,Lavender_flower,Leaves,Leaves_2,Leaves_3,Mushroom,Mushroom_2,Mushroom_3,Rock,Sigil_Of_Fortune,Sign,Skull,Small_Rock,Stump,Tree_Dark,Tree_Darker,Tree_Eyes_FPS_2,lantern,light_2,new_asset_1,okkkkk_babyyy
+passable,Big_Rock,Bone_Pile,Book,Book_1,Box,Bush_FPS_2,Chest,Davey,Flame_FPS_12,Fountain,Grass_1_FPS_2,Grass_FPS_2,Key,Lavender_flower,Leaves,Leaves_2,Leaves_3,Mushroom,Mushroom_2,Mushroom_3,Rock,Sigil_Of_Fortune,Sign,Skull,Small_Rock,Stump,Tree_Eyes_FPS_2,lantern,light_2,new_asset_1,okkkkk_babyyy
 plant,Grass_1_FPS_2,Grass_FPS_2,Mushroom,Mushroom_1,Mushroom_2
 player,Davey
 purple,Mushroom_2

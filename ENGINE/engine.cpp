@@ -189,41 +189,44 @@ void Engine::render_visible() {
         render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
 
-    // === [3] Draw all assets with gradient-based darkness modulation ===
-    for (const auto* asset : game_assets->active_assets) {
-        if (!asset) continue;
+// === [3] Draw all assets with gradient-based darkness modulation ===
+for (const auto* asset : game_assets->active_assets) {
+    if (!asset) continue;
 
-        SDL_Texture* tex = asset->get_current_frame();
-        if (!tex) continue;
+    SDL_Texture* tex = asset->get_current_frame();
+    if (!tex) continue;
 
-        int w, h;
-        SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
-        SDL_Rect dest = {
-            asset->pos_X - px + cx - w / 2,
-            asset->pos_Y - py + cy - h,
-            w, h
-        };
+    int w, h;
+    SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+    SDL_Rect dest = {
+        asset->pos_X - px + cx - w / 2,
+        asset->pos_Y - py + cy - h,
+        w, h
+    };
 
-        float curved_opacity = std::pow(asset->gradient_opacity, 1.5f);
-        int darkness = static_cast<int>(255 * curved_opacity);
+    float curved_opacity = std::pow(asset->gradient_opacity, 1.2f);
+    int darkness = static_cast<int>(255 * curved_opacity);
 
-        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureColorMod(tex, darkness, darkness, darkness);
-        SDL_SetTextureAlphaMod(tex, 255);
-        SDL_RenderCopy(renderer, tex, nullptr, &dest);
-
-        // === Overlay any active gradients for this frame ===
-        const auto& anim = asset->info->animations.at(asset->get_current_animation());
-        for (const auto& gradPtr : anim.gradients) {
-            if (!gradPtr || !gradPtr->active_) continue;
-            SDL_Texture* gradTex = gradPtr->getGradient(asset->current_frame_index);
-            if (!gradTex) continue;
-
-            SDL_SetTextureBlendMode(gradTex, SDL_BLENDMODE_BLEND);
-            SDL_RenderCopy(renderer, gradTex, nullptr, &dest);
-            // do NOT destroy gradTex here; it's cached and freed by Gradient
-        }
+    if (asset->info->type == "Player" || asset->info->type == "player") {
+        darkness = std::min(255, static_cast<int>(darkness * 3.0f));
     }
+
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureColorMod(tex, darkness, darkness, darkness);
+    SDL_SetTextureAlphaMod(tex, 255);
+    SDL_RenderCopy(renderer, tex, nullptr, &dest);
+
+    const auto& anim = asset->info->animations.at(asset->get_current_animation());
+    for (const auto& gradPtr : anim.gradients) {
+        if (!gradPtr || !gradPtr->active_) continue;
+        SDL_Texture* gradTex = gradPtr->getGradient(asset->current_frame_index);
+        if (!gradTex) continue;
+
+        SDL_SetTextureBlendMode(gradTex, SDL_BLENDMODE_BLEND);
+        SDL_RenderCopy(renderer, gradTex, nullptr, &dest);
+    }
+}
+
 
     // === [4] Draw soft light highlights *in front* of each lit asset ===
     for (const auto* asset : game_assets->active_assets) {
@@ -256,7 +259,7 @@ void Engine::render_visible() {
     );
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_ADD);
     SDL_SetRenderTarget(renderer, lightmap);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 220);
     SDL_RenderClear(renderer);
 
     for (const auto* asset : game_assets->active_assets) {
@@ -292,7 +295,12 @@ void Engine::render_visible() {
     SDL_RenderCopy(renderer, lightmap, nullptr, nullptr);
     SDL_DestroyTexture(lightmap);
 
-
+    // === [8] Fullscreen white overlay to brighten scene ===
+    int overlay_opacity = 200; // adjust 0–255
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_MUL);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, overlay_opacity);
+    SDL_Rect fullRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+    SDL_RenderFillRect(renderer, &fullRect);
 
     SDL_RenderPresent(renderer);
 }

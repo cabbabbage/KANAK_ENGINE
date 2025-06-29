@@ -2,86 +2,86 @@
 
 
 BOUNDARY
-Big_Rock,0.082,80827,986831,distributed_batch,1961.509,45,209.405
-Tree_Darker,0.082,1452593,17780640,distributed_batch,1963.034,45,208.515
-Tree,0.082,1452207,17780640,distributed_batch,1974.797,45,209.153
-Tree_Dark,0.082,1456568,17780640,distributed_batch,1982.773,45,211.366
+Big_Rock,0.082,104113,1269553,distributed_batch,2032.155,58,390.851
+Tree_Darker,0.082,1869275,22874706,distributed_batch,2034.650,58,388.815
+Tree,0.082,1868815,22874706,distributed_batch,2046.858,58,396.377
+Tree_Dark,0.082,1872731,22874706,distributed_batch,2054.980,58,394.968
 
 
 
 MAPS/FORREST/rooms\fountain.json
-Lavender_flower,0.756,3909,5171,distributed,519.137,45,4727.037
-Fountain,1.000,41,41,center,8.375,41,143.295
+Lavender_flower,0.753,4859,6451,distributed,1615.396,58,2634.124
+Fountain,1.000,54,54,center,54.232,54,136.326
 
 
 
 MAPS/FORREST/rooms\tree.json
-Skull,0.970,2047,2111,random,1.345,39,0.048
-Lavender_flower,0.786,1500,1908,distributed,164.296,39,2072.779
+Skull,0.969,2718,2806,random,1.373,52,0.219
+Lavender_flower,0.775,1965,2535,distributed,751.526,52,1993.915
 
 
 
 MAPS/FORREST/rooms\stoge.json
-Lavender_flower,1.000,594,594,random,103.794,40,699.847
-Chest,1.000,36,36,center,23.925,36,130.365
+Lavender_flower,1.000,769,769,random,319.204,52,1117.331
+Chest,1.000,48,48,center,75.986,48,153.396
 
 
 
 MAPS/FORREST/rooms\Key.json
-Box,0.978,135,138,random,0.151,39,-0.033
-Key,1.000,35,35,center,6.387,35,221.595
+Box,0.977,169,173,random,0.157,48,0.096
+Key,1.000,44,44,center,65.820,44,220.960
 
 
 
 MAPS/FORREST/rooms\stumps.json
-Stump,0.402,1123,2796,random,1.789,37,-0.572
-okkkkk_babyyy,0.962,200,208,random,754.449,34,-639.094
+Stump,0.402,1489,3707,random,1.872,49,1.200
+okkkkk_babyyy,0.964,271,281,random,594.675,46,-452.701
 
 
 
 MAPS/FORREST/rooms\skulls.json
-Bone,0.008,467,57320,random,27.478,43,-8.686
-Bone_1,0.019,423,21908,random,11.216,43,0.861
-Bone_Pile,0.024,582,24711,random,13.107,43,18.948
-Skull,0.958,4796,5004,random,3.571,43,-0.277
-Skull_1,0.014,438,31830,random,19.787,43,0.654
-SKull_pile,0.006,331,51000,random,31.448,43,-19.828
+Bone,0.008,604,74860,random,28.490,56,-5.593
+Bone_1,0.019,546,28198,random,11.422,56,-1.666
+Bone_Pile,0.023,773,34262,random,14.556,56,20.423
+Skull,0.959,6244,6509,random,3.663,56,0.652
+Skull_1,0.014,570,41440,random,20.496,56,3.586
+SKull_pile,0.007,426,62662,random,30.386,56,-27.294
 
 
 
 TRAILS
-Grass_1_FPS_2,0.977,183493,187895,random,13.216,489,9.540
-Grass_FPS_2,0.962,167173,173795,random,17.630,489,3.767
-Mushroom_2,0.732,4570,6242,random,27.468,489,14.770
-okkkkk_babyyy,1.000,170,170,random,164.170,23,49.996
-lantern,0.100,44,438,random,504.607,23,289.675
+Grass_1_FPS_2,0.977,229076,234399,random,12.941,631,12.165
+Grass_FPS_2,0.963,211531,219613,random,17.502,631,43.859
+Mushroom_2,0.760,5765,7583,random,34.398,631,41.323
+okkkkk_babyyy,0.999,1227,1228,random,180.892,165,198.054
+lantern,0.155,383,2478,random,784.803,165,1102.791
 
 
 
 MAPS/FORREST/rooms\cum.json
-Lavender_flower,0.823,5180,6296,distributed,790.533,40,6732.096
-Chest,1.000,38,38,center,22.839,38,163.390
+Lavender_flower,0.821,6588,8029,distributed,2545.366,51,8284.731
+Chest,1.000,49,49,center,70.058,49,162.058
 
 
 
 MAPS/FORREST/rooms\RND.json
-Mushroom_1,0.009,288,31080,random,15.518,39,-1.271
-Mushroom_2,0.038,1042,27132,random,222.249,39,106.858
+Mushroom_1,0.009,378,41040,random,16.197,51,3.606
+Mushroom_2,0.072,2036,28221,random,277.699,51,114.318
 
 
 
 MAPS/FORREST/rooms\chest.json
-Chest,1.000,34,34,center,21.033,34,128.539
+Chest,1.000,44,44,center,68.497,44,164.094
 
 
 
 MAPS/FORREST/rooms\spawn.json
-Davey,1.000,38,38,center,95.038,38,-3.397
-Sigil_Of_Fortune,1.000,7,7,center,0.108,7,-0.024
-Grass_FPS_2,0.991,220,222,random,1.682,4,0.234
-Grass_1_FPS_2,0.978,219,224,random,1.903,4,0.627
+Davey,1.000,51,51,center,122.982,51,714.181
+Sigil_Of_Fortune,1.000,20,20,center,0.107,20,-0.014
+Grass_FPS_2,0.975,978,1003,random,1.926,17,0.790
+Grass_1_FPS_2,0.973,902,927,random,1.970,17,1.475
 
 
 
 MAPS/FORREST/rooms\bone_room.json
-Bone,1.000,701,701,distributed,3.256,4,0.801
+Bone,1.000,2427,2427,distributed,3.039,16,-0.373
