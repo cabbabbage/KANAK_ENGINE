@@ -12,6 +12,7 @@
       "frames_path": "default",
       "speed": 1.0,
       "on_end": "default",
+      "event_data": [],
       "randomize": false,
       "audio_path": "",
       "volume": 50
@@ -23,7 +24,8 @@
     "variability_percentage": 0.0
   },
   "tags": [
-    "passable"
+    "passable",
+    "default"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

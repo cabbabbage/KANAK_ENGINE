@@ -69,23 +69,43 @@ void Engine::init() {
 
     try {
         AssetLoader loader(map_path, renderer);
+
+        // grab and tint the room/trail areas
         roomTrailAreas = loader.getAllRoomAndTrailAreas();
-        for (auto& area : roomTrailAreas)
+        for (auto& area : roomTrailAreas) {
             area.set_color(background_color.r, background_color.g, background_color.b);
+        }
 
+        // pull back all assets by value
         std::vector<Asset> assets = loader.extract_all_assets();
-        Asset* player_ptr = nullptr;
-        for (auto& a : assets)
-            if (a.info && a.info->type == "Player") { player_ptr = &a; break; }
-        if (!player_ptr) throw std::runtime_error("No player asset found.");
 
-        game_assets = new Assets(std::move(assets), player_ptr,
-                                 SCREEN_WIDTH, SCREEN_HEIGHT,
-                                 player_ptr->pos_X, player_ptr->pos_Y);
-    } catch (const std::exception& e) {
+        // find the player in that list
+        Asset* player_ptr = nullptr;
+        for (auto& asset : assets) {
+            if (asset.info && asset.info->type == "Player") {
+                player_ptr = &asset;
+                break;
+            }
+        }
+        if (!player_ptr) {
+            throw std::runtime_error("No player asset found.");
+        }
+
+        // hand ownership of the assets (and the player pointer) off to the game
+        game_assets = new Assets(
+            std::move(assets),
+            player_ptr,
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            player_ptr->pos_X,
+            player_ptr->pos_Y
+        );
+    }
+    catch (const std::exception& e) {
         std::cerr << "[Engine] Error: " << e.what() << "\n";
         return;
     }
+
 
    // std::cout << "Generating Fade Textures\n ********************************************* \n";
    // {
@@ -243,7 +263,7 @@ for (const auto* asset : game_assets->active_assets) {
 
         SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
         SDL_SetTextureColorMod(light, 255, 255, 255);
-        int flicker_alpha = 20;
+        int flicker_alpha = 15;
         if (asset->info->flicker)
             flicker_alpha = std::max(10, 20 + (rand() % 8));
         SDL_SetTextureAlphaMod(light, flicker_alpha);

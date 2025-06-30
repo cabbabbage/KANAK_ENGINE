@@ -27,22 +27,6 @@
       "position": "Center",
       "exact_position": null,
       "inherited": false
-    },
-    {
-      "name": "Grass_FPS_2",
-      "min_number": 100,
-      "max_number": 200,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Grass_1_FPS_2",
-      "min_number": 100,
-      "max_number": 200,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
     }
   ],
   "min_height": 750,

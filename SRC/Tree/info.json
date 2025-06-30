@@ -8,13 +8,13 @@
   "max_child_depth": 2,
   "tags": [
     "spawn",
-    "impassable",
-    "default"
+    "default",
+    "impassable"
   ],
-  "z_threshold": 28,
+  "z_threshold": 4,
   "size_settings": {
-    "scale_percentage": 38.65489130434783,
-    "variability_percentage": 0.0
+    "scale_percentage": 40,
+    "variability_percentage": 0
   },
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -38,5 +38,7 @@
       "volume": 50
     }
   },
-  "impassable_area": "impassable_area.json"
+  "impassable_area": "impassable_area.json",
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 0
 }
