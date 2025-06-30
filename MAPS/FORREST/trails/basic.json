@@ -2,29 +2,13 @@
   "name": "basic",
   "min_width": 450,
   "max_width": 450,
-  "curvyness": 6,
+  "curvyness": 4,
   "assets": [
     {
       "name": "okkkkk_babyyy",
-      "min_number": 6,
-      "max_number": 6,
+      "min_number": 4,
+      "max_number": 4,
       "position": "Null",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Grass_1_FPS_2",
-      "min_number": 149,
-      "max_number": 406,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Grass_FPS_2",
-      "min_number": 134,
-      "max_number": 375,
-      "position": "",
       "exact_position": null,
       "inherited": false
     },
@@ -38,9 +22,9 @@
     },
     {
       "name": "lantern",
-      "min_number": 2,
-      "max_number": 2,
-      "position": "",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Center",
       "exact_position": null,
       "inherited": false
     }

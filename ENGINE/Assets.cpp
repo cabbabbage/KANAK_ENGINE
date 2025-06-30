@@ -192,7 +192,7 @@ void Assets::activate(Asset* asset) {
 
 void Assets::sort_assets_by_distance_to_screen_center(int cx, int cy) {
     const float active_width = 1.0f * static_cast<float>(screen_width);
-    const float active_height = 1.0f * static_cast<float>(screen_height);
+    const float active_height = 1.2f * static_cast<float>(screen_height);
 
     for (auto& asset : all) {
         float dx = static_cast<float>(asset.pos_X - cx);

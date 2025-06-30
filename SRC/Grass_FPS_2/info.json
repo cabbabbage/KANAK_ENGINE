@@ -1,42 +1,42 @@
 {
-  "asset_name": "Grass_FPS_2",
-  "asset_type": "Object",
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "randomize": true,
-      "audio_path": "",
-      "volume": 50
-    }
-  },
-  "impassable_area": null,
-  "z_threshold": 0,
-  "size_settings": {
-    "scale_percentage": 3.357594936708861,
-    "variability_percentage": 0.0
-  },
-  "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 15,
-  "visited_tabs": [
-    "Spacing"
-  ],
-  "tags": [
-    "moving",
-    "plant",
-    "nature",
-    "green",
-    "leafy",
-    "passable",
-    "meadow",
-    "bluff"
-  ],
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400,
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2
+    "asset_name": "Grass_FPS_2",
+    "asset_type": "MAP",
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "randomize": true,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "impassable_area": null,
+    "z_threshold": 0,
+    "size_settings": {
+        "scale_percentage": 3,
+        "variability_percentage": 0
+    },
+    "spacing_area": null,
+    "min_same_type_distance": 15,
+    "visited_tabs": [
+        "Spacing"
+    ],
+    "tags": [
+        "nature",
+        "meadow",
+        "bluff",
+        "green",
+        "plant",
+        "passable",
+        "leafy",
+        "moving"
+    ],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2
 }

@@ -1,6 +1,6 @@
 // generate_room.cpp
 #include "generate_room.hpp"
-#include "asset_generator.hpp"
+
 #include <filesystem>
 #include <cmath>
 #include <fstream>
@@ -14,13 +14,11 @@ GenerateRoom::GenerateRoom(std::string map_path,
                            int map_width,
                            int map_height,
                            const std::string& json_path,
-                           SDL_Renderer* renderer,
-                           AssetLibrary* asset_library)
+                           SDL_Renderer* renderer)
     : map_path(map_path),
       map_width_(map_width),
       map_height_(map_height),
-      renderer_(renderer),
-      asset_library_(asset_library)
+      renderer_(renderer)
 {
     std::ifstream in(json_path);
     if (!in.is_open()) throw std::runtime_error("[GenerateRoom] Failed to open room json: " + json_path);
@@ -38,6 +36,7 @@ GenerateRoom::GenerateRoom(std::string map_path,
 
     bool is_spawn = J.value("is_spawn", false);
     bool is_boss = J.value("is_boss", false);
+    inherits = J.value("inherits_map_assets", false);
 
     const double avg_dim = (map_width_ + map_height_) / 2.0;
     const double center_dist_threshold = 0.20 * avg_dim;
@@ -132,9 +131,6 @@ GenerateRoom::GenerateRoom(std::string map_path,
     }
 
     if (!placed) throw std::runtime_error("[GenerateRoom] Failed to place required room: " + json_path);
-
-    AssetGenerator gen(room_area_, J, renderer_, map_width_, map_height_, asset_library_, false, map_path, json_path);
-    room_assets_ = std::move(gen.extract_all_assets());
 }
 
 const Area& GenerateRoom::getArea() const {
@@ -159,9 +155,7 @@ int GenerateRoom::getCenterY() const {
     return center_y_;
 }
 
-std::vector<std::unique_ptr<Asset>> GenerateRoom::getAssets() {
-    return std::move(room_assets_);
-}
+
 
 GenerateRoom::Point GenerateRoom::getPointInside() const {
     auto [minx, miny, maxx, maxy] = room_area_.get_bounds();

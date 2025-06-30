@@ -1,54 +1,46 @@
-// generate_room.hpp
+// File: generate_room.hpp
 #ifndef GENERATE_ROOM_HPP
 #define GENERATE_ROOM_HPP
 
-#include "area.hpp"
-#include "asset.hpp"
-#include <vector>
 #include <string>
+#include <vector>
 #include <random>
-#include <memory>
 #include <SDL.h>
-
-class AssetLibrary;
+#include "Area.hpp"
 
 class GenerateRoom {
 public:
-    using Point = std::pair<int, int>;
+    using Point = std::pair<int,int>;
 
+    // map_path: base directory for map files
+    // existing_rooms: pointers to already-generated rooms for overlap checks
     GenerateRoom(std::string map_path,
-                const std::vector<GenerateRoom*>& existing_rooms,
-                int map_width,
-                int map_height,
-                const std::string& json_path,
-                SDL_Renderer* renderer,
-                AssetLibrary* asset_library);
+                 const std::vector<GenerateRoom*>& existing_rooms,
+                 int map_width,
+                 int map_height,
+                 const std::string& json_path,
+                 SDL_Renderer* renderer);
 
-    AssetLibrary* asset_library_;
-
+    const Area& getArea() const;
     int getCenterX() const;
     int getCenterY() const;
-    const Area& getArea() const;
-    const std::string& getAssetsPath() const;
-    Point getPointInside() const;
-    std::vector<std::unique_ptr<Asset>> getAssets();  // changed from &&
-
-    bool is_spawn_ = false;
-    bool is_boss_ = false;
-
     bool isSpawn() const;
     bool isBoss() const;
+    Point getPointInside() const;
+    bool inherits;
 
 private:
     std::string map_path;
     std::string assets_path_;
     int map_width_;
     int map_height_;
+    SDL_Renderer* renderer_;
+    Area room_area_;
     int center_x_;
     int center_y_;
-    Area room_area_;
-    SDL_Renderer* renderer_;
-    std::vector<std::unique_ptr<Asset>> room_assets_;
+    bool is_spawn_;
+    bool is_boss_;
+
     static std::mt19937 rng_;
 };
 

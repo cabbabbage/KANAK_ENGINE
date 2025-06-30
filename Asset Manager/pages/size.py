@@ -1,11 +1,12 @@
+# pages/size.py
+
 import os
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 from pages.button import BlueButton
-
-
+from pages.range import Range
 
 class SizePage(ttk.Frame):
     def __init__(self, parent):
@@ -19,10 +20,16 @@ class SizePage(ttk.Frame):
         self._orig_img = None
         self._fit_img = None
 
-        # variables
-        self.scale_percentage_var = tk.DoubleVar(value=100)
-        self.variability_percentage_var = tk.DoubleVar(value=0)
-        self.z_threshold_var = tk.DoubleVar(value=0)
+        # Range controls
+        self.scale_range = Range(self, min_bound=1, max_bound=150,
+                                 set_min=100, set_max=100,
+                                 force_fixed=True, label="Scale (%)")
+        self.variability_range = Range(self, min_bound=0, max_bound=20,
+                                       set_min=0, set_max=0,
+                                       force_fixed=True, label="Size Variability (%)")
+        self.threshold_range = Range(self, min_bound=0, max_bound=1,
+                                     set_min=0, set_max=0,
+                                     force_fixed=True, label="Z Threshold (px)")
 
         # styles
         style = ttk.Style(self)
@@ -46,26 +53,17 @@ class SizePage(ttk.Frame):
                                  bg='black', bd=2, relief='sunken')
         self.preview.grid(row=1, column=0, columnspan=4, padx=12, pady=6)
 
-        # Scale slider
-        ttk.Label(self, text="Scale (%)", style='Large.TLabel') \
-            .grid(row=2, column=0, sticky="e", padx=12, pady=6)
-        ttk.Scale(self, from_=1, to=150, variable=self.scale_percentage_var,
-                  orient='horizontal', command=lambda _v: self._rescale()) \
-            .grid(row=2, column=1, columnspan=3, sticky="we", padx=12, pady=6)
+        # Scale range
+        self.scale_range.grid(row=2, column=1, columnspan=3,
+                              sticky="we", padx=12, pady=6)
 
-        # Variability slider
-        ttk.Label(self, text="Size Variability (%)", style='Large.TLabel') \
-            .grid(row=3, column=0, sticky="e", padx=12, pady=6)
-        ttk.Scale(self, from_=0, to=20, variable=self.variability_percentage_var,
-                  orient='horizontal', command=lambda _v: self._rescale()) \
-            .grid(row=3, column=1, columnspan=3, sticky="we", padx=12, pady=6)
+        # Variability range
+        self.variability_range.grid(row=3, column=1, columnspan=3,
+                                    sticky="we", padx=12, pady=6)
 
-        # Z-threshold slider
-        ttk.Label(self, text="Z Threshold (px)", style='Large.TLabel') \
-            .grid(row=4, column=0, sticky="e", padx=12, pady=6)
-        self.threshold_scale = ttk.Scale(self, from_=0, to=1, variable=self.z_threshold_var,
-                                         orient='horizontal', command=lambda _v: self._rescale())
-        self.threshold_scale.grid(row=4, column=1, columnspan=3, sticky="we", padx=12, pady=6)
+        # Z-threshold range
+        self.threshold_range.grid(row=4, column=1, columnspan=3,
+                                  sticky="we", padx=12, pady=6)
 
         # min/max size previews
         ttk.Label(self, text="Min Size Preview", style='Large.TLabel') \
@@ -98,8 +96,10 @@ class SizePage(ttk.Frame):
 
         # load size settings
         ss = data.get("size_settings", {})
-        self.scale_percentage_var.set(ss.get("scale_percentage", 100))
-        self.variability_percentage_var.set(ss.get("variability_percentage", 0))
+        scale_pct = ss.get("scale_percentage", 100)
+        self.scale_range.set(scale_pct, scale_pct)
+        var_pct = ss.get("variability_percentage", 0)
+        self.variability_range.set(var_pct, var_pct)
 
         # load z_threshold
         zt = data.get('z_threshold')
@@ -114,15 +114,14 @@ class SizePage(ttk.Frame):
 
         if self._orig_img:
             bw, bh = self._orig_img.size
-            # configure threshold slider max
-            self.threshold_scale.configure(to=bh)
-
-            # determine initial threshold value in slider units
-            if zt is not None and self.scale_percentage_var.get() != 0:
-                self.z_threshold_var.set(zt / (self.scale_percentage_var.get() / 100.0))
+            # update threshold bounds
+            self.threshold_range.min_bound = 0
+            self.threshold_range.max_bound = bh
+            if zt is not None and scale_pct != 0:
+                disp_val = int(zt / (scale_pct / 100.0))
             else:
-                # default to 80% of height
-                self.z_threshold_var.set((bh * 4 / 5) / (self.scale_percentage_var.get() / 100.0))
+                disp_val = int((bh * 4 / 5) / (scale_pct / 100.0))
+            self.threshold_range.set(disp_val, disp_val)
 
             # prepare fit image
             fit_scale = min(self.CANVAS_W / bw, self.CANVAS_H / bh)
@@ -137,17 +136,27 @@ class SizePage(ttk.Frame):
         # main preview
         self.preview.delete("all")
         if self._fit_img:
-            base_pct = self.scale_percentage_var.get()
+            _, base_pct = self.scale_range.get()
             scale = base_pct / 100.0
             self._draw_to_canvas(self.preview, scale)
-            self._draw_threshold(self.preview, scale)
+            # draw threshold line
+            orig_h = getattr(self._orig_img, 'height', 0)
+            if orig_h > 0:
+                _, thr = self.threshold_range.get()
+                displayed_h = self._fit_img.height * scale
+                cw = int(self.preview['width'])
+                ch = int(self.preview['height'])
+                y_offset = (ch - displayed_h) / 2
+                frac = 1.0 - (thr / orig_h)
+                line_y = y_offset + displayed_h * frac
+                self.preview.create_line(0, line_y, cw, line_y, fill='red', width=2)
 
         # min/max previews
         self.preview_min.delete("all")
         self.preview_max.delete("all")
         if self._fit_img:
-            base_pct = self.scale_percentage_var.get()
-            var_pct = self.variability_percentage_var.get()
+            _, base_pct = self.scale_range.get()
+            _, var_pct = self.variability_range.get()
             min_scale = max(0, (base_pct - var_pct) / 100.0)
             max_scale = (base_pct + var_pct) / 100.0
             self._draw_to_canvas(self.preview_min, min_scale)
@@ -168,23 +177,6 @@ class SizePage(ttk.Frame):
         canvas.create_image(x, y, anchor='nw', image=tk_img)
         setattr(self, f'_tk_{id(canvas)}', tk_img)
 
-    def _draw_threshold(self, canvas, scale):
-        orig_h = getattr(self._orig_img, 'height', 0)
-        if orig_h <= 0:
-            return
-        cw = int(canvas['width'])
-        ch = int(canvas['height'])
-        threshold_px = self.z_threshold_var.get()
-        displayed_h = self._fit_img.height * scale
-        y_offset = (ch - displayed_h) / 2
-
-        # flip: 0 at bottom, max at top
-        frac = 1.0 - (threshold_px / orig_h)
-        line_y = y_offset + displayed_h * frac
-
-        canvas.create_line(0, line_y, cw, line_y, fill='red', width=2)
-
-
     def save(self):
         if not self.asset_path:
             messagebox.showerror("Error", "No asset selected.")
@@ -194,14 +186,15 @@ class SizePage(ttk.Frame):
             data = json.load(f)
 
         # save z_threshold multiplied by scale percent
-        base_pct = self.scale_percentage_var.get()
-        z_val = int(self.z_threshold_var.get() * (base_pct / 100.0))
+        _, base_pct = self.scale_range.get()
+        _, thr = self.threshold_range.get()
+        z_val = int(thr * (base_pct / 100.0))
         data['z_threshold'] = z_val
 
         # save size settings
         data['size_settings'] = {
-            'scale_percentage': self.scale_percentage_var.get(),
-            'variability_percentage': self.variability_percentage_var.get(),
+            'scale_percentage': base_pct,
+            'variability_percentage': self.variability_range.get()[1],
         }
 
         with open(self.asset_path, 'w') as f:
