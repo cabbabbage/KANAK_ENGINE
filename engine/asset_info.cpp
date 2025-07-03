@@ -133,56 +133,78 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
 
 
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
-    if (!data.contains("lighting_info") || !data["lighting_info"].is_object()) return;
-    const auto& l = data["lighting_info"];
+    lights.clear();
+    has_light_source = false;
 
-    if (l.contains("has_light_source") && l["has_light_source"].is_boolean())
-        has_light_source = l["has_light_source"].get<bool>();
-    else
-        has_light_source = false;
+    if (!data.contains("lighting_info"))
+        return;
 
-    if (l.contains("light_intensity") && l["light_intensity"].is_number())
-        light_intensity = l["light_intensity"].get<int>();
-    else
-        light_intensity = 0;
+    const auto& linfo = data["lighting_info"];
 
-    light_color = {0, 0, 0, 0};
-    if (l.contains("light_color") && l["light_color"].is_array() && l["light_color"].size() == 3
-        && l["light_color"][0].is_number_integer()
-        && l["light_color"][1].is_number_integer()
-        && l["light_color"][2].is_number_integer())
-    {
-        light_color.r = l["light_color"][0].get<int>();
-        light_color.g = l["light_color"][1].get<int>();
-        light_color.b = l["light_color"][2].get<int>();
-        light_color.a = 255;
+    // Handle backward-compatible single light object
+    if (linfo.is_object()) {
+        if (!linfo.value("has_light_source", false)) return;
+        has_light_source = true;
+
+        LightSource light;
+        light.intensity   = linfo.value("light_intensity", 0);
+        light.radius      = linfo.value("radius", 100);
+        light.fall_off    = linfo.value("fall_off", 0);
+        light.jitter_min  = linfo.value("jitter_min", 0);
+        light.jitter_max  = linfo.value("jitter_max", 0);
+        light.flicker     = linfo.value("flicker", false);
+        light.offset_x    = linfo.value("offset_x", 0);
+        light.offset_y    = linfo.value("offset_y", 0);
+
+        // Load light color
+        light.color = {0, 0, 0, 255};
+        if (linfo.contains("light_color") && linfo["light_color"].is_array() &&
+            linfo["light_color"].size() == 3 &&
+            linfo["light_color"][0].is_number_integer() &&
+            linfo["light_color"][1].is_number_integer() &&
+            linfo["light_color"][2].is_number_integer()) {
+            light.color.r = linfo["light_color"][0].get<int>();
+            light.color.g = linfo["light_color"][1].get<int>();
+            light.color.b = linfo["light_color"][2].get<int>();
+        }
+
+        lights.push_back(light);
     }
 
-    if (l.contains("radius") && l["radius"].is_number())
-        radius = l["radius"].get<int>();
-    else
-        radius = 100;
+    // Handle list of multiple lights
+    else if (linfo.is_array()) {
+        for (const auto& l : linfo) {
+            if (!l.is_object() || !l.value("has_light_source", false))
+                continue;
 
-    if (l.contains("fall_off") && l["fall_off"].is_number())
-        fall_off = l["fall_off"].get<int>();
-    else
-        fall_off = 0;
+            has_light_source = true;
 
-    if (l.contains("jitter_min") && l["jitter_min"].is_number())
-        jitter_min = l["jitter_min"].get<int>();
-    else
-        jitter_min = 0;
+            LightSource light;
+            light.intensity   = l.value("light_intensity", 0);
+            light.radius      = l.value("radius", 100);
+            light.fall_off    = l.value("fall_off", 0);
+            light.jitter_min  = l.value("jitter_min", 0);
+            light.jitter_max  = l.value("jitter_max", 0);
+            light.flicker     = l.value("flicker", false);
+            light.offset_x    = l.value("offset_x", 0);
+            light.offset_y    = l.value("offset_y", 0);
 
-    if (l.contains("jitter_max") && l["jitter_max"].is_number())
-        jitter_max = l["jitter_max"].get<int>();
-    else
-        jitter_max = 0;
+            light.color = {0, 0, 0, 255};
+            if (l.contains("light_color") && l["light_color"].is_array() &&
+                l["light_color"].size() == 3 &&
+                l["light_color"][0].is_number_integer() &&
+                l["light_color"][1].is_number_integer() &&
+                l["light_color"][2].is_number_integer()) {
+                light.color.r = l["light_color"][0].get<int>();
+                light.color.g = l["light_color"][1].get<int>();
+                light.color.b = l["light_color"][2].get<int>();
+            }
 
-    if (l.contains("flicker") && l["flicker"].is_boolean())
-        flicker = l["flicker"].get<bool>();
-    else
-        flicker = false;
+            lights.push_back(light);
+        }
+    }
 }
+
 
 void AssetInfo::load_shading_info(const nlohmann::json& data) {
     if (!data.contains("shading_info") || !data["shading_info"].is_object()) return;
@@ -384,7 +406,9 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
                 0.80f,           // global opacity
                 110.0f           // midpointPercent = 20%
             );
-            fade->setActive(true);
+            if(has_base_shadow){
+                fade->setActive(true);
+            }
             anim.gradients.push_back(std::move(fade));
 
 

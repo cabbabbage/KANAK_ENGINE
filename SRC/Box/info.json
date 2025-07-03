@@ -12,10 +12,10 @@
     }
   },
   "impassable_area": "impassable_area.json",
-  "z_threshold": 6,
+  "z_threshold": 5,
   "size_settings": {
-    "scale_percentage": 9.487341772151899,
-    "variability_percentage": 0.0
+    "scale_percentage": 8,
+    "variability_percentage": 0
   },
   "visited_tabs": [
     "Passability",

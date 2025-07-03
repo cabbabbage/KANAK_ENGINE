@@ -26,25 +26,45 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 200,
   "tags": [
-    "passable",
-    "default"
+    "default",
+    "passable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
-  "lighting_info": {
-    "has_light_source": true,
-    "light_intensity": 81,
-    "light_color": [
-      255,
-      255,
-      255
-    ],
-    "radius": 748,
-    "fall_off": 86,
-    "jitter_min": 0,
-    "jitter_max": 0,
-    "flicker": false
-  },
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 30,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 232,
+      "fall_off": 100,
+      "jitter_min": 0,
+      "jitter_max": 0,
+      "offset_x": 30,
+      "offset_y": -200,
+      "flicker": false
+    },
+    {
+      "has_light_source": true,
+      "light_intensity": 81,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 734,
+      "fall_off": 100,
+      "jitter_min": 0,
+      "jitter_max": 0,
+      "offset_x": 30,
+      "offset_y": 0,
+      "flicker": false
+    }
+  ],
   "shading_info": {
     "has_shading": false,
     "has_base_shadow": null,

@@ -1,36 +1,27 @@
 {
-  "assets": [
-    {
-      "name": "Grass_1_FPS_2",
-      "min_number": 2000,
-      "max_number": 2000,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Grass_FPS_2",
-      "min_number": 2000,
-      "max_number": 2000,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Bush_FPS_2",
-      "min_number": 15,
-      "max_number": 15,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Bush_1_FPS_2",
-      "min_number": 15,
-      "max_number": 15,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    }
-  ]
+  "assets": [],
+  "batch_assets": {
+    "has_batch_assets": true,
+    "grid_spacing_min": 100,
+    "grid_spacing_max": 100,
+    "jitter_min": 0,
+    "jitter_max": 0,
+    "batch_assets": [
+      {
+        "name": "Grass_FPS_2",
+        "tag": false,
+        "percent": 25
+      },
+      {
+        "name": "null",
+        "tag": false,
+        "percent": 53
+      },
+      {
+        "name": "Grass_1_FPS_2",
+        "tag": false,
+        "percent": 22
+      }
+    ]
+  }
 }

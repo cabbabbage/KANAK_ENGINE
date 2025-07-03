@@ -12,17 +12,17 @@
   "assets": [
     {
       "name": "Skull",
-      "min_number": 238,
-      "max_number": 238,
+      "min_number": 50,
+      "max_number": 50,
       "position": "Null",
       "exact_position": null,
       "inherited": false
     },
     {
-      "name": "Lavender_flower",
-      "min_number": 222,
-      "max_number": 222,
-      "position": "Distributed",
+      "name": "okkkkk_babyyy",
+      "min_number": 2,
+      "max_number": 3,
+      "position": "",
       "exact_position": null,
       "inherited": false
     }

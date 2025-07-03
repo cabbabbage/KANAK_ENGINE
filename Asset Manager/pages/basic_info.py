@@ -80,16 +80,27 @@ class BasicInfoPage(ttk.Frame):
         asset_name = self.name_var.get().strip()
         asset_folder = os.path.dirname(self.asset_path)
 
-        data = {
-            "asset_name": asset_name,
-            "asset_type": self.type_var.get(),
-            "duplicatable": self.duplicatable_var.get(),
-            "duplication_interval_min": self.dup_range.get()[0],
-            "duplication_interval_max": self.dup_range.get()[1],
-            "min_child_depth": self.depth_range.get()[0],
-            "max_child_depth": self.depth_range.get()[1]
-        }
+        # === Load existing JSON if it exists ===
+        if os.path.exists(self.asset_path):
+            try:
+                with open(self.asset_path, "r") as f:
+                    data = json.load(f)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load existing JSON: {e}")
+                return
+        else:
+            data = {}
 
+        # === Update only the fields related to Basic Info ===
+        data["asset_name"] = asset_name
+        data["asset_type"] = self.type_var.get()
+        data["duplicatable"] = self.duplicatable_var.get()
+        data["duplication_interval_min"] = self.dup_range.get()[0]
+        data["duplication_interval_max"] = self.dup_range.get()[1]
+        data["min_child_depth"] = self.depth_range.get()[0]
+        data["max_child_depth"] = self.depth_range.get()[1]
+
+        # === Save back the full JSON ===
         try:
             with open(os.path.join(asset_folder, "info.json"), "w") as f:
                 json.dump(data, f, indent=4)
@@ -97,6 +108,7 @@ class BasicInfoPage(ttk.Frame):
             messagebox.showinfo("Saved", f"Asset '{asset_name}' saved successfully.")
         except Exception as e:
             messagebox.showerror("Save Error", str(e))
+
 
     def _delete_asset(self):
         if not self.asset_path:

@@ -19,26 +19,23 @@ class AssetSpawner {
 public:
     using Point = std::pair<int, int>;
 
-    // Constructor: only sets up persistent state
     AssetSpawner(SDL_Renderer* renderer,
                  int map_width,
                  int map_height,
                  AssetLibrary* asset_library);
 
-    // Public method: processes a new JSON batch for a given area
     void spawn(const Area& spawn_area,
                const nlohmann::json& assets_json,
-               bool batch,
                const std::string& map_dir,
                const std::string& room_dir);
 
     std::vector<std::unique_ptr<Asset>>&& extract_all_assets();
-// In asset_spawner.hpp (add to public section)
     void removeAsset(Asset* asset);
 
 private:
     void spawn_item_random(const SpawnInfo& item, const Area* area);
-    void spawn_distributed_batch(const std::vector<SpawnInfo>& items, const Area* area);
+    void spawn_distributed_batch(const std::vector<BatchSpawnInfo>& items, const Area* area, int spacing, int jitter);
+
     void spawn_item_distributed(const SpawnInfo& item, const Area* area);
     void spawn_item_exact(const SpawnInfo& item, const Area* area);
     void spawn_item_center(const SpawnInfo& item, const Area* area);
@@ -61,11 +58,9 @@ private:
     SpawnLogger                                       logger_;
 
     nlohmann::json                                    assets_json_;
-    bool                                              batch_;
     std::string                                       map_dir_;
     std::string                                       room_dir_;
     std::vector<SpawnInfo>                            spawn_queue_;
-    std::unordered_map<std::string, std::shared_ptr<AssetInfo>>
-                                                      asset_info_library_;
+    std::unordered_map<std::string, std::shared_ptr<AssetInfo>> asset_info_library_;
     std::vector<std::unique_ptr<Asset>>               all_;
 };

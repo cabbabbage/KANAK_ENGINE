@@ -34,19 +34,22 @@ GenerateRoom::GenerateRoom(std::string map_path,
     int edge_smoothness = J["edge_smoothness"];
     std::string geometry = J["geometry"];
 
-    bool is_spawn = J.value("is_spawn", false);
-    bool is_boss = J.value("is_boss", false);
+    is_spawn_ = J.value("is_spawn", false);
+    is_boss_ = J.value("is_boss", false);
     inherits = J.value("inherits_map_assets", false);
 
     const double avg_dim = (map_width_ + map_height_) / 2.0;
-    const double center_dist_threshold = 0.20 * avg_dim;
-    const double line_dist_threshold = 0.001 * avg_dim;
-    const int edge_margin_x = static_cast<int>(map_width_ * 0.1);
-    const int edge_margin_y = static_cast<int>(map_height_ * 0.1);
+    const double center_dist_threshold = 0.08 * avg_dim;
+    const double line_dist_threshold = 0.002 * avg_dim;
+    const double intersection_min_dist = 0.03 * avg_dim;
+
+    const int edge_margin_x = static_cast<int>(map_width_ * 0.10);
+    const int edge_margin_y = static_cast<int>(map_height_ * 0.10);
 
     bool placed = false;
     int attempts = 0;
-    while (!placed && attempts < 1000) {
+
+    while (!placed && attempts < 10000) {
         double scale = (attempts >= 20) ? 0.9 : 1.0;
         int cur_min_w = static_cast<int>(min_width * scale);
         int cur_max_w = static_cast<int>(max_width * scale);
@@ -58,19 +61,20 @@ GenerateRoom::GenerateRoom(std::string map_path,
         int w = w_dist(rng_);
         int h = h_dist(rng_);
 
-        if (is_spawn) {
-            std::uniform_int_distribution<int> x_dist(edge_margin_x, map_width_ / 10);
+        if (is_spawn_) {
+            center_x_ = map_width_ / 2;
+            center_y_ = map_height_ / 2;
+        } else if (is_boss_) {
+            std::uniform_int_distribution<int> x_dist(map_width_ * 8 / 10 - w, map_width_ - edge_margin_x);
+            std::uniform_int_distribution<int> y_dist(edge_margin_y, map_height_ - edge_margin_y - h);
             center_x_ = x_dist(rng_) + w / 2;
-        } else if (is_boss) {
-            std::uniform_int_distribution<int> x_dist(map_width_ * 9 / 10 - w, map_width_ - edge_margin_x);
-            center_x_ = x_dist(rng_) + w / 2;
+            center_y_ = y_dist(rng_) + h / 2;
         } else {
-            std::uniform_int_distribution<int> x_dist(0, map_width_ - w);
+            std::uniform_int_distribution<int> x_dist(edge_margin_x, map_width_ - edge_margin_x - w);
+            std::uniform_int_distribution<int> y_dist(edge_margin_y, map_height_ - edge_margin_y - h);
             center_x_ = x_dist(rng_) + w / 2;
+            center_y_ = y_dist(rng_) + h / 2;
         }
-
-        std::uniform_int_distribution<int> y_dist(0, map_height_ - h);
-        center_y_ = y_dist(rng_) + h / 2;
 
         if (center_x_ < edge_margin_x || center_x_ > map_width_ - edge_margin_x ||
             center_y_ < edge_margin_y || center_y_ > map_height_ - edge_margin_y) {
@@ -91,7 +95,14 @@ GenerateRoom::GenerateRoom(std::string map_path,
             int oy = other->getCenterY();
             double dx = center_x_ - ox;
             double dy = center_y_ - oy;
-            if (std::hypot(dx, dy) < center_dist_threshold) {
+            double dist = std::hypot(dx, dy);
+
+            if (json_path.find("intersection.json") != std::string::npos) {
+                if (dist < intersection_min_dist) {
+                    invalid = true;
+                    break;
+                }
+            } else if (dist < center_dist_threshold) {
                 invalid = true;
                 break;
             }
@@ -141,7 +152,6 @@ int GenerateRoom::getCenterX() const {
     return center_x_;
 }
 
-
 bool GenerateRoom::isSpawn() const {
     return is_spawn_;
 }
@@ -150,12 +160,9 @@ bool GenerateRoom::isBoss() const {
     return is_boss_;
 }
 
-
 int GenerateRoom::getCenterY() const {
     return center_y_;
 }
-
-
 
 GenerateRoom::Point GenerateRoom::getPointInside() const {
     auto [minx, miny, maxx, maxy] = room_area_.get_bounds();

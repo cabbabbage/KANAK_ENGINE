@@ -22,7 +22,9 @@
   "visited_tabs": [
     "Spacing"
   ],
-  "tags": [],
+  "tags": [
+    "passable"
+  ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400
 }

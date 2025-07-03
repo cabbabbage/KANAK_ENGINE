@@ -14,17 +14,21 @@
       "name": "Mushroom_1",
       "min_number": 300,
       "max_number": 400,
-      "position": "",
+      "position": "Distributed",
       "exact_position": null,
-      "inherited": false
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false
     },
     {
       "name": "Mushroom_2",
       "min_number": 346,
       "max_number": 359,
-      "position": "",
+      "position": "Random",
       "exact_position": null,
-      "inherited": false
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false
     }
   ]
 }

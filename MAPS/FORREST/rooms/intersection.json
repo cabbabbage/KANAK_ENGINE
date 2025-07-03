@@ -1,27 +1,30 @@
 {
-  "name": "spawn",
+  "name": "intersection",
   "min_width": 750,
   "max_width": 750,
-  "curvyness": 1,
-  "assets": [],
   "min_height": 750,
   "max_height": 750,
-  "edge_smoothness": 100,
+  "edge_smoothness": 0,
   "geometry": "Circle",
-  "is_spawn": true,
+  "is_spawn": false,
   "is_boss": false,
-  "inherits_map_assets": true,
+  "inherits_map_assets": false,
+  "assets": [],
   "batch_assets": {
-    "has_batch_assets": false,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
     "jitter_max": 0,
     "batch_assets": [
       {
+        "name": "Bone_Pile",
+        "tag": false,
+        "percent": 5
+      },
+      {
         "name": "null",
         "tag": false,
-        "percent": 100
+        "percent": 95
       }
     ]
   }

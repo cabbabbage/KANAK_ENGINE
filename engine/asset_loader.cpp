@@ -112,11 +112,11 @@ std::cout << "Generating ROOM Assets\n";
         jin >> roomConfig;
 
         // spawn the assets into that area
-        spawner_->spawn(area, roomConfig, false, map_path_, p);
+        spawner_->spawn(area, roomConfig, map_path_, p);
         if (!rooms_.back().inherits){
             
 
-            spawner_->spawn(area, mapConfig, true, map_path_, p);
+            spawner_->spawn(area, mapConfig, map_path_, p);
 
         }
     }
@@ -138,7 +138,8 @@ std::cout << "Generating ROOM Assets\n";
         tin >> config;
         tin.close();
 
-        spawner_->spawn(area, config, false, map_path_, "TRAILS");
+        spawner_->spawn(area, config, map_path_, "TRAILS");
+        spawner_->spawn(area, mapConfig, map_path_, "TRAILS");
     }
 
         // === BOUNDARY Assets ===
@@ -158,7 +159,7 @@ std::cout << "Generating ROOM Assets\n";
                 area.apply_offset(cx - (minx + maxx) / 2,
                                   cy - (miny + maxy) / 2);
 
-                spawner_->spawn(area, aset, true, map_path_, "BOUNDARY");
+                spawner_->spawn(area, aset, map_path_, "BOUNDARY");
             }
         }
     }

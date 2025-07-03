@@ -11,6 +11,20 @@
 
 #include <memory>  // for std::unique_ptr
 
+
+struct LightSource {
+    SDL_Color color;
+    int intensity = 0;
+    int radius = 100;
+    int fall_off = 0;
+    int jitter_min = 0;
+    int jitter_max = 0;
+    bool flicker = false;
+    int offset_x = 0;
+    int offset_y = 0;
+};
+
+
 struct Animation {
     std::vector<SDL_Texture*> frames;
     // store pointers to Gradient so they own their own resources
@@ -37,6 +51,8 @@ struct ChildAsset {
 
 class AssetInfo {
 public:
+    std::vector<LightSource> lights;
+
     void apply_base_gradient(SDL_Renderer* renderer);
     std::string name;
     std::string type;

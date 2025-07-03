@@ -2,43 +2,55 @@ import os
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox
-from pages.assets_editor import AssetEditor  # Ensure this class is defined properly
+from pages.batch_asset_editor import BatchAssetEditor  # Updated to use BatchAssetEditor
 
 class BoundaryPage(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        self.data = {"assets": []}
+        self.data = {
+            "batch_assets": {
+                "has_batch_assets": False,
+                "grid_spacing_min": 100,
+                "grid_spacing_max": 100,
+                "jitter_min": 0,
+                "jitter_max": 0,
+                "batch_assets": []
+            }
+        }
         self.json_path = None
 
-        def get_asset_list():
-            return self.data.get("assets", [])
-
-        def set_asset_list(new_list):
-            self.data["assets"] = new_list
-
-        def save_callback():
-            if not self.json_path:
-                return
-            try:
-                with open(self.json_path, "w") as f:
-                    json.dump(self.data, f, indent=2)
-            except Exception as e:
-                messagebox.showerror("Save Failed", str(e))
-
-        self.editor = AssetEditor(
+        self.editor = BatchAssetEditor(
             self,
-            get_asset_list=get_asset_list,
-            set_asset_list=set_asset_list,
-            save_callback=save_callback
+            save_callback=self._save_json
         )
         self.editor.pack(fill=tk.BOTH, expand=True, padx=40, pady=10)
 
+    def _save_json(self):
+        if not self.json_path:
+            return
+        self.data["batch_assets"] = self.editor.save()  # make sure jitter values are updated here
+        try:
+            with open(self.json_path, "w") as f:
+                json.dump(self.data, f, indent=2)
+        except Exception as e:
+            messagebox.showerror("Save Failed", str(e))
+
     def load_data(self, data, json_path=None):
-        self.data = data or {"assets": []}
+        self.data = data or {
+            "batch_assets": {
+                "has_batch_assets": False,
+                "grid_spacing_min": 100,
+                "grid_spacing_max": 100,
+                "jitter_min": 0,
+                "jitter_max": 0,
+                "batch_assets": []
+            }
+        }
         self.json_path = json_path
-        self.editor.refresh()  # Update UI with loaded data
+        self.editor.load(self.data.get("batch_assets", {}))
 
     def get_data(self):
+        self.data["batch_assets"] = self.editor.save()
         return self.data
 
     @staticmethod
