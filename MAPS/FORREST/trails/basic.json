@@ -6,28 +6,6 @@
   "assets": [
     {
       "name": "okkkkk_babyyy",
-      "min_number": 3,
-      "max_number": 3,
-      "position": "Random",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "Mushroom_2",
-      "min_number": 4,
-      "max_number": 10,
-      "position": "",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "lantern",
       "min_number": 1,
       "max_number": 3,
       "position": "Random",
@@ -38,9 +16,20 @@
       "tag": false
     },
     {
+      "name": "lantern",
+      "min_number": 0,
+      "max_number": 2,
+      "position": "Random",
+      "exact_position": null,
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
+    },
+    {
       "name": "Rock",
-      "min_number": 10,
-      "max_number": 15,
+      "min_number": 0,
+      "max_number": 6,
       "position": "Random",
       "exact_position": null,
       "inherited": false,
@@ -51,16 +40,26 @@
   ],
   "inherits_map_assets": true,
   "batch_assets": {
-    "has_batch_assets": false,
-    "grid_spacing_min": 100,
-    "grid_spacing_max": 100,
-    "jitter_min": 0,
-    "jitter_max": 0,
+    "has_batch_assets": true,
+    "grid_spacing_min": 57,
+    "grid_spacing_max": 57,
+    "jitter_min": 9,
+    "jitter_max": 9,
     "batch_assets": [
+      {
+        "name": "brick",
+        "tag": false,
+        "percent": 10
+      },
       {
         "name": "null",
         "tag": false,
-        "percent": 100
+        "percent": 89
+      },
+      {
+        "name": "light",
+        "tag": true,
+        "percent": 1
       }
     ]
   }

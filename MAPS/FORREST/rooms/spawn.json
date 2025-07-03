@@ -3,7 +3,36 @@
   "min_width": 750,
   "max_width": 750,
   "curvyness": 1,
-  "assets": [],
+  "assets": [
+    {
+      "name": "Davey",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Center",
+      "exact_position": null,
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
+    },
+    {
+      "name": "okkkkk_babyyy",
+      "min_number": 95,
+      "max_number": 95,
+      "position": "Perimeter",
+      "exact_position": null,
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false,
+      "border_shift_min": 100,
+      "border_shift_max": 100,
+      "sector_center_min": 0,
+      "sector_center_max": 0,
+      "sector_range_min": 360,
+      "sector_range_max": 360
+    }
+  ],
   "min_height": 750,
   "max_height": 750,
   "edge_smoothness": 100,

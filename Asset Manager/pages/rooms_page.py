@@ -134,18 +134,63 @@ class RoomsPage(ttk.Frame):
         selection = self.room_list.curselection()
         if not selection or not self.rooms_dir:
             return
+
+        # Save the old room (if any) before loading the new one
+        if self.current_room_path and self.room_data:
+            try:
+                # 1) Pull UI state into room_data
+                self.room_data["assets"] = self.asset_editor.get_assets()
+                self.room_data["batch_assets"] = self.batch_editor.save()
+                # also pull in the ranges/checkboxes
+                self.room_data["min_width"],  self.room_data["max_width"]  = self.width_range.get()
+                self.room_data["min_height"], self.room_data["max_height"] = self.height_range.get()
+                self.room_data["edge_smoothness"] = self.edge_smoothness.get()[0]
+                self.room_data["geometry"] = self.geometry_var.get()
+                self.room_data["is_spawn"] = self.spawn_var.get()
+                self.room_data["is_boss"] = self.boss_var.get()
+                self.room_data["inherits_map_assets"] = self.asset_editor.inherit_state
+
+                # 2) Write it back out
+                with open(self.current_room_path, "w") as outf:
+                    json.dump(self.room_data, outf, indent=2)
+            except Exception as e:
+                messagebox.showerror("Save Failed", f"Could not save previous room:\n{e}")
+
+        # Now load the newly-selected room
         name = self.room_list.get(selection[0])
         path = os.path.join(self.rooms_dir, f"{name}.json")
         if not os.path.exists(path):
             return
+
         try:
-            with open(path) as f:
-                self.room_data = json.load(f)
+            with open(path) as inf:
+                data = json.load(inf)
+
+            # Ensure we always have these keys
+            if not isinstance(data.get("assets"), list):
+                data["assets"] = []
+            if not isinstance(data.get("batch_assets"), dict):
+                data["batch_assets"] = {
+                    "has_batch_assets": False,
+                    "grid_spacing_min": 100,
+                    "grid_spacing_max": 100,
+                    "jitter_min": 0,
+                    "jitter_max": 0,
+                    "batch_assets": []
+                }
+            if "inherits_map_assets" not in data:
+                data["inherits_map_assets"] = False
+
+            self.room_data = data
             self.current_room_path = path
+
+            # Load the UI from room_data
             self._load_editor()
             self.editor_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Error loading room", str(e))
+ 
 
     def _load_editor(self):
         self._suspend_save = True
@@ -163,8 +208,8 @@ class RoomsPage(ttk.Frame):
         self.asset_editor.load_assets()
 
         self.batch_editor.load(self.room_data.get("batch_assets", {}))
-
         self._suspend_save = False
+
 
     def _add_room(self):
         name = simpledialog.askstring("New Room", "Enter room name:")

@@ -37,9 +37,10 @@
     "volume"
   ],
   "tags": [
-    "default",
+    "impassable",
     "collision",
-    "impassable"
+    "default",
+    "wood"
   ],
   "impassable_area": "impassable_area.json",
   "spacing_area": "spacing_area.json",

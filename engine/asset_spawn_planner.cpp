@@ -32,14 +32,27 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
     for (const auto& entry : root_json_["assets"]) {
         nlohmann::json asset = entry;
 
-        if (asset.value("tag", false)) {
-            asset = resolve_asset_from_tag(asset);
+        if (!asset.contains("name") || !asset["name"].is_string()) {
+            std::cerr << "[AssetSpawnPlanner] WARNING: Missing 'name' field.\n";
+            continue;
         }
 
-        std::string name = asset.value("name", "");
-        if (name.empty()) continue;
-
+        std::string name = asset["name"];
         auto info = asset_library_->get(name);
+
+        // If not found by name, try treating 'name' as a tag
+        if (!info) {
+            try {
+                asset["tag"] = name;
+                asset = resolve_asset_from_tag(asset);
+                name = asset["name"];
+                info = asset_library_->get(name);
+            } catch (const std::exception& e) {
+                std::cerr << "[AssetSpawnPlanner] WARNING: Failed to resolve tag from name '" << name << "': " << e.what() << "\n";
+                continue;
+            }
+        }
+
         if (!info) {
             std::cerr << "[AssetSpawnPlanner] WARNING: Asset '" << name << "' not found in library.\n";
             continue;
@@ -84,6 +97,7 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
     }
 }
 
+
 void AssetSpawnPlanner::parse_batch_assets() {
     if (!root_json_.contains("batch_assets")) return;
 
@@ -96,15 +110,17 @@ void AssetSpawnPlanner::parse_batch_assets() {
     for (const auto& entry : batch_data.value("batch_assets", std::vector<nlohmann::json>{})) {
         nlohmann::json asset = entry;
 
-        if (asset.value("tag", false)) {
+        if (asset.contains("tag") && asset["tag"].is_string()) {
             asset = resolve_asset_from_tag(asset);
         }
 
-        std::string name = asset.value("name", "");
-        if (name.empty()) continue;
+        if (!asset.contains("name") || !asset["name"].is_string()) {
+            std::cerr << "[AssetSpawnPlanner] WARNING: Invalid or missing 'name' in batch asset.\n";
+            continue;
+        }
 
         BatchSpawnInfo b;
-        b.name = name;
+        b.name = asset["name"];
         b.percent = asset.value("percent", 0);
         batch_spawn_assets_.push_back(b);
     }
@@ -115,7 +131,6 @@ nlohmann::json AssetSpawnPlanner::resolve_asset_from_tag(const nlohmann::json& t
     std::string tag = tag_entry.value("tag", "");
 
     std::vector<std::string> matches;
-
     for (const auto& [name, info] : asset_library_->all()) {
         if (info && info->has_tag(tag)) {
             matches.push_back(name);
@@ -134,3 +149,4 @@ nlohmann::json AssetSpawnPlanner::resolve_asset_from_tag(const nlohmann::json& t
     result.erase("tag");
     return result;
 }
+

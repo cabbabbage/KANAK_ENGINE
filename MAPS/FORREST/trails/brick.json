@@ -1,0 +1,32 @@
+{
+  "name": "brick",
+  "min_width": 550,
+  "max_width": 550,
+  "curvyness": 5,
+  "inherits_map_assets": true,
+  "assets": [],
+  "batch_assets": {
+    "has_batch_assets": true,
+    "grid_spacing_min": 54,
+    "grid_spacing_max": 54,
+    "jitter_min": 0,
+    "jitter_max": 0,
+    "batch_assets": [
+      {
+        "name": "brick",
+        "tag": false,
+        "percent": 84
+      },
+      {
+        "name": "null",
+        "tag": false,
+        "percent": 15
+      },
+      {
+        "name": "light",
+        "tag": true,
+        "percent": 1
+      }
+    ]
+  }
+}
