@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from pages.range import Range
 from pages.assets_editor import AssetEditor
+from pages.batch_asset_editor import BatchAssetEditor
 
 
 class RoomsPage(ttk.Frame):
@@ -53,7 +54,7 @@ class RoomsPage(ttk.Frame):
         ttk.Label(self.editor_frame, text="Geometry:").pack(anchor="w", pady=(8, 0))
         self.geometry_var = tk.StringVar()
         self.geometry_dropdown = ttk.Combobox(self.editor_frame, textvariable=self.geometry_var, state="readonly",
-                                              values=["Random", "Circle", "Square"])
+                                            values=["Random", "Circle", "Square"])
         self.geometry_dropdown.pack(fill=tk.X, pady=2)
 
         self.spawn_var = tk.BooleanVar()
@@ -61,12 +62,14 @@ class RoomsPage(ttk.Frame):
 
         self._last_changed = "spawn"
         self.spawn_checkbox = ttk.Checkbutton(self.editor_frame, text="Is Spawn", variable=self.spawn_var,
-                                              command=lambda: self._checkbox_logic("spawn"))
+                                            command=lambda: self._checkbox_logic("spawn"))
         self.spawn_checkbox.pack(anchor="w", pady=(6, 2))
 
         self.boss_checkbox = ttk.Checkbutton(self.editor_frame, text="Is Boss", variable=self.boss_var,
-                                             command=lambda: self._checkbox_logic("boss"))
+                                            command=lambda: self._checkbox_logic("boss"))
         self.boss_checkbox.pack(anchor="w", pady=(0, 6))
+
+        ttk.Label(self.editor_frame, text="Basic Assets", font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(10, 4))
 
         self.asset_editor = AssetEditor(
             self.editor_frame,
@@ -76,15 +79,30 @@ class RoomsPage(ttk.Frame):
             positioning=True,
             current_path=""
         )
-        self.asset_editor.pack(fill=tk.BOTH, expand=True)
+        self.asset_editor.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 20))
+        self.asset_editor.config(width=600, height=600)
 
-        # Traces: attach once, ignore changes when suspended
-        self.geometry_var.trace_add("write", self._on_field_change)
-        self.spawn_var.trace_add("write", self._on_field_change)
-        self.boss_var.trace_add("write", self._on_field_change)
-        self.width_range.var_max.trace_add("write", self._on_field_change)
-        self.height_range.var_max.trace_add("write", self._on_field_change)
-        self.edge_smoothness.var_max.trace_add("write", self._on_field_change)
+
+
+        ttk.Label(self.editor_frame, text="Batch Asset Editor", font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(0, 4))
+
+        self.batch_editor = BatchAssetEditor(self.editor_frame, save_callback=self._save_json)
+        self.batch_editor.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 10))
+        self.batch_editor.config(width=600, height=600)
+
+    def _add_asset_to_editor(self):
+        asset = {
+            "name": "new_asset",
+            "tag": False,
+            "positioning": {"type": "Random"},
+            "collisions": [],
+            "interactions": [],
+            "attacks": [],
+            "children": []
+        }
+        self.room_data["assets"].append(asset)
+        self.asset_editor.load_assets()
+        self._save_json()
 
     def _on_field_change(self, *args):
         if not self._suspend_save:
@@ -97,7 +115,6 @@ class RoomsPage(ttk.Frame):
                 self.boss_var.set(False)
             else:
                 self.spawn_var.set(False)
-        # No immediate save here; _on_field_change handles save
 
     def _refresh_room_list(self):
         self.room_list.delete(0, tk.END)
@@ -114,7 +131,6 @@ class RoomsPage(ttk.Frame):
                     self.room_list.insert(tk.END, file[:-5])
 
     def _on_select_room(self, event):
-        # Do not auto-save here; rely on field change triggers
         selection = self.room_list.curselection()
         if not selection or not self.rooms_dir:
             return
@@ -145,6 +161,9 @@ class RoomsPage(ttk.Frame):
         self.asset_editor.inherit_state = self.room_data.get("inherits_map_assets", False)
         self.asset_editor.inherit_var.set(self.asset_editor.inherit_state)
         self.asset_editor.load_assets()
+
+        self.batch_editor.load(self.room_data.get("batch_assets", {}))
+
         self._suspend_save = False
 
     def _add_room(self):
@@ -168,7 +187,8 @@ class RoomsPage(ttk.Frame):
             "is_spawn": False,
             "is_boss": False,
             "inherits_map_assets": False,
-            "assets": []
+            "assets": [],
+            "batch_assets": {}
         }
 
         with open(path, "w") as f:
@@ -192,6 +212,7 @@ class RoomsPage(ttk.Frame):
         self.room_data["is_spawn"] = self.spawn_var.get()
         self.room_data["is_boss"] = self.boss_var.get()
         self.room_data["inherits_map_assets"] = self.asset_editor.inherit_state
+        self.room_data["batch_assets"] = self.batch_editor.save()
         try:
             with open(self.current_room_path, "w") as f:
                 json.dump(self.room_data, f, indent=2)

@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from pages.range import Range
 from pages.assets_editor import AssetEditor
+from pages.batch_asset_editor import BatchAssetEditor
 
 
 class TrailsPage(ttk.Frame):
@@ -52,7 +53,13 @@ class TrailsPage(ttk.Frame):
             set_asset_list=lambda val: self.trail_data.__setitem__("assets", val),
             save_callback=self._save_json
         )
-        self.asset_editor.pack(fill=tk.BOTH, expand=True)
+        self.asset_editor.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+
+        self.batch_asset_editor = BatchAssetEditor(
+            self.editor_frame,
+            save_callback=self._save_json
+        )
+        self.batch_asset_editor.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 10))
 
     def _refresh_trail_list(self):
         self.trail_list.delete(0, tk.END)
@@ -95,6 +102,9 @@ class TrailsPage(ttk.Frame):
         self.asset_editor.inherit_var.set(self.asset_editor.inherit_state)
         self.asset_editor.load_assets()
 
+        self.batch_asset_editor.current_path = self.current_trail_path
+        self.batch_asset_editor.load(self.trail_data.get("batch_assets", {}))
+
         self.width_range.var_max.trace_add("write", lambda *_: self._save_json())
         self.curve_range.var_max.trace_add("write", lambda *_: self._save_json())
 
@@ -114,7 +124,15 @@ class TrailsPage(ttk.Frame):
             "max_width": 200,
             "curvyness": 50,
             "inherits_map_assets": False,
-            "assets": []
+            "assets": [],
+            "batch_assets": {
+                "has_batch_assets": False,
+                "grid_spacing_min": 100,
+                "grid_spacing_max": 100,
+                "jitter_min": 0,
+                "jitter_max": 0,
+                "batch_assets": []
+            }
         }
         with open(path, "w") as f:
             json.dump(data, f, indent=2)
@@ -126,6 +144,8 @@ class TrailsPage(ttk.Frame):
         self.trail_data["min_width"], self.trail_data["max_width"] = self.width_range.get()
         self.trail_data["curvyness"] = self.curve_range.get()[0]
         self.trail_data["inherits_map_assets"] = self.asset_editor.inherit_state
+        self.trail_data["batch_assets"] = self.batch_asset_editor.save()  # Save batch assets
+
         try:
             with open(self.current_trail_path, "w") as f:
                 json.dump(self.trail_data, f, indent=2)

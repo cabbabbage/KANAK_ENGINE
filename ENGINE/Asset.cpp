@@ -55,9 +55,15 @@ void Asset::finalize_setup(int start_pos_X,
 
     if (is_lit && renderer) {
         GenerateLight light_gen(renderer);
-        light_texture = light_gen.generate(this);
+        light_textures.clear();
+
+        for (const auto& light : info->lights) {
+            SDL_Texture* tex = light_gen.generate(this, light);
+            if (tex) light_textures.push_back(tex);
+        }
     }
 }
+
 
 
 void Asset::set_position(int x, int y) {

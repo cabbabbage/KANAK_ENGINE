@@ -66,7 +66,7 @@ void Engine::init() {
         SDL_SetTextureBlendMode(overlay_texture, SDL_BLENDMODE_BLEND);
         SDL_SetTextureAlphaMod(overlay_texture, static_cast<Uint8>(255 * 0.2));
     }
-
+    map_light = get_map_light();
     try {
         AssetLoader loader(map_path, renderer);
 
@@ -123,6 +123,22 @@ void Engine::init() {
     game_loop();
 }
 
+
+Generate_Map_Light* Engine::get_map_light() {
+    SDL_Color base_color = {255, 255, 255, 255};
+    return new Generate_Map_Light(
+        renderer,
+        SCREEN_WIDTH / 2,
+        SCREEN_HEIGHT / 2,
+        SCREEN_WIDTH,
+        base_color,
+        50,   // min opacity
+        255   // max opacity
+    );
+}
+
+
+
 void Engine::game_loop() {
     const int FRAME_MS = 1000 / 30;
     bool quit = false;
@@ -171,156 +187,164 @@ void render_light_distorted(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Rect c
     SDL_RenderCopyEx(renderer, tex, nullptr, &scaled, rotation, nullptr, SDL_FLIP_NONE);
 }
 
+
+
 void Engine::render_visible() {
     const int cx = SCREEN_WIDTH / 2;
     const int cy = SCREEN_HEIGHT / 2;
     const int px = game_assets->player->pos_X;
     const int py = game_assets->player->pos_Y;
 
-    // === [1] Clear background to ambient dark color ===
+    auto apply_parallax = [&](int ax, int ay) -> SDL_Point {
+        float y_offset = static_cast<float>(ay - py);
+        float strength = std::clamp(y_offset / 2000.0f, -1.0f, 1.0f);
+        int screen_x = ax - px + cx + static_cast<int>(strength * 60.0f);
+        int screen_y = ay - py + cy;
+        return {screen_x, screen_y};
+    };
+
     SDL_SetRenderDrawColor(renderer, SLATE_COLOR.r, SLATE_COLOR.g, SLATE_COLOR.b, SLATE_COLOR.a);
     SDL_RenderClear(renderer);
-   
+
     for (const auto& [tex, dst] : static_faded_areas) {
         SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-        SDL_Rect shifted = { dst.x - px + cx, dst.y - py + cy - 40, dst.w, dst.h };
+        SDL_Point p = apply_parallax(dst.x, dst.y);
+        SDL_Rect shifted = {p.x, p.y - 40, dst.w, dst.h};
         SDL_RenderCopy(renderer, tex, nullptr, &shifted);
     }
 
-    // === [2] Draw soft light highlights *behind* each lit asset ===
+    if (map_light->current_color_.a < 150) {
+        for (const auto* asset : game_assets->active_assets) {
+            if (!asset || !asset->is_lit || asset->light_textures.empty() || asset->info->lights.empty())
+                continue;
+
+            const auto& lights = asset->info->lights;
+            for (size_t i = 0; i < asset->light_textures.size() && i < lights.size(); ++i) {
+                SDL_Texture* light = asset->light_textures[i];
+                const auto& light_data = lights[i];
+
+                int lw, lh;
+                SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
+                SDL_Point p = apply_parallax(asset->pos_X + light_data.offset_x,
+                                            asset->pos_Y + light_data.offset_y);
+                SDL_Rect highlight = {p.x - lw / 2, p.y - lh / 2, lw, lh};
+
+                SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
+                SDL_SetTextureColorMod(light, 255, 235, 180);
+
+                int flicker_alpha = light_data.flicker ? std::clamp(28 + (rand() % 12), 10, 48) : 32;
+                float t = 1.0f - std::clamp(map_light->current_color_.a / 150.0f, 0.0f, 1.0f);
+                SDL_SetTextureAlphaMod(light, static_cast<int>(flicker_alpha * t));
+
+                render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
+            }
+        }
+    }
+
+
     for (const auto* asset : game_assets->active_assets) {
-        if (!asset || !asset->is_lit || !asset->light_texture) continue;
-
-        SDL_Texture* light = asset->light_texture;
-        int lw, lh;
-        SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
-        SDL_Rect highlight = {
-            asset->pos_X - px + cx - lw / 2,
-            asset->pos_Y - py + cy - lh / 2,
-            lw, lh
-        };
-
-        SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureColorMod(light, 255, 235, 180);
-        int flicker_alpha = 32;
-        if (asset->info->flicker)
-            flicker_alpha = std::clamp(28 + (rand() % 12), 10, 48);
-        SDL_SetTextureAlphaMod(light, flicker_alpha);
-        render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
+        if (!asset) continue;
+        SDL_Texture* tex = asset->get_current_frame();
+        if (!tex) continue;
+        int w, h;
+        SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+        SDL_Point p = apply_parallax(asset->pos_X, asset->pos_Y);
+        SDL_Rect dest = {p.x - w / 2, p.y - h, w, h};
+        float curved_opacity = std::pow(asset->gradient_opacity, 1.2f);
+        int darkness = static_cast<int>(255 * curved_opacity);
+        if (asset->info->type == "Player" || asset->info->type == "player") {
+            darkness = std::min(255, static_cast<int>(darkness * 3.0f));
+        }
+        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+        SDL_SetTextureColorMod(tex, darkness, darkness, darkness);
+        SDL_SetTextureAlphaMod(tex, 255);
+        SDL_RenderCopy(renderer, tex, nullptr, &dest);
     }
 
-// === [3] Draw all assets with gradient-based darkness modulation ===
-for (const auto* asset : game_assets->active_assets) {
-    if (!asset) continue;
+    if (map_light->current_color_.a < 130) {
+        for (const auto* asset : game_assets->active_assets) {
+            if (!asset || !asset->is_lit || asset->light_textures.empty() || asset->info->lights.empty())
+                continue;
 
-    SDL_Texture* tex = asset->get_current_frame();
-    if (!tex) continue;
+            const auto& lights = asset->info->lights;
+            for (size_t i = 0; i < asset->light_textures.size() && i < lights.size(); ++i) {
+                SDL_Texture* light = asset->light_textures[i];
+                const auto& light_data = lights[i];
 
-    int w, h;
-    SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
-    SDL_Rect dest = {
-        asset->pos_X - px + cx - w / 2,
-        asset->pos_Y - py + cy - h,
-        w, h
-    };
+                int lw, lh;
+                SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
+                SDL_Point p = apply_parallax(asset->pos_X + light_data.offset_x,
+                                            asset->pos_Y + light_data.offset_y);
+                SDL_Rect highlight = {p.x - lw / 2, p.y - lh / 2, lw, lh};
 
-    float curved_opacity = std::pow(asset->gradient_opacity, 1.2f);
-    int darkness = static_cast<int>(255 * curved_opacity);
+                SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
+                SDL_SetTextureColorMod(light, 255, 255, 255);
 
-    if (asset->info->type == "Player" || asset->info->type == "player") {
-        darkness = std::min(255, static_cast<int>(darkness * 3.0f));
+                int flicker_alpha = (asset->info->type == "Player") ? 60 : 15;
+                if (light_data.flicker)
+                    flicker_alpha = std::max(5, 15 + (rand() % 8));
+
+                float t = std::clamp(1.0f - (static_cast<float>(map_light->current_color_.a) / 130.0f), 0.0f, 1.0f);
+                SDL_SetTextureAlphaMod(light, static_cast<int>(flicker_alpha * t / 20));
+
+                render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
+            }
+        }
     }
 
-    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureColorMod(tex, darkness, darkness, darkness);
-    SDL_SetTextureAlphaMod(tex, 255);
-    SDL_RenderCopy(renderer, tex, nullptr, &dest);
-
-    const auto& anim = asset->info->animations.at(asset->get_current_animation());
-    for (const auto& gradPtr : anim.gradients) {
-        if (!gradPtr || !gradPtr->active_) continue;
-        SDL_Texture* gradTex = gradPtr->getGradient(asset->current_frame_index);
-        if (!gradTex) continue;
-
-        SDL_SetTextureBlendMode(gradTex, SDL_BLENDMODE_BLEND);
-        SDL_RenderCopy(renderer, gradTex, nullptr, &dest);
-    }
-}
-
-
-    // === [4] Draw soft light highlights *in front* of each lit asset ===
-    for (const auto* asset : game_assets->active_assets) {
-        if (!asset || !asset->is_lit || !asset->light_texture) continue;
-
-        SDL_Texture* light = asset->light_texture;
-        int lw, lh;
-        SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
-        SDL_Rect highlight = {
-            asset->pos_X - px + cx - lw / 2,
-            asset->pos_Y - py + cy - lh / 2,
-            lw, lh
-        };
-
-        SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureColorMod(light, 255, 255, 255);
-        int flicker_alpha = 15;
-        if (asset->info->flicker)
-            flicker_alpha = std::max(10, 20 + (rand() % 8));
-        SDL_SetTextureAlphaMod(light, flicker_alpha);
-        render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
-    }
-
-    // === [5] Create full-screen lightmap ===
-    SDL_Texture* lightmap = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_TARGET,
-        SCREEN_WIDTH, SCREEN_HEIGHT
-    );
+    SDL_Texture* lightmap = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_ADD);
     SDL_SetRenderTarget(renderer, lightmap);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 220);
     SDL_RenderClear(renderer);
 
     for (const auto* asset : game_assets->active_assets) {
-        if (!asset || !asset->is_lit || !asset->light_texture) continue;
+        if (!asset || !asset->is_lit || asset->light_textures.empty() || asset->info->lights.empty())
+            continue;
 
-        SDL_Texture* light = asset->light_texture;
-        int lw, lh;
-        SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
-        SDL_Rect dest = {
-            asset->pos_X - px + cx - lw / 2,
-            asset->pos_Y - py + cy - lh / 2,
-            lw, lh
-        };
+        const auto& lights = asset->info->lights;
+        for (size_t i = 0; i < asset->light_textures.size() && i < lights.size(); ++i) {
+            SDL_Texture* light = asset->light_textures[i];
+            const auto& light_data = lights[i];
 
-        SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
-        int flicker_alpha = 255;
-        if (asset->info->flicker)
-            flicker_alpha = 200 + (rand() % 56);
+            int lw, lh;
+            SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
+            SDL_Point p = apply_parallax(asset->pos_X + light_data.offset_x,
+                                        asset->pos_Y + light_data.offset_y);
+            SDL_Rect dest = {p.x - lw / 2, p.y - lh / 2, lw, lh};
 
-        SDL_SetTextureAlphaMod(light, flicker_alpha);
-        if (asset->info->type == "Player" || asset->info->type == "player") {
-            double angle = -0.05 * SDL_GetTicks() * 0.001;
-            double degrees = angle * (180.0 / M_PI);
-            SDL_RenderCopyEx(renderer, light, nullptr, &dest, degrees, nullptr, SDL_FLIP_NONE);
-        } else {
-            SDL_RenderCopy(renderer, light, nullptr, &dest);
+            SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
+            int flicker_alpha = light_data.flicker ? 200 + (rand() % 56) : 255;
+            SDL_SetTextureAlphaMod(light, flicker_alpha);
+
+            if (asset->info->type == "Player" || asset->info->type == "player") {
+                double angle = -0.05 * SDL_GetTicks() * 0.001;
+                double degrees = angle * (180.0 / M_PI);
+                SDL_RenderCopyEx(renderer, light, nullptr, &dest, degrees, nullptr, SDL_FLIP_NONE);
+            } else {
+                SDL_RenderCopy(renderer, light, nullptr, &dest);
+            }
         }
     }
 
-    // === [7] Blend lightmap back over the scene using MOD ===
+
+    map_light->update();
+    if (map_light) {
+        auto [lx, ly] = map_light->get_position();
+        int size = SCREEN_WIDTH * 3 * 2;
+        SDL_Rect dest = {lx - size / 2, ly - size / 2, size, size};
+        SDL_Texture* tex = map_light->get_texture();
+        if (tex) {
+            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_ADD);
+            SDL_SetTextureColorMod(tex, map_light->current_color_.r, map_light->current_color_.g, map_light->current_color_.b);
+            SDL_SetTextureAlphaMod(tex, map_light->current_color_.a);
+            SDL_RenderCopy(renderer, tex, nullptr, &dest);
+        }
+    }
+
     SDL_SetRenderTarget(renderer, nullptr);
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_MOD);
     SDL_RenderCopy(renderer, lightmap, nullptr, nullptr);
     SDL_DestroyTexture(lightmap);
-
-    // === [8] Fullscreen white overlay to brighten scene ===
-    int overlay_opacity = 200; // adjust 0–255
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_MUL);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, overlay_opacity);
-    SDL_Rect fullRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-    SDL_RenderFillRect(renderer, &fullRect);
-
     SDL_RenderPresent(renderer);
 }

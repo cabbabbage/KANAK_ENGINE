@@ -1,16 +1,19 @@
 {
   "name": "basic",
-  "min_width": 450,
-  "max_width": 450,
-  "curvyness": 4,
+  "min_width": 550,
+  "max_width": 550,
+  "curvyness": 5,
   "assets": [
     {
       "name": "okkkkk_babyyy",
-      "min_number": 4,
-      "max_number": 4,
-      "position": "Null",
+      "min_number": 3,
+      "max_number": 3,
+      "position": "Random",
       "exact_position": null,
-      "inherited": false
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
     },
     {
       "name": "Mushroom_2",
@@ -18,16 +21,47 @@
       "max_number": 10,
       "position": "",
       "exact_position": null,
-      "inherited": false
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
     },
     {
       "name": "lantern",
       "min_number": 1,
-      "max_number": 1,
-      "position": "Center",
+      "max_number": 3,
+      "position": "Random",
       "exact_position": null,
-      "inherited": false
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
+    },
+    {
+      "name": "Rock",
+      "min_number": 10,
+      "max_number": 15,
+      "position": "Random",
+      "exact_position": null,
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
     }
   ],
-  "inherits_map_assets": true
+  "inherits_map_assets": true,
+  "batch_assets": {
+    "has_batch_assets": false,
+    "grid_spacing_min": 100,
+    "grid_spacing_max": 100,
+    "jitter_min": 0,
+    "jitter_max": 0,
+    "batch_assets": [
+      {
+        "name": "null",
+        "tag": false,
+        "percent": 100
+      }
+    ]
+  }
 }

@@ -6,7 +6,6 @@
 #include <filesystem>
 #include <sstream>
 
-
 namespace fs = std::filesystem;
 
 AssetSpawner::AssetSpawner(SDL_Renderer* renderer,
@@ -22,57 +21,162 @@ AssetSpawner::AssetSpawner(SDL_Renderer* renderer,
       logger_("", "")
 {}
 
-// 2) spawn(...) takes an Area each time
 void AssetSpawner::spawn(const Area& spawn_area,
                          const nlohmann::json& assets_json,
-                         bool batch,
                          const std::string& map_dir,
                          const std::string& room_dir)
 {
     assets_json_  = assets_json;
-    batch_        = batch;
     map_dir_      = map_dir;
     room_dir_     = room_dir;
     logger_       = SpawnLogger(map_dir_, room_dir_);
 
-    // build planner for *this* area
     AssetSpawnPlanner planner(assets_json_, spawn_area.get_area(), renderer_, *asset_library_);
     spawn_queue_ = planner.get_spawn_queue();
+    auto batch_assets = planner.get_batch_spawn_assets();
+    int batch_spacing = planner.get_batch_grid_spacing();
+    int batch_jitter = planner.get_batch_jitter();
 
-    // pull in the AssetInfo map
     asset_info_library_ = asset_library_->all();
 
-    std::vector<SpawnInfo> boundaries;
     for (auto& queue_item : spawn_queue_) {
         logger_.start_timer();
         if (!queue_item.info) continue;
 
-        const auto& pos = queue_item.spawn_position;
-        if (batch_) {
-            boundaries.push_back(queue_item);
-        }
-        else if (pos == "exact") {
+        const auto& pos = queue_item.position;
+        if (pos == "Exact Position") {
             spawn_item_exact(queue_item, &spawn_area);
         }
-        else if (pos == "center" || pos == "Center") {
+        else if (pos == "Center") {
             spawn_item_center(queue_item, &spawn_area);
         }
-        else if (pos == "perimeter" || pos == "Perimeter") {
+        else if (pos == "Perimeter") {
             spawn_item_perimeter(queue_item, &spawn_area);
         }
-        else if (pos == "distributed" || pos == "Distributed") {
+        else if (pos == "Distributed") {
             spawn_item_distributed(queue_item, &spawn_area);
         }
+   //     else if (pos == "Entrance") {
+ //           spawn_item_random(queue_item, &spawn_area);  // TODO: Implement entrance-specific logic if needed
+//        }
+//        else if (pos == "Intersection") {
+//            spawn_item_random(queue_item, &spawn_area);  // TODO: Implement intersection-specific logic if needed
+//        }
         else {
             spawn_item_random(queue_item, &spawn_area);
         }
     }
 
-    if (!boundaries.empty()) {
-        spawn_distributed_batch(boundaries, &spawn_area);
+    if (!batch_assets.empty()) {
+        spawn_distributed_batch(batch_assets, &spawn_area, batch_spacing, batch_jitter);
     }
 }
 
+
+
+
+void AssetSpawner::spawn_item_distributed(const SpawnInfo& item, const Area* area) {
+    if (!item.info || item.quantity <= 0 || !area) return;
+
+    auto [minx, miny, maxx, maxy] = area->get_bounds();
+    int w = maxx - minx;
+    int h = maxy - miny;
+    if (w <= 0 || h <= 0) return;
+
+    int spacing = std::max(1, item.grid_spacing);
+    int jitter = std::max(0, item.jitter);
+    int wiggle_x = jitter;
+    int wiggle_y = jitter;
+
+    int placed = 0;
+    int attempts = 0;
+    int max_attempts = item.quantity * 10;
+
+    for (int x = minx; x <= maxx && placed < item.quantity && attempts < max_attempts; x += spacing) {
+        for (int y = miny; y <= maxy && placed < item.quantity && attempts < max_attempts; y += spacing) {
+            int jitter_x = std::uniform_int_distribution<int>(-wiggle_x, wiggle_x)(rng_);
+            int jitter_y = std::uniform_int_distribution<int>(-wiggle_y, wiggle_y)(rng_);
+            int cx = x + jitter_x;
+            int cy = y + jitter_y;
+
+            ++attempts;
+
+            // Empty grid space chance
+            int chance = std::uniform_int_distribution<int>(0, 99)(rng_);
+            if (chance < item.empty_grid_spaces) continue;
+
+            if (!area->contains_point({cx, cy})) continue;
+
+            auto nearest = checker_.get_closest_assets(cx, cy, 3);
+            if (!checker_.check_spacing_overlap(item.info, cx, cy, nearest)) {
+                spawn_(item.name, item.info, *area, cx, cy, 0, nullptr);
+                ++placed;
+                logger_.progress(item.info, placed, item.quantity);
+            }
+        }
+    }
+
+    logger_.output_and_log(item.name, item.quantity, placed, attempts, max_attempts, "distributed");
+}
+
+
+
+
+
+
+void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& items, const Area* area, int spacing, int jitter) {
+    if (!area || items.empty()) return;
+
+    auto [minx, miny, maxx, maxy] = area->get_bounds();
+    int w = maxx - minx;
+    int h = maxy - miny;
+    if (w <= 0 || h <= 0) return;
+
+    std::unordered_map<std::string, int> placed_quantities;
+    for (const auto& item : items) {
+        placed_quantities[item.name] = 0;
+    }
+
+    std::uniform_int_distribution<int> jitter_dist(-jitter, jitter);
+
+    for (int x = minx; x <= maxx; x += spacing) {
+        for (int y = miny; y <= maxy; y += spacing) {
+            int jitter_x = jitter_dist(rng_);
+            int jitter_y = jitter_dist(rng_);
+            int cx = x + jitter_x;
+            int cy = y + jitter_y;
+
+            if (!area->contains_point({cx, cy})) continue;
+
+            std::vector<int> weights;
+            for (const auto& item : items) {
+                weights.push_back(item.percent);
+            }
+
+            std::discrete_distribution<int> picker(weights.begin(), weights.end());
+            int chosen_index = picker(rng_);
+            const auto& selected = items[chosen_index];
+
+            if (selected.name == "null") continue;
+
+            auto it = asset_info_library_.find(selected.name);
+            if (it == asset_info_library_.end()) continue;
+
+            auto nearest = checker_.get_closest_assets(cx, cy, 3);
+            if (!checker_.check_spacing_overlap(it->second, cx, cy, nearest)) {
+                spawn_(selected.name, it->second, *area, cx, cy, 0, nullptr);
+                ++placed_quantities[selected.name];
+            }
+        }
+    }
+
+    std::cout << std::endl;
+    for (const auto& item : items) {
+        if (item.name == "null") continue;
+        int placed = placed_quantities[item.name];
+        logger_.output_and_log(item.name, placed, placed, placed, placed, "distributed_batch");
+    }
+}
 
 
 
@@ -120,126 +224,17 @@ void AssetSpawner::spawn_item_random(const SpawnInfo& item, const Area* area) {
 }
 
 
-void AssetSpawner::spawn_distributed_batch(const std::vector<SpawnInfo>& items, const Area* area) {
-    if (!area || items.empty()) return;
-
-    const int GRID_SPACING = 100;
-    std::unordered_map<std::string, int> original_quantities;
-    std::unordered_map<std::string, int> placed_quantities;
-    std::unordered_map<std::string, std::shared_ptr<AssetInfo>> asset_infos;
-
-    int total_quantity = 0;
-    auto pool = items;
-    for (const auto& item : pool) {
-        if (item.info && item.quantity > 0) {
-            total_quantity += item.quantity;
-            original_quantities[item.name] = item.quantity;
-            placed_quantities[item.name] = 0;
-            asset_infos[item.name] = item.info;
-        }
-    }
-    if (total_quantity <= 0) return;
-
-    auto [minx, miny, maxx, maxy] = area->get_bounds();
-    int w = maxx - minx;
-    int h = maxy - miny;
-    if (w <= 0 || h <= 0) return;
-
-    const int wiggle_x = GRID_SPACING / 3;
-    const int wiggle_y = GRID_SPACING / 3;
-
-    for (int x = minx; x <= maxx; x += GRID_SPACING) {
-        for (int y = miny; y <= maxy; y += GRID_SPACING) {
-            if (total_quantity <= 0) return;
-
-            int jitter_x = std::uniform_int_distribution<int>(-wiggle_x, wiggle_x)(rng_);
-            int jitter_y = std::uniform_int_distribution<int>(-wiggle_y, wiggle_y)(rng_);
-            int cx = x + jitter_x;
-            int cy = y + jitter_y;
-
-            if (!area->contains_point({cx, cy})) continue;
-
-            std::vector<int> weights;
-            for (const auto& item : pool) weights.push_back(item.quantity);
-
-            std::discrete_distribution<int> picker(weights.begin(), weights.end());
-            int chosen_index = picker(rng_);
-            auto& selected = pool[chosen_index];
-            auto nearest = checker_.get_closest_assets(cx, cy, 3);
-            if (!checker_.check_spacing_overlap(selected.info, cx, cy, nearest)) {
-                spawn_(selected.name, selected.info, *area, cx, cy, 0, nullptr);
-            }
-            --selected.quantity;
-            --total_quantity;
-            ++placed_quantities[selected.name];
-
-            logger_.progress(selected.info, placed_quantities[selected.name], original_quantities[selected.name]);
-
-            if (selected.quantity <= 0) pool.erase(pool.begin() + chosen_index);
-        }
-    }
-
-    std::cout << std::endl;
-    for (const auto& [name, attempted] : original_quantities) {
-        int placed = placed_quantities[name];
-        logger_.output_and_log(name, attempted, placed, attempted, attempted, "distributed_batch");
-    }
-}
-
-
-void AssetSpawner::spawn_item_distributed(const SpawnInfo& item, const Area* area) {
-    if (!item.info || item.quantity <= 0) return;
-
-    auto [minx, miny, maxx, maxy] = area->get_bounds();
-    int w = maxx - minx;
-    int h = maxy - miny;
-    if (w <= 0 || h <= 0) return;
-
-    int grid_cols = static_cast<int>(std::sqrt(item.quantity));
-    int grid_rows = (item.quantity + grid_cols - 1) / grid_cols;
-    if (grid_cols <= 0 || grid_rows <= 0) return;
-
-    int cell_w = std::max(1, w / grid_cols);
-    int cell_h = std::max(1, h / grid_rows);
-    int wiggle_x = std::max(1, cell_w / 3);
-    int wiggle_y = std::max(1, cell_h / 3);
-
-    int spawned = 0;
-    while (spawned < item.quantity) {
-        for (int gx = 0; gx < grid_cols && spawned < item.quantity; ++gx) {
-            for (int gy = 0; gy < grid_rows && spawned < item.quantity; ++gy) {
-                int cx = minx + gx * cell_w + cell_w / 2;
-                int cy = miny + gy * cell_h + cell_h / 2;
-
-                cx += std::uniform_int_distribution<int>(-wiggle_x, wiggle_x)(rng_);
-                cy += std::uniform_int_distribution<int>(-wiggle_y, wiggle_y)(rng_);
-
-                if (!area->contains_point({cx, cy})) continue;
-
-                auto nearest = checker_.get_closest_assets(cx, cy, 2);
-                if (!checker_.check_spacing_overlap(item.info, cx, cy, nearest)) {
-                    spawn_(item.name, item.info, *area, cx, cy, 0, nullptr);
-                }
-                ++spawned;
-                logger_.progress(item.info, spawned, item.quantity);
-            }
-        }
-    }
-
-    logger_.output_and_log(item.name, item.quantity, spawned, item.quantity, item.quantity, "distributed");
-}
-
 
 void AssetSpawner::spawn_item_exact(const SpawnInfo& item, const Area* area) {
-    if (!item.info || item.x_position < 0 || item.y_position < 0) return;
+    if (!item.info || item.ep_x < 0 || item.ep_y < 0) return;
 
     auto [minx, miny, maxx, maxy] = area->get_bounds();
     int actual_width = maxx - minx;
     int actual_height = maxy - miny;
 
     Point center = get_area_center(*area);
-    double normalized_x = (item.x_position - 50.0) / 100.0;
-    double normalized_y = (item.y_position - 50.0) / 100.0;
+    double normalized_x = (item.ep_x - 50.0) / 100.0;
+    double normalized_y = (item.ep_y - 50.0) / 100.0;
 
     int final_x = center.first + static_cast<int>(normalized_x * actual_width);
     int final_y = center.second + static_cast<int>(normalized_y * actual_height);
@@ -250,6 +245,7 @@ void AssetSpawner::spawn_item_exact(const SpawnInfo& item, const Area* area) {
         spawn_(item.name, item.info, *area, final_x, final_y, 0, nullptr);
     }
 }
+
 
 
 void AssetSpawner::spawn_item_center(const SpawnInfo& item, const Area* area) {
@@ -291,14 +287,15 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
     cx /= boundary.size();
     cy /= boundary.size();
 
-    // Contract the boundary inward by 10%
+    // Contract boundary inward based on border_shift
+    double shift_ratio = 1.0 - (item.border_shift / 100.0);
     std::vector<Point> contracted;
     contracted.reserve(boundary.size());
     for (const auto& pt : boundary) {
         double dx = pt.first - cx;
         double dy = pt.second - cy;
-        int new_x = static_cast<int>(std::round(cx + dx * 0.9));
-        int new_y = static_cast<int>(std::round(cy + dy * 0.9));
+        int new_x = static_cast<int>(std::round(cx + dx * shift_ratio));
+        int new_y = static_cast<int>(std::round(cy + dy * shift_ratio));
         contracted.emplace_back(new_x, new_y);
     }
 
@@ -317,6 +314,9 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
     double dist_accum = 0.0;
     size_t seg_index = 0;
 
+    int angle_center = item.sector_center;
+    int angle_range = item.sector_range;
+
     for (int i = 0; i < item.quantity; ++i) {
         double target = i * spacing;
         while (seg_index < segment_lengths.size() &&
@@ -330,6 +330,24 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
         double t = (target - dist_accum) / segment_lengths[seg_index];
         int x = static_cast<int>(std::round(p1.first + t * (p2.first - p1.first)));
         int y = static_cast<int>(std::round(p1.second + t * (p2.second - p1.second)));
+
+        double angle = std::atan2(y - cy, x - cx) * 180.0 / M_PI;
+        if (angle < 0) angle += 360;
+
+        int angle_start = angle_center - angle_range / 2;
+        int angle_end = angle_center + angle_range / 2;
+        bool within_sector = false;
+        if (angle_start < 0 || angle_end >= 360) {
+            // wraparound case
+            within_sector = (angle >= (angle_start + 360) % 360 || angle <= angle_end % 360);
+        } else {
+            within_sector = (angle >= angle_start && angle <= angle_end);
+        }
+
+        if (!within_sector) continue;
+
+        x += item.perimeter_x_offset;
+        y += item.perimeter_y_offset;
 
         auto nearest = checker_.get_closest_assets(x, y, 5);
         if (!checker_.check_spacing_overlap(item.info, x, y, nearest)) {

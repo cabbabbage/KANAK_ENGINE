@@ -14,8 +14,8 @@
   "impassable_area": null,
   "z_threshold": 0,
   "size_settings": {
-    "scale_percentage": 107.18170103092784,
-    "variability_percentage": 0.0
+    "scale_percentage": 119,
+    "variability_percentage": 0
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 300,

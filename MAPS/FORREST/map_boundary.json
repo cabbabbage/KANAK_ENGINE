@@ -1,37 +1,33 @@
 {
-  "assets": [
-    {
-      "name": "Big_Rock",
-      "min_number": 111,
-      "max_number": 111,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Tree",
-      "min_number": 2000,
-      "max_number": 2000,
-      "position": "Distributed",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Tree_Dark",
-      "min_number": 2000,
-      "max_number": 2000,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    },
-    {
-      "name": "Tree_Darker",
-      "min_number": 2000,
-      "max_number": 2000,
-      "position": "",
-      "exact_position": null,
-      "inherited": false
-    }
-  ],
-  "inherits_map_assets": false
+  "assets": [],
+  "inherits_map_assets": false,
+  "batch_assets": {
+    "has_batch_assets": true,
+    "grid_spacing_min": 100,
+    "grid_spacing_max": 100,
+    "jitter_min": 15,
+    "jitter_max": 15,
+    "batch_assets": [
+      {
+        "name": "Tree",
+        "tag": false,
+        "percent": 34
+      },
+      {
+        "name": "Tree_Dark",
+        "tag": false,
+        "percent": 32
+      },
+      {
+        "name": "Tree_Darker",
+        "tag": false,
+        "percent": 32
+      },
+      {
+        "name": "Big_Rock",
+        "tag": false,
+        "percent": 2
+      }
+    ]
+  }
 }

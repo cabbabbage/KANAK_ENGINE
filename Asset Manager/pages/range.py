@@ -13,6 +13,8 @@ class Range(ttk.Frame):
         self.var_random = tk.BooleanVar()
         self.var_min = tk.IntVar()
         self.var_max = tk.IntVar()
+        self.sliders = []
+        self.check = None
 
         if self.label:
             ttk.Label(self, text=self.label, font=('Segoe UI', 10, 'bold')).pack(anchor='w', pady=(0, 4))
@@ -30,6 +32,7 @@ class Range(ttk.Frame):
     def _clear_sliders(self):
         for child in self.slider_frame.winfo_children():
             child.destroy()
+        self.sliders = []
 
     def set_fixed(self):
         self.force_fixed = True
@@ -64,6 +67,8 @@ class Range(ttk.Frame):
         slider.set(var.get())
         slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 4))
 
+        self.sliders.append(slider)
+
         def make_editable(event):
             value_label.pack_forget()
             entry = ttk.Entry(row, width=5)
@@ -77,7 +82,6 @@ class Range(ttk.Frame):
                     if from_ <= val <= to_:
                         var.set(val)
                         slider.set(val)
-                    # else revert
                 except ValueError:
                     pass
                 entry.destroy()
@@ -120,3 +124,15 @@ class Range(ttk.Frame):
 
         self.var_random.set(min_val != max_val and not self.force_fixed)
         self._draw_sliders()
+
+    def disable(self):
+        if self.check:
+            self.check.configure(state=tk.DISABLED)
+        for slider in self.sliders:
+            slider.configure(state=tk.DISABLED)
+
+    def enable(self):
+        if self.check:
+            self.check.configure(state=tk.NORMAL)
+        for slider in self.sliders:
+            slider.configure(state=tk.NORMAL)

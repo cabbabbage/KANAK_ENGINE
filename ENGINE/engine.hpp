@@ -1,4 +1,4 @@
-// File: engine.hpp
+// engine.hpp
 
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
@@ -7,10 +7,11 @@
 #include <vector>
 #include <unordered_map>
 #include <SDL.h>
-#include <SDL_image.h>          // ← for IMG_Animation
+#include <SDL_image.h>
 #include "area.hpp"
 #include "Assets.hpp"
 #include "fade_textures.hpp"
+#include "generate_map_light.hpp"
 
 class Engine {
 public:
@@ -20,6 +21,7 @@ public:
     void init();
 
 private:
+    int brightness_level;
     std::string map_path;
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -32,7 +34,9 @@ private:
     std::vector<Area> roomTrailAreas;
 
     std::unordered_map<SDL_Texture*, SDL_Rect> static_faded_areas;
+    Generate_Map_Light* map_light;  // now a pointer
 
+    Generate_Map_Light* get_map_light();  // declaration only
     void generate_static_faded_areas();
     void game_loop();
     void render_visible();

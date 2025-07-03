@@ -9,9 +9,9 @@ SRC_DIR = "SRC"
 class AssetSearchWindow(tk.Toplevel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.title("Search Assets")
+        self.title("Search Assets or Tags")
         self.geometry("500x600")
-        self.selected_asset = None
+        self.selected_result = None  # (type, name)
         self.thumb_size = (64, 64)
 
         # Search input
@@ -71,24 +71,30 @@ class AssetSearchWindow(tk.Toplevel):
             widget.destroy()
 
         matches = []
+        tag_set = set()
 
         for asset in self.assets:
             name = asset["name"]
             tags = asset["tags"]
             if query in name.lower():
-                matches.append({"score": 0, "asset": asset})
-            elif any(query in tag.lower() for tag in tags):
-                matches.append({"score": 1, "asset": asset})
+                matches.append(("asset", asset))
+            for tag in tags:
+                if query in tag.lower():
+                    tag_set.add(tag)
 
-        matches.sort(key=lambda x: x["score"])
+        matches.sort(key=lambda x: x[1]["name"])
 
         for match in matches:
-            self._add_result_widget(match["asset"])
+            if match[0] == "asset":
+                self._add_asset_widget(match[1])
 
-    def _add_result_widget(self, asset):
+        for tag in sorted(tag_set):
+            self._add_tag_widget(tag)
+
+    def _add_asset_widget(self, asset):
         frame = ttk.Frame(self.result_frame, relief="ridge", borderwidth=1, padding=5)
         frame.pack(fill=tk.X, pady=4)
-        frame.bind("<Button-1>", lambda e, name=asset["name"]: self._on_select(name))
+        frame.bind("<Button-1>", lambda e, name=asset["name"]: self._on_select("asset", name))
 
         # Image
         img_path = os.path.join(asset["path"], "default", "0.png")
@@ -100,18 +106,25 @@ class AssetSearchWindow(tk.Toplevel):
                 img_label = tk.Label(frame, image=photo)
                 img_label.image = photo
                 img_label.pack(side=tk.LEFT, padx=5)
-                img_label.bind("<Button-1>", lambda e, name=asset["name"]: self._on_select(name))
+                img_label.bind("<Button-1>", lambda e, name=asset["name"]: self._on_select("asset", name))
             except Exception:
                 pass
 
-        # Name
         name_label = ttk.Label(frame, text=asset["name"], font=("Segoe UI", 12))
         name_label.pack(side=tk.LEFT, padx=10)
-        name_label.bind("<Button-1>", lambda e, name=asset["name"]: self._on_select(name))
+        name_label.bind("<Button-1>", lambda e, name=asset["name"]: self._on_select("asset", name))
 
-    def _on_select(self, asset_name):
-        print(f"[Search] Selected asset: {asset_name}")
-        self.selected_asset = asset_name
+    def _add_tag_widget(self, tag):
+        frame = ttk.Frame(self.result_frame, relief="solid", borderwidth=1, padding=5)
+        frame.pack(fill=tk.X, pady=3)
+        label = ttk.Label(frame, text=f"# {tag}", font=("Segoe UI", 11, "italic"), foreground="#555")
+        label.pack(side=tk.LEFT, padx=10)
+        frame.bind("<Button-1>", lambda e, tag=tag: self._on_select("tag", tag))
+        label.bind("<Button-1>", lambda e, tag=tag: self._on_select("tag", tag))
+
+    def _on_select(self, item_type, value):
+        print(f"[Search] Selected {item_type}: {value}")
+        self.selected_result = (item_type, value)
         self.destroy()
 
 # Optional launcher
@@ -120,8 +133,8 @@ def launch_search():
     root.withdraw()
     window = AssetSearchWindow()
     window.wait_window()
-    return getattr(window, "selected_asset", None)
+    return getattr(window, "selected_result", None)
 
 if __name__ == "__main__":
     selected = launch_search()
-    print("Returned asset:", selected)
+    print("Returned:", selected)

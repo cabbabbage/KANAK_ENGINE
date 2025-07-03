@@ -1,9 +1,8 @@
 #include "asset_spawn_planner.hpp"
 #include <iostream>
 #include <sstream>
-#include <filesystem>
-#include <random>
 #include <fstream>
+#include <random>
 
 namespace fs = std::filesystem;
 
@@ -11,133 +10,127 @@ AssetSpawnPlanner::AssetSpawnPlanner(const nlohmann::json& json_data,
                                      double area,
                                      SDL_Renderer* renderer,
                                      AssetLibrary& asset_library)
-    : renderer_(renderer), asset_library_(&asset_library)
-{
+    : renderer_(renderer), asset_library_(&asset_library) {
     root_json_ = json_data;
-    merge_assets();
-    build_spawn_queue(area);
+    parse_asset_spawns(area);
+    parse_batch_assets();
 }
 
 const std::vector<SpawnInfo>& AssetSpawnPlanner::get_spawn_queue() const {
     return spawn_queue_;
 }
 
-void AssetSpawnPlanner::merge_assets() {
-    if (root_json_.contains("assets")) {
-        for (const auto& asset : root_json_["assets"]) {
-            merged_assets_.push_back(asset);
-        }
-    }
+const std::vector<BatchSpawnInfo>& AssetSpawnPlanner::get_batch_spawn_assets() const {
+    return batch_spawn_assets_;
+}
 
-    if (root_json_.contains("assets_tag")) {
-        for (const auto& tag_entry : root_json_["assets_tag"]) {
-            nlohmann::json resolved = resolve_asset_from_tag(tag_entry);
-            merged_assets_.push_back(resolved);
+void AssetSpawnPlanner::parse_asset_spawns(double area) {
+    std::mt19937 rng(std::random_device{}());
+
+    if (!root_json_.contains("assets")) return;
+
+    for (const auto& entry : root_json_["assets"]) {
+        nlohmann::json asset = entry;
+
+        if (asset.value("tag", false)) {
+            asset = resolve_asset_from_tag(asset);
         }
+
+        std::string name = asset.value("name", "");
+        if (name.empty()) continue;
+
+        auto info = asset_library_->get(name);
+        if (!info) {
+            std::cerr << "[AssetSpawnPlanner] WARNING: Asset '" << name << "' not found in library.\n";
+            continue;
+        }
+
+        int min_num = asset.value("min_number", 1);
+        int max_num = asset.value("max_number", min_num);
+        int quantity = std::uniform_int_distribution<int>(min_num, max_num)(rng);
+
+        std::string position = asset.value("position", "Random");
+        if (!(min_num == 1 && max_num == 1 && (position == "Center" || position == "center"))) {
+            quantity = static_cast<int>(std::round(quantity * (area / REPRESENTATIVE_SPAWN_AREA)));
+            if (quantity < 1) quantity = 1;
+        }
+
+        SpawnInfo s;
+        s.name = name;
+        s.position = position;
+        s.quantity = quantity;
+        s.check_overlap = asset.value("check_overlap", false);
+        s.check_min_spacing = asset.value("check_min_spacing", false);
+
+        auto get_val = [&](const std::string& kmin, const std::string& kmax, int def = 0) -> int {
+            int vmin = asset.value(kmin, def);
+            int vmax = asset.value(kmax, def);
+            return (vmin + vmax) / 2;
+        };
+
+        s.grid_spacing = get_val("grid_spacing_min", "grid_spacing_max");
+        s.jitter = get_val("jitter_min", "jitter_max");
+        s.empty_grid_spaces = get_val("empty_grid_spaces_min", "empty_grid_spaces_max");
+        s.ep_x = get_val("ep_x_min", "ep_x_max", -1);
+        s.ep_y = get_val("ep_y_min", "ep_y_max", -1);
+        s.border_shift = get_val("border_shift_min", "border_shift_max");
+        s.sector_center = get_val("sector_center_min", "sector_center_max");
+        s.sector_range = get_val("sector_range_min", "sector_range_max");
+        s.perimeter_x_offset = get_val("perimeter_x_offset_min", "perimeter_x_offset_max");
+        s.perimeter_y_offset = get_val("perimeter_y_offset_min", "perimeter_y_offset_max");
+
+        s.info = info;
+        spawn_queue_.push_back(s);
+    }
+}
+
+void AssetSpawnPlanner::parse_batch_assets() {
+    if (!root_json_.contains("batch_assets")) return;
+
+    const auto& batch_data = root_json_["batch_assets"];
+    if (!batch_data.value("has_batch_assets", false)) return;
+
+    batch_grid_spacing_ = (batch_data.value("grid_spacing_min", 100) + batch_data.value("grid_spacing_max", 100)) / 2;
+    batch_jitter_ = (batch_data.value("jitter_min", 0) + batch_data.value("jitter_max", 0)) / 2;
+
+    for (const auto& entry : batch_data.value("batch_assets", std::vector<nlohmann::json>{})) {
+        nlohmann::json asset = entry;
+
+        if (asset.value("tag", false)) {
+            asset = resolve_asset_from_tag(asset);
+        }
+
+        std::string name = asset.value("name", "");
+        if (name.empty()) continue;
+
+        BatchSpawnInfo b;
+        b.name = name;
+        b.percent = asset.value("percent", 0);
+        batch_spawn_assets_.push_back(b);
     }
 }
 
 nlohmann::json AssetSpawnPlanner::resolve_asset_from_tag(const nlohmann::json& tag_entry) {
     static std::mt19937 rng(std::random_device{}());
-
     std::string tag = tag_entry.value("tag", "");
-    std::string csv_path = "SRC/tag_map.csv";
 
-    std::ifstream file(csv_path);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open tag map: " + csv_path);
-    }
+    std::vector<std::string> matches;
 
-    std::string line;
-    std::vector<std::string> matching_assets;
-
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        std::string cell;
-        std::vector<std::string> tokens;
-
-        while (std::getline(ss, cell, ',')) {
-            tokens.push_back(cell);
-        }
-
-        if (!tokens.empty() && tokens[0] == tag) {
-            for (size_t i = 1; i < tokens.size(); ++i) {
-                if (!tokens[i].empty()) {
-                    matching_assets.push_back(tokens[i]);
-                }
-            }
-            break;
+    for (const auto& [name, info] : asset_library_->all()) {
+        if (info && info->has_tag(tag)) {
+            matches.push_back(name);
         }
     }
 
-    file.close();
-
-    if (matching_assets.empty()) {
+    if (matches.empty()) {
         throw std::runtime_error("No assets found for tag: " + tag);
     }
 
-    std::uniform_int_distribution<size_t> dist(0, matching_assets.size() - 1);
-    std::string selected_name = matching_assets[dist(rng)];
+    std::uniform_int_distribution<size_t> dist(0, matches.size() - 1);
+    std::string selected = matches[dist(rng)];
 
     nlohmann::json result = tag_entry;
-    result["name"] = selected_name;
+    result["name"] = selected;
     result.erase("tag");
-
     return result;
-}
-
-void AssetSpawnPlanner::build_spawn_queue(double area) {
-    std::mt19937 rng(std::random_device{}());
-
-    for (const auto& entry : merged_assets_) {
-        std::string type = entry.value("name", "");
-        if (type.empty()) {
-            std::cerr << "[AssetSpawnPlanner] WARNING: JSON entry missing 'name', skipping.\n";
-            continue;
-        }
-
-        auto info = asset_library_->get(type);
-        if (!info) {
-            std::cerr << "[AssetSpawnPlanner] WARNING: Asset '" << type
-                      << "' not found in library, skipping.\n";
-            continue;
-        }
-
-        std::string pos = "random";
-        int x = -1, y = -1;
-        int spacing_min = 0, spacing_max = 0;
-
-        if (entry.contains("position") && !entry["position"].is_null()) {
-            pos = entry["position"].get<std::string>();
-        }
-        if (entry.contains("x")) x = entry.value("x", -1);
-        if (entry.contains("y")) y = entry.value("y", -1);
-
-        if (entry.contains("spacing") && entry["spacing"].is_object()) {
-            spacing_min = entry["spacing"].value("min", 0);
-            spacing_max = entry["spacing"].value("max", 0);
-        }
-
-        int min_num = entry.value("min_number", 1);
-        int max_num = entry.value("max_number", min_num);
-        int quantity = std::uniform_int_distribution<int>(min_num, max_num)(rng);
-        quantity = static_cast<int>(std::round(quantity * (area / REPRESENTATIVE_SPAWN_AREA)));
-        if (quantity < 1) quantity = 1;
-        if (pos == "center" || pos == "Center") {
-            quantity = 1;
-        }
-
-        SpawnInfo info_obj;
-        info_obj.name = type;
-        info_obj.type = info->type;
-        info_obj.spawn_position = pos;
-        info_obj.quantity = quantity;
-        info_obj.x_position = x;
-        info_obj.y_position = y;
-        info_obj.spacing_min = spacing_min;
-        info_obj.spacing_max = spacing_max;
-        info_obj.info = info;
-
-        spawn_queue_.push_back(std::move(info_obj));
-    }
 }

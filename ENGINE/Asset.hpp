@@ -14,6 +14,8 @@
 
 class Asset {
 public:
+    std::vector<SDL_Texture*> light_textures;
+
     Asset(int z_offset,
           const Area& spawn_area,
           SDL_Renderer* renderer,

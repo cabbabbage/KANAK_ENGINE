@@ -30,22 +30,26 @@
     "variability_percentage": 0.0
   },
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 0,
+  "min_same_type_distance": 200,
   "blend_mode": "SDL_BLENDMODE_BLEND",
-  "lighting_info": {
-    "has_light_source": true,
-    "light_intensity": 96,
-    "light_color": [
-      255,
-      167,
-      79
-    ],
-    "radius": 207,
-    "fall_off": 100,
-    "jitter_min": 16,
-    "jitter_max": 20,
-    "flicker": true
-  },
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 96,
+      "light_color": [
+        255,
+        167,
+        79
+      ],
+      "radius": 207,
+      "fall_off": 100,
+      "jitter_min": 16,
+      "jitter_max": 20,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flicker": true
+    }
+  ],
   "shading_info": {
     "has_shading": false,
     "has_base_shadow": null,

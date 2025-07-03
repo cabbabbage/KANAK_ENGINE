@@ -1,9 +1,9 @@
 {
   "name": "bone_room",
-  "min_width": 966,
-  "max_width": 966,
-  "min_height": 956,
-  "max_height": 956,
+  "min_width": 1765,
+  "max_width": 1765,
+  "min_height": 1765,
+  "max_height": 1765,
   "edge_smoothness": 100,
   "geometry": "Square",
   "is_spawn": false,
@@ -12,9 +12,25 @@
   "assets": [
     {
       "name": "Bone",
-      "min_number": 251,
-      "max_number": 1539,
+      "min_number": 421,
+      "max_number": 421,
       "position": "Distributed",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "Barrel",
+      "min_number": 2,
+      "max_number": 5,
+      "position": "Null",
+      "exact_position": null,
+      "inherited": false
+    },
+    {
+      "name": "okkkkk_babyyy",
+      "min_number": 0,
+      "max_number": 5,
+      "position": "",
       "exact_position": null,
       "inherited": false
     }
