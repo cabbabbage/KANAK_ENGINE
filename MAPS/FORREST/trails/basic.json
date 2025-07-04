@@ -3,63 +3,32 @@
   "min_width": 550,
   "max_width": 550,
   "curvyness": 5,
-  "assets": [
-    {
-      "name": "okkkkk_babyyy",
-      "min_number": 1,
-      "max_number": 3,
-      "position": "Random",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "lantern",
-      "min_number": 0,
-      "max_number": 2,
-      "position": "Random",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "Rock",
-      "min_number": 0,
-      "max_number": 6,
-      "position": "Random",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    }
-  ],
+  "assets": [],
   "inherits_map_assets": true,
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 57,
-    "grid_spacing_max": 57,
-    "jitter_min": 9,
-    "jitter_max": 9,
+    "grid_spacing_min": 100,
+    "grid_spacing_max": 100,
+    "jitter_min": 0,
+    "jitter_max": 0,
     "batch_assets": [
-      {
-        "name": "brick",
-        "tag": false,
-        "percent": 10
-      },
       {
         "name": "null",
         "tag": false,
-        "percent": 89
+        "percent": 93,
+        "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 1
+        "percent": 2,
+        "color": "#4e0a14"
+      },
+      {
+        "name": "brick",
+        "tag": false,
+        "percent": 5,
+        "color": "#ed746d"
       }
     ]
   }

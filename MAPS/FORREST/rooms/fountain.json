@@ -4,7 +4,7 @@
   "max_width": 937,
   "min_height": 956,
   "max_height": 956,
-  "edge_smoothness": 0,
+  "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": false,
   "is_boss": true,
@@ -33,8 +33,8 @@
       "tag": false,
       "ep_x_min": 50,
       "ep_x_max": 50,
-      "ep_y_min": 50,
-      "ep_y_max": 50
+      "ep_y_min": 10,
+      "ep_y_max": 10
     },
     {
       "name": "flowers",
@@ -56,15 +56,15 @@
     {
       "name": "light",
       "min_number": 0,
-      "max_number": 60,
+      "max_number": 242,
       "position": "Perimeter",
       "exact_position": null,
       "inherited": false,
       "check_overlap": false,
       "check_min_spacing": false,
       "tag": false,
-      "border_shift_min": 100,
-      "border_shift_max": 100,
+      "border_shift_min": 179,
+      "border_shift_max": 179,
       "sector_center_min": 0,
       "sector_center_max": 0,
       "sector_range_min": 360,
@@ -72,16 +72,23 @@
     }
   ],
   "batch_assets": {
-    "has_batch_assets": false,
+    "has_batch_assets": true,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
     "jitter_max": 0,
     "batch_assets": [
       {
+        "name": "Barrel",
+        "tag": false,
+        "percent": 5,
+        "color": "#e08b50"
+      },
+      {
         "name": "null",
         "tag": false,
-        "percent": 100
+        "percent": 95,
+        "color": "#123602"
       }
     ]
   }

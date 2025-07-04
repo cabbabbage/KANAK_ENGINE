@@ -54,7 +54,8 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 100
+        "percent": 100,
+        "color": "#CCCCCC"
       }
     ]
   }

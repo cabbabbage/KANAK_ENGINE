@@ -11,7 +11,7 @@
   "inherits_map_assets": true,
   "assets": [],
   "batch_assets": {
-    "has_batch_assets": false,
+    "has_batch_assets": true,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
@@ -20,7 +20,14 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 100
+        "percent": 50,
+        "color": "#34d6ad"
+      },
+      {
+        "name": "plant",
+        "tag": true,
+        "percent": 50,
+        "color": "#06a004"
       }
     ]
   }

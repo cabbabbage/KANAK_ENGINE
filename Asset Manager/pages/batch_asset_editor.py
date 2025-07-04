@@ -1,260 +1,266 @@
+import os
+import random
+import math
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
+from PIL import Image, ImageTk
+
 from pages.range import Range
 from pages.search import AssetSearchWindow
-import math
-import random
+
+SRC_DIR = "SRC"
 
 class BatchAssetEditor(ttk.Frame):
+    def _bind_range_save(self, rw: Range):
+        """
+        Wire up a Range widget so that any change in its min/max/random
+        immediately triggers a save callback.
+        """
+        rw.var_min.trace_add("write", lambda *_: self._trigger_save())
+        rw.var_max.trace_add("write", lambda *_: self._trigger_save())
+        if hasattr(rw, "var_random"):
+            rw.var_random.trace_add("write", lambda *_: self._trigger_save())
+
     def __init__(self, parent, save_callback=None):
         super().__init__(parent)
-
         self.save_callback = save_callback
+        self._suspend_save = False
 
-        border = ttk.Frame(self, padding=1, relief="solid", borderwidth=1)
-        border.pack(fill=tk.BOTH, expand=True)
+        self.asset_data = []
+        self.sliders = []
 
-        self.pie = []  # list of {name, percent, color, tag}
-        self.slider = None
-        self.remove_button = None
-        self.selected_index = None
-        self.colors = []
-        self._generate_colors()
+        outer = ttk.Frame(self, padding=1, relief="solid", borderwidth=1)
+        outer.pack(fill=tk.BOTH, expand=True)
 
-        self.grid_spacing = Range(border, label="Grid Spacing", min_bound=0, max_bound=400, set_min=100, set_max=100)
-        self.grid_spacing.pack(fill=tk.X, padx=10, pady=4)
-        self.grid_spacing.on_change = self._trigger_save
+        # Grid Spacing range
+        self.grid_spacing = Range(
+            outer,
+            label="Grid Spacing",
+            min_bound=0, max_bound=400,
+            set_min=100, set_max=100
+        )
+        self.grid_spacing.pack(fill=tk.X, padx=10, pady=(6, 2))
+        self._bind_range_save(self.grid_spacing)
 
-        self.jitter = Range(border, label="Jitter", min_bound=0, max_bound=200, set_min=0, set_max=0)
-        self.jitter.pack(fill=tk.X, padx=10, pady=(0, 6))
-        self.jitter.on_change = self._trigger_save
+        # Jitter range
+        self.jitter = Range(
+            outer,
+            label="Jitter",
+            min_bound=0, max_bound=200,
+            set_min=0, set_max=0
+        )
+        self.jitter.pack(fill=tk.X, padx=10, pady=(0, 8))
+        self._bind_range_save(self.jitter)
 
-        self.canvas = tk.Canvas(border, height=360)
-        self.canvas.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
-        self.canvas.bind("<Double-Button-1>", self._on_double_click)
+        # Asset sliders container
+        self.asset_list_frame = ttk.Frame(outer)
+        self.asset_list_frame.pack(fill=tk.BOTH, expand=True, padx=10)
 
-        button_frame = ttk.Frame(border)
-        button_frame.pack(fill=tk.X, padx=10, pady=4)
-        ttk.Button(button_frame, text="Add Asset", command=self._add_asset).pack(side=tk.LEFT)
+        # Add Asset button
+        btns = ttk.Frame(outer)
+        btns.pack(fill=tk.X, padx=10, pady=6)
+        ttk.Button(btns, text="Add Asset", command=self._add_asset).pack(side=tk.LEFT)
 
-        self._redraw()
-
-    def _trigger_save(self):
-        if self.save_callback:
+    def _trigger_save(self, *_):
+        if not self._suspend_save and self.save_callback:
             self.save_callback()
-
-    def _generate_colors(self):
-        for _ in range(100):
-            self.colors.append("#%06x" % random.randint(0, 0xFFFFFF))
 
     def _add_asset(self):
         window = AssetSearchWindow(self)
         window.wait_window()
-        result = getattr(window, "selected_result", None)
-        if not result:
-            return
-        kind, name = result
+        res = getattr(window, "selected_result", None)
+        if not res: return
+        kind, name = res
         is_tag = (kind == "tag")
-        if any(s["name"] == name and s.get("tag", False) == is_tag for s in self.pie):
+        if any(d["name"]==name and d.get("tag")==is_tag for d in self.asset_data):
             return
 
-        if self.pie and self.pie[0]["name"] == "null" and len(self.pie) == 1:
-            self.pie.clear()
-            self.pie.append({
-                "name": name,
-                "tag": is_tag,
-                "percent": 5,
-                "color": self.colors[0]
-            })
-            self.pie.append({
-                "name": "null",
-                "tag": False,
-                "percent": 95,
-                "color": "#DDDDDD"
-            })
-        elif not self.pie:
-            self.pie.append({
-                "name": name,
-                "tag": is_tag,
-                "percent": 5,
-                "color": self.colors[0]
-            })
-            self.pie.append({
-                "name": "null",
-                "tag": False,
-                "percent": 95,
-                "color": "#DDDDDD"
-            })
+        color = "#%06x" % random.randint(0, 0xFFFFFF)
+
+        if not self.asset_data:
+            # first asset: null->50, new->50
+            self.asset_data = [
+                {"name":"null","tag":False,"percent":50,"color":"#CCCCCC"},
+                {"name":name,"tag":is_tag,"percent":50,"color":color}
+            ]
+        elif len(self.asset_data)==1 and self.asset_data[0]["name"]=="null":
+            self.asset_data[0].update(percent=50)
+            self.asset_data.append({"name":name,"tag":is_tag,"percent":50,"color":color})
         else:
-            new_percent = 5
-            self._adjust_existing(new_percent)
-            self.pie.append({
-                "name": name,
-                "tag": is_tag,
-                "percent": new_percent,
-                "color": self.colors[len(self.pie) % len(self.colors)]
-            })
-            self._normalize_percentages()
-        self._redraw()
+            self.asset_data.append({"name":name,"tag":is_tag,"percent":5,"color":color})
+            self._rebalance_percentages()
+
+        self._refresh_ui()
         self._trigger_save()
 
-    def _adjust_existing(self, remove_amount):
-        total = sum(s["percent"] for s in self.pie)
-        if total == 0:
-            return
-        for s in self.pie:
-            share = s["percent"] / total
-            s["percent"] -= share * remove_amount
+    def _rebalance_percentages(self):
+        total = sum(a["percent"] for a in self.asset_data)
+        n = len(self.asset_data)
+        if total==0:
+            for a in self.asset_data:
+                a["percent"] = 100//n
+        else:
+            scaled = [round(a["percent"]*100/total) for a in self.asset_data]
+            diff = 100 - sum(scaled)
+            if diff:
+                # adjust largest
+                i = max(range(n), key=lambda i:scaled[i])
+                scaled[i]+=diff
+            for i,a in enumerate(self.asset_data):
+                a["percent"]=max(1,scaled[i])
 
-    def _normalize_percentages(self):
-        total = sum(s["percent"] for s in self.pie)
-        if total == 0:
-            return
-        scaled = [round(s["percent"] * 100 / total) for s in self.pie]
-        diff = 100 - sum(scaled)
-        if scaled and diff != 0:
-            max_index = max(range(len(scaled)), key=lambda i: scaled[i])
-            scaled[max_index] += diff
-        for i, s in enumerate(self.pie):
-            s["percent"] = scaled[i]
-
-    def _redraw(self):
-        self.canvas.delete("all")
-        if not self.pie:
-            self.pie = [{"name": "null", "tag": False, "percent": 100, "color": "#DDDDDD"}]
-        x, y, r = 220, 180, 120
-        label_radius = r + 30
-        angle = 0
-        for i, s in enumerate(self.pie):
-            extent = 360 * (s["percent"] / 100)
-            self.canvas.create_arc(
-                x - r, y - r, x + r, y + r,
-                start=-angle - extent, extent=extent,
-                fill=s["color"], outline="black", tags=("sector", str(i))
-            )
-            mid_angle_deg = angle + extent / 2
-            mid_angle_rad = math.radians(-mid_angle_deg)
-            edge_x = x + r * math.cos(mid_angle_rad)
-            edge_y = y + r * math.sin(mid_angle_rad)
-            label_x = x + label_radius * math.cos(mid_angle_rad)
-            label_y = y + label_radius * math.sin(mid_angle_rad)
-            self.canvas.create_line(edge_x, edge_y, label_x, label_y, fill="black")
-            label_text = f"#{s['name']}" if s.get("tag", False) else s["name"]
-            self.canvas.create_text(
-                label_x, label_y,
-                text=f"{label_text}\n{s['percent']}%",
-                font=("Segoe UI", 9, "bold"),
-                anchor="center"
-            )
-            angle += extent
-
-    def _on_double_click(self, event):
-        clicked = self.canvas.find_withtag("current")
-        if not clicked:
-            return
-        tags = self.canvas.gettags(clicked[0])
-        if "sector" not in tags:
-            return
-        index = int(tags[1])
-        self._open_slider(index)
-
-    def _open_slider(self, index):
-        if self.slider:
-            self.slider.destroy()
-        if self.remove_button:
-            self.remove_button.destroy()
-
-        self.selected_index = index
-        sector = self.pie[index]
-        self.slider = Range(self, min_bound=1, max_bound=100, set_min=sector["percent"],
-                            set_max=sector["percent"], force_fixed=True)
-        self.slider.pack(fill=tk.X, padx=10, pady=(0, 4))
-
-        self.remove_button = ttk.Button(self, text="✕", width=3, command=self._remove_selected)
-        self.remove_button.pack(padx=10, pady=(0, 10))
-
-        def on_change(*_):
-            new_val = self.slider.get_min()
-            self._recalculate_distribution(new_val)
-
-        self.slider.var_max.trace_add("write", on_change)
-
-    def _remove_selected(self):
-        if self.selected_index is None:
-            return
-        del self.pie[self.selected_index]
-        self.selected_index = None
-        if self.slider:
-            self.slider.destroy()
-            self.slider = None
-        if self.remove_button:
-            self.remove_button.destroy()
-            self.remove_button = None
-        self._normalize_percentages()
-        self._redraw()
-        self._trigger_save()
-
-    def _recalculate_distribution(self, new_val):
-        rest = [i for i in range(len(self.pie)) if i != self.selected_index]
-        if not rest:
-            self.pie[self.selected_index]["percent"] = new_val
-            self._redraw()
-            self._trigger_save()
+    def _adjust_others(self, idx, new_val):
+        n = len(self.asset_data)
+        if n<=1:
+            self.asset_data[idx]["percent"]=100
             return
 
-        leftover = 100 - new_val
-        current_total = sum(self.pie[i]["percent"] for i in rest)
-        new_distribution = []
-        for i in rest:
-            if current_total == 0:
-                new_distribution.append((i, leftover / len(rest)))
+        old = [a["percent"] for a in self.asset_data]
+        old_total = sum(old) - old[idx]
+        self.asset_data[idx]["percent"] = new_val
+        remaining = 100 - new_val
+
+        # proportional distribution
+        props = []
+        for j in range(n):
+            if j==idx: continue
+            if old_total>0:
+                v = old[j]*remaining/old_total
             else:
-                ratio = self.pie[i]["percent"] / current_total
-                new_distribution.append((i, leftover * ratio))
+                v = remaining/(n-1)
+            props.append(v)
 
-        rounded = [round(p) for _, p in new_distribution]
-        total = sum(rounded)
-        delta = 100 - new_val - total
-        if rounded and delta != 0:
-            max_index = max(range(len(rounded)), key=lambda i: rounded[i])
-            rounded[max_index] += delta
+        # floor and track fractions
+        floored = [math.floor(v) for v in props]
+        fracs = [v - math.floor(v) for v in props]
+        s = sum(floored)
+        diff = remaining - s
 
-        for (i, _), r in zip(new_distribution, rounded):
-            self.pie[i]["percent"] = r
-        self.pie[self.selected_index]["percent"] = new_val
-        self._redraw()
+        # allocate diff by largest fractions (or smallest if negative)
+        if diff>0:
+            order = sorted(range(len(fracs)), key=lambda i:fracs[i], reverse=True)
+            for k in order[:diff]:
+                floored[k]+=1
+        elif diff<0:
+            order = sorted(range(len(fracs)), key=lambda i:fracs[i])
+            for k in order[: -diff]:
+                floored[k]=max(1,floored[k]-1)
+
+        # ensure all >=1
+        for k in range(len(floored)):
+            floored[k]=max(1,floored[k])
+        # final fix if still off
+        s = sum(floored)
+        diff = remaining - s
+        for _ in range(abs(diff)):
+            k = random.randrange(len(floored))
+            if diff>0:
+                floored[k]+=1
+            elif floored[k]>1:
+                floored[k]-=1
+
+        # write back
+        it=0
+        for j in range(n):
+            if j==idx: continue
+            self.asset_data[j]["percent"] = floored[it]
+            it+=1
+
+    def _remove_asset(self, idx):
+        if 0<=idx<len(self.asset_data):
+            del self.asset_data[idx]
+        if not self.asset_data:
+            self.asset_data=[{"name":"null","tag":False,"percent":100,"color":"#CCCCCC"}]
+        else:
+            self._rebalance_percentages()
+        self._refresh_ui()
         self._trigger_save()
 
+    def _refresh_ui(self):
+        for w in self.asset_list_frame.winfo_children():
+            w.destroy()
+        self.sliders.clear()
+
+        n = len(self.asset_data)
+        for i,asset in enumerate(self.asset_data):
+            frame = ttk.Frame(self.asset_list_frame)
+            frame.pack(fill=tk.X,pady=4)
+
+            left = ttk.Frame(frame)
+            left.pack(side=tk.LEFT,padx=(0,10))
+            if asset.get("tag") or asset["name"]=="null":
+                lbl = tk.Label(left,text="#",font=("Segoe UI",28,"bold"),width=2)
+                lbl.pack()
+            else:
+                path = os.path.join(SRC_DIR,asset["name"],"default","0.png")
+                if os.path.exists(path):
+                    try:
+                        img=Image.open(path)
+                        img.thumbnail((48,48),Image.Resampling.LANCZOS)
+                        ph=ImageTk.PhotoImage(img)
+                        lbl=tk.Label(left,image=ph); lbl.image=ph; lbl.pack()
+                    except:
+                        tk.Label(left,text="?").pack()
+                else:
+                    tk.Label(left,text="?").pack()
+
+            ttk.Label(frame,text=asset["name"],width=20).pack(side=tk.LEFT)
+
+            slider = tk.Scale(frame,from_=1,to=100,orient=tk.HORIZONTAL,
+                              resolution=1,length=200,
+                              bg=asset["color"],
+                              troughcolor=asset["color"])
+            slider.set(asset["percent"])
+            slider.pack(side=tk.LEFT,padx=6,fill=tk.X,expand=True)
+
+            # on release adjust others
+            def on_release(event=None, idx=i, s=slider):
+                val = s.get()
+                max_allowed = 100 - (n-1)*1
+                val = max(1,min(val,max_allowed))
+                s.set(val)
+                self._adjust_others(idx,val)
+                self._refresh_ui()
+                self._trigger_save()
+
+            slider.bind("<ButtonRelease-1>", on_release)
+
+            # remove button
+            ttk.Button(frame,text="Delete",width=3,command=lambda idx=i:self._remove_asset(idx)
+            ).pack(side=tk.RIGHT,padx=(10,0))
+
+            self.sliders.append((frame,slider))
     def save(self):
         return {
-            "has_batch_assets": any(s["name"] != "null" for s in self.pie),
+            "has_batch_assets": any(a["name"]!="null" for a in self.asset_data),
             "grid_spacing_min": self.grid_spacing.get_min(),
             "grid_spacing_max": self.grid_spacing.get_max(),
             "jitter_min": self.jitter.get_min(),
             "jitter_max": self.jitter.get_max(),
             "batch_assets": [
-                {
-                    "name": s["name"],
-                    "tag": s.get("tag", False),
-                    "percent": s["percent"]
-                } for s in self.pie
+                {"name":a["name"],"tag":a.get("tag",False),
+                 "percent":a["percent"],"color":a["color"]}
+                for a in self.asset_data
             ]
         }
-
-
-    def load(self, data=None):
-        if not data:
-            return
-        self.grid_spacing.set(data.get("grid_spacing_min", 100), data.get("grid_spacing_max", 100))
-        self.jitter.set(data.get("jitter_min", 0), data.get("jitter_max", 0))
-        self.pie = data.get("batch_assets", [])
-
-        for i, s in enumerate(self.pie):
-            if "color" not in s:
-                s["color"] = self.colors[i % len(self.colors)]
-
-        if not self.pie:
-            self.pie = [{"name": "null", "tag": False, "percent": 100, "color": "#DDDDDD"}]
-
-        self._normalize_percentages()
-        self._redraw()
+    def load(self,data=None):
+        self._suspend_save=True
+        self.asset_data=[]; self.sliders.clear()
+        for w in self.asset_list_frame.winfo_children(): w.destroy()
+        if not isinstance(data,dict): data={}
+        self.grid_spacing.set(data.get("grid_spacing_min",100),
+                              data.get("grid_spacing_max",100))
+        self.jitter.set(data.get("jitter_min",0),
+                        data.get("jitter_max",0))
+        loaded=data.get("batch_assets",[])
+        if isinstance(loaded,list) and loaded:
+            self.asset_data=[{
+                "name":a["name"],"tag":a.get("tag",False),
+                "percent":a.get("percent",0),
+                "color":a.get("color","#%06x"%random.randint(0,0xFFFFFF))
+            } for a in loaded]
+            self._rebalance_percentages()
+        else:
+            self.asset_data=[{"name":"null","tag":False,"percent":100,"color":"#CCCCCC"}]
+        self._refresh_ui()
+        self._suspend_save=False
