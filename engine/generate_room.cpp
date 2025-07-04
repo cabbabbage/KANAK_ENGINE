@@ -39,7 +39,7 @@ GenerateRoom::GenerateRoom(std::string map_path,
     inherits = J.value("inherits_map_assets", false);
 
     const double avg_dim = (map_width_ + map_height_) / 2.0;
-    const double center_dist_threshold = 0.08 * avg_dim;
+    const double center_dist_threshold = 0.1 * avg_dim;
     const double line_dist_threshold = 0.002 * avg_dim;
     const double intersection_min_dist = 0.03 * avg_dim;
 

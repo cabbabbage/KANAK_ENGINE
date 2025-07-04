@@ -1,10 +1,10 @@
 {
-  "name": "basic",
+  "name": "brick",
   "min_width": 550,
   "max_width": 550,
   "curvyness": 5,
-  "assets": [],
   "inherits_map_assets": true,
+  "assets": [],
   "batch_assets": {
     "has_batch_assets": true,
     "grid_spacing_min": 100,
@@ -15,20 +15,20 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 93,
+        "percent": 89,
         "color": "#CCCCCC"
-      },
-      {
-        "name": "light",
-        "tag": true,
-        "percent": 2,
-        "color": "#4e0a14"
       },
       {
         "name": "brick",
         "tag": false,
-        "percent": 5,
-        "color": "#ed746d"
+        "percent": 10,
+        "color": "#a6e41f"
+      },
+      {
+        "name": "light",
+        "tag": true,
+        "percent": 1,
+        "color": "#2911cb"
       }
     ]
   }

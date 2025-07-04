@@ -1,5 +1,3 @@
-# pages/size.py
-
 import os
 import json
 import tkinter as tk
@@ -30,6 +28,13 @@ class SizePage(ttk.Frame):
         self.threshold_range = Range(self, min_bound=0, max_bound=1,
                                      set_min=0, set_max=0,
                                      force_fixed=True, label="Z Threshold (px)")
+
+        # Bind live update on any slider change
+        for rw in (self.scale_range, self.variability_range, self.threshold_range):
+            rw.var_min.trace_add("write", lambda *_: self._rescale())
+            rw.var_max.trace_add("write", lambda *_: self._rescale())
+            if hasattr(rw, "var_random"):
+                rw.var_random.trace_add("write", lambda *_: self._rescale())
 
         # styles
         style = ttk.Style(self)

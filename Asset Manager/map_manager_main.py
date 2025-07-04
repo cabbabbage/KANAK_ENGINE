@@ -45,15 +45,25 @@ class MapManagerApp(tk.Toplevel):
         top_btns = ttk.Frame(left)
         top_btns.pack(fill=tk.X, pady=(8, 4), padx=5)
 
-        switch_btn = tk.Button(top_btns, text="Switch to Asset Manager", bg="#D9534F", fg="white",
-                                font=("Segoe UI", 11, "bold"), command=self._open_asset_manager)
+        switch_btn = tk.Button(
+            top_btns, text="Switch to Asset Manager", bg="#D9534F", fg="white",
+            font=("Segoe UI", 11, "bold"), command=self._open_asset_manager
+        )
         switch_btn.pack(fill=tk.X, pady=(0, 4))
 
-        new_btn = tk.Button(top_btns, text="New Map", bg="#007BFF", fg="white",
-                            font=("Segoe UI", 11, "bold"), command=self._new_map)
+        new_btn = tk.Button(
+            top_btns, text="New Map", bg="#007BFF", fg="white",
+            font=("Segoe UI", 11, "bold"), command=self._new_map
+        )
         new_btn.pack(fill=tk.X, pady=(0, 6))
 
-        self.list_canvas = tk.Canvas(left, borderwidth=0, highlightthickness=0, width=220)
+        # Reduced list_canvas width to match left frame, giving more space to editor
+        self.list_canvas = tk.Canvas(
+            left,
+            borderwidth=0,
+            highlightthickness=0,
+            width=120
+        )
         self.list_scroll = ttk.Scrollbar(left, orient="vertical", command=self.list_canvas.yview)
         self.list_canvas.configure(yscrollcommand=self.list_scroll.set)
         self.list_canvas.pack(side="left", fill="both", expand=True)
@@ -61,7 +71,10 @@ class MapManagerApp(tk.Toplevel):
 
         self.list_inner = ttk.Frame(self.list_canvas)
         self.list_window = self.list_canvas.create_window((0, 0), window=self.list_inner, anchor="nw")
-        self.list_inner.bind("<Configure>", lambda e: self.list_canvas.configure(scrollregion=self.list_canvas.bbox("all")))
+        self.list_inner.bind(
+            "<Configure>",
+            lambda e: self.list_canvas.configure(scrollregion=self.list_canvas.bbox("all"))
+        )
         self.list_canvas.bind_all("<MouseWheel>", self._on_mousewheel_assets)
 
         self.map_buttons = {}
@@ -76,9 +89,12 @@ class MapManagerApp(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
 
         scrollable_frame = ttk.Frame(canvas)
-        scroll_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
 
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
         scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel_assets)
 
         self.notebook = ttk.Notebook(scrollable_frame)
@@ -97,15 +113,6 @@ class MapManagerApp(tk.Toplevel):
     def _on_mousewheel_assets(self, event):
         self.list_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
-
-
-    def _bind_mousewheel(self, bind):
-        method = self.list_canvas.bind_all if bind else self.list_canvas.unbind_all
-        method("<MouseWheel>", self._on_mousewheel_list)
-
-    def _on_mousewheel_list(self, event):
-        self.list_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-
     def _scan_maps(self):
         if not os.path.isdir(MAPS_DIR):
             os.makedirs(MAPS_DIR)
@@ -113,24 +120,21 @@ class MapManagerApp(tk.Toplevel):
 
     def _refresh_map_list(self):
         self.maps = self._scan_maps()
-        for widget in self.list_inner.winfo_children():
-            widget.destroy()
+        for w in self.list_inner.winfo_children():
+            w.destroy()
         self.map_buttons.clear()
-
-        # Inside _refresh_map_list
         for name in self.maps:
             btn = tk.Button(
                 self.list_inner,
                 text=name,
                 anchor="w",
-                width=30,  # Standardized width
+                width=30,
                 font=("Segoe UI", 9),
                 command=lambda n=name: self._select_map(n),
-                height=1  # Button height can be adjusted here
+                height=1
             )
-            btn.pack(fill="x", padx=4, pady=1)  # Adjust vertical spacing as needed
+            btn.pack(fill="x", padx=4, pady=1)
             self.map_buttons[name] = btn
-
 
     def _select_map(self, name):
         self.current_map = name
@@ -141,44 +145,37 @@ class MapManagerApp(tk.Toplevel):
         for title, page in self.pages.items():
             json_filename = page.get_json_filename()
             json_path = os.path.join(MAPS_DIR, name, json_filename)
-
             try:
-                if isinstance(page, TrailsPage):
-                    page.load_data(None, json_path)
-                else:
-                    if os.path.exists(json_path):
-                        with open(json_path, "r") as f:
-                            data = json.load(f)
-                        page.load_data(data, json_path)
+                data = None
+                if os.path.exists(json_path):
+                    with open(json_path, "r") as f:
+                        data = json.load(f)
+                page.load_data(data, json_path)
             except Exception as e:
-                print(f"[MapManager] Failed to load {json_filename}: {e}")
+                messagebox.showerror("Load Failed", f"Could not load {json_filename}: {e}")
 
     def _new_map(self):
-        from tkinter import simpledialog
         while True:
-            raw_name = simpledialog.askstring("New Map", "Enter a name for the new map:")
-            if raw_name is None:
+            raw = simpledialog.askstring("New Map", "Enter map name:")
+            if raw is None:
                 return
-            safe_name = "".join(c for c in raw_name if c.isalnum() or c in ("_", "-")).strip()
-            if not safe_name:
-                messagebox.showerror("Invalid Name", "Map name must contain letters, numbers, dashes or underscores.")
+            safe = "".join(c for c in raw if c.isalnum() or c in ("_","-")).strip()
+            if not safe:
+                messagebox.showerror("Invalid Name", "Use letters, numbers, dashes, or underscores.")
                 continue
-            folder = os.path.join(MAPS_DIR, safe_name)
+            folder = os.path.join(MAPS_DIR, safe)
             if os.path.exists(folder):
-                messagebox.showerror("Already Exists", f"A map named '{safe_name}' already exists.")
+                messagebox.showerror("Already Exists", f"Map '{safe}' exists.")
                 continue
+            os.makedirs(folder, exist_ok=True)
+            for cls in TABS.values():
+                path = os.path.join(folder, cls.get_json_filename())
+                if not os.path.exists(path):
+                    with open(path, "w") as f:
+                        f.write("{}")
             break
-
-        os.makedirs(folder, exist_ok=True)
-        for page_cls in TABS.values():
-            path = os.path.join(folder, page_cls.get_json_filename())
-            if not os.path.exists(path):
-                with open(path, "w") as f:
-                    f.write("{}")
-
         self._refresh_map_list()
-        idx = self.maps.index(safe_name)
-        list(self.map_buttons.values())[idx].invoke()
+        self.map_buttons[safe].invoke()
 
     def _open_asset_manager(self):
         from asset_manager_main import AssetOrganizerApp

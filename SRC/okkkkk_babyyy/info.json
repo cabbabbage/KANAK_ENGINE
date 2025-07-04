@@ -20,7 +20,10 @@
   },
   "tags": [
     "passable",
-    "default"
+    "default",
+    "light",
+    "man-made",
+    "orange"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

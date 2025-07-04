@@ -1,66 +1,39 @@
 {
   "map_name": "FORREST",
-  "map_width_": 39063,
-  "map_height_": 33391,
-  "min_rooms": 16,
-  "max_rooms": 20,
+  "map_width_": 42452,
+  "map_height_": 42046,
+  "min_rooms": 7,
+  "max_rooms": 11,
   "map_assets": "map_assets.json",
   "map_boundary": "map_boundary.json",
   "rooms": [
     {
-      "room_path": "rooms\\Key.json",
-      "max_instances": 1,
+      "room_path": "rooms\\chest.json",
+      "max_instances": 5,
       "required": true
-    },
-    {
-      "room_path": "rooms\\RND.json",
-      "max_instances": 2,
-      "required": false
-    },
-    {
-      "room_path": "rooms\\bone_room.json",
-      "max_instances": 1,
-      "required": false
     },
     {
       "room_path": "rooms\\fountain.json",
-      "max_instances": 1,
+      "max_instances": 5,
       "required": true
     },
     {
-      "room_path": "rooms\\intersection.json",
-      "max_instances": 15,
-      "required": false
-    },
-    {
-      "room_path": "rooms\\skulls.json",
-      "max_instances": 1,
-      "required": false
+      "room_path": "rooms\\random.json",
+      "max_instances": 5,
+      "required": true
     },
     {
       "room_path": "rooms\\spawn.json",
       "max_instances": 1,
       "required": true
-    },
-    {
-      "room_path": "rooms\\stoge.json",
-      "max_instances": 1,
-      "required": false
-    },
-    {
-      "room_path": "rooms\\stumps.json",
-      "max_instances": 2,
-      "required": false
-    },
-    {
-      "room_path": "rooms\\tree.json",
-      "max_instances": 2,
-      "required": false
     }
   ],
   "trails": [
     {
       "trail_path": "trails\\basic.json"
+    },
+    {
+      "trail_path": "trails\\brick.json"
     }
   ]
 }

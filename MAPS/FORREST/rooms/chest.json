@@ -1,30 +1,33 @@
 {
-  "name": "intersection",
+  "name": "chest",
   "min_width": 750,
   "max_width": 750,
-  "min_height": 750,
-  "max_height": 750,
-  "edge_smoothness": 0,
+  "min_height": 730,
+  "max_height": 730,
+  "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": false,
   "is_boss": false,
-  "inherits_map_assets": false,
+  "inherits_map_assets": true,
   "assets": [],
   "batch_assets": {
+    "has_batch_assets": true,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
     "jitter_max": 0,
     "batch_assets": [
       {
-        "name": "Bone_Pile",
-        "tag": false,
-        "percent": 5
-      },
-      {
         "name": "null",
         "tag": false,
-        "percent": 95
+        "percent": 50,
+        "color": "#34d6ad"
+      },
+      {
+        "name": "plant",
+        "tag": true,
+        "percent": 50,
+        "color": "#06a004"
       }
     ]
   }

@@ -70,14 +70,14 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 500,
   "tags": [
-    "passable",
     "backward",
-    "forward",
     "right",
-    "left",
     "player",
+    "forward",
     "start",
-    "default"
+    "passable",
+    "default",
+    "left"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

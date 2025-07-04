@@ -1,53 +1,42 @@
 {
-  "name": "Key",
-  "min_width": 1213,
-  "max_width": 1213,
-  "min_height": 1194,
-  "max_height": 1194,
+  "name": "random",
+  "min_width": 1351,
+  "max_width": 1915,
+  "min_height": 1432,
+  "max_height": 2105,
   "edge_smoothness": 100,
-  "geometry": "Square",
+  "geometry": "Circle",
   "is_spawn": false,
   "is_boss": false,
   "inherits_map_assets": true,
   "assets": [
     {
-      "name": "Key",
+      "name": "scary",
+      "min_number": 0,
+      "max_number": 300,
+      "position": "Random",
+      "exact_position": null,
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
+    },
+    {
+      "name": "scary",
+      "min_number": 0,
+      "max_number": 436,
+      "position": "Random",
+      "exact_position": null,
+      "inherited": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "tag": false
+    },
+    {
+      "name": "light",
       "min_number": 1,
       "max_number": 1,
       "position": "Center",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "Box",
-      "min_number": 0,
-      "max_number": 5,
-      "position": "Random",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "Barrel",
-      "min_number": 0,
-      "max_number": 5,
-      "position": "Random",
-      "exact_position": null,
-      "inherited": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "tag": false
-    },
-    {
-      "name": "okkkkk_babyyy",
-      "min_number": 2,
-      "max_number": 5,
-      "position": "Random",
       "exact_position": null,
       "inherited": false,
       "check_overlap": false,
@@ -65,7 +54,8 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 100
+        "percent": 100,
+        "color": "#CCCCCC"
       }
     ]
   }

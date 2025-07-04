@@ -4,23 +4,32 @@
     "has_batch_assets": true,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
-    "jitter_min": 0,
-    "jitter_max": 0,
+    "jitter_min": 4,
+    "jitter_max": 4,
     "batch_assets": [
       {
         "name": "Grass_FPS_2",
         "tag": false,
-        "percent": 25
+        "percent": 17,
+        "color": "#da2582"
       },
       {
         "name": "null",
         "tag": false,
-        "percent": 53
+        "percent": 66,
+        "color": "#a49367"
       },
       {
         "name": "Grass_1_FPS_2",
         "tag": false,
-        "percent": 22
+        "percent": 16,
+        "color": "#6193a3"
+      },
+      {
+        "name": "bush",
+        "tag": true,
+        "percent": 1,
+        "color": "#414b24"
       }
     ]
   }

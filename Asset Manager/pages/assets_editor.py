@@ -22,6 +22,7 @@ class AssetEditor(ttk.Frame):
         self.inherit_state = False
         self.selected_frame = None
 
+        # ─── Top bar with Inherit, Add Asset, and Generate buttons ───────────
         top_bar = ttk.Frame(self)
         top_bar.pack(fill=tk.X, pady=4, padx=20)
 
@@ -47,23 +48,29 @@ class AssetEditor(ttk.Frame):
         )
         generate_btn.pack(side=tk.LEFT, padx=10)
 
+        # ─── Scrolling container (vertical only) ─────────────────────────────
         container = ttk.Frame(self)
         container.pack(fill=tk.BOTH, expand=True)
 
         self.asset_canvas = tk.Canvas(container)
         self.asset_scrollbar_y = ttk.Scrollbar(container, orient="vertical", command=self.asset_canvas.yview)
-        self.asset_scrollbar_x = ttk.Scrollbar(container, orient="horizontal", command=self.asset_canvas.xview)
-        self.asset_canvas.configure(yscrollcommand=self.asset_scrollbar_y.set, xscrollcommand=self.asset_scrollbar_x.set)
+        self.asset_canvas.configure(yscrollcommand=self.asset_scrollbar_y.set)
 
         self.asset_frame = ttk.Frame(self.asset_canvas)
         self.asset_canvas.create_window((0, 0), window=self.asset_frame, anchor="nw")
-        self.asset_frame.bind("<Configure>", lambda e: self.asset_canvas.configure(scrollregion=self.asset_canvas.bbox("all")))
+        self.asset_frame.bind(
+            "<Configure>",
+            lambda e: self.asset_canvas.configure(scrollregion=self.asset_canvas.bbox("all"))
+        )
         self.asset_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
         self.asset_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.asset_scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
-        self.asset_scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
 
+    
+    
+    
+    
     def _on_mousewheel(self, event):
         self.asset_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
@@ -75,9 +82,21 @@ class AssetEditor(ttk.Frame):
         for asset in self.get_asset_list():
             self._create_asset_widget(asset)
 
+        # Immediately save the loaded state to synchronize with UI
+        self.save_assets()
+
+
+
     def _create_asset_widget(self, asset):
         frame = ttk.Frame(self.asset_frame, relief="ridge", borderwidth=2, padding=5)
-        frame.pack(fill=tk.X, padx=10, pady=4, ipadx=20)
+        # Make each asset frame stretch to the full width
+        frame.pack(fill=tk.X, expand=True, padx=10, pady=4)
+
+
+        # Remember the original dict so untouched keys persist
+        frame.asset_data = asset
+
+        # For selection highlighting
         frame.asset_name = asset["name"]
         frame.inherited = asset.get("inherited", False)
 
@@ -89,7 +108,7 @@ class AssetEditor(ttk.Frame):
 
         frame.bind("<Button-1>", on_click)
 
-        # Image or Tag Symbol
+        # ─── Image or Tag Icon ─────────────────────────────────────────────────────
         if asset.get("tag", False):
             tag_label = tk.Label(frame, text="#", font=("Segoe UI", 32, "bold"), width=2, height=1)
             tag_label.pack(side=tk.LEFT, padx=6)
@@ -106,95 +125,152 @@ class AssetEditor(ttk.Frame):
                 except Exception:
                     pass
 
-
+        # ─── Content Area ─────────────────────────────────────────────────────────
         content = ttk.Frame(frame)
         content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         ttk.Label(content, text=asset["name"], font=("Segoe UI", 11, "bold")).pack(anchor="w")
 
-        range_widget = Range(content, min_bound=0, max_bound=2000, set_min=asset.get("min_number", 0), set_max=asset.get("max_number", 0))
+        # Quantity Range
+        range_widget = Range(
+            content,
+            min_bound=0, max_bound=2000,
+            set_min=asset.get("min_number", 0),
+            set_max=asset.get("max_number", 0)
+        )
         range_widget.pack(fill=tk.X, pady=2)
-        frame.range = range_widget
+        frame.range = range_widget  # ← ensure get_assets can always find it
 
-        def save_on_change(*_):
-            self.save_assets()
+        # Bind quantity sliders to save
+        range_widget.var_min.trace_add("write", lambda *_: self.save_assets())
+        range_widget.var_max.trace_add("write", lambda *_: self.save_assets())
+        range_widget.var_random.trace_add("write", lambda *_: self.save_assets())
 
-        range_widget.var_min.trace_add("write", save_on_change)
-        range_widget.var_max.trace_add("write", save_on_change)
-        range_widget.var_random.trace_add("write", save_on_change)
-
+        # ─── Positioning Controls ─────────────────────────────────────────────────
         if self.positioning:
+            # Overlap / Spacing toggles
             frame.check_overlap_var = tk.BooleanVar(value=asset.get("check_overlap", False))
             frame.check_min_spacing_var = tk.BooleanVar(value=asset.get("check_min_spacing", False))
+            ttk.Checkbutton(content, text="Check Overlap", variable=frame.check_overlap_var,
+                            command=self.save_assets).pack(anchor="w", pady=(6, 0))
+            ttk.Checkbutton(content, text="Check Min Spacing", variable=frame.check_min_spacing_var,
+                            command=self.save_assets).pack(anchor="w", pady=(0, 6))
 
-            ttk.Checkbutton(content, text="Check Overlap", variable=frame.check_overlap_var, command=self.save_assets).pack(anchor="w", pady=(6, 0))
-            ttk.Checkbutton(content, text="Check Min Spacing", variable=frame.check_min_spacing_var, command=self.save_assets).pack(anchor="w", pady=(0, 6))
-
-            ttk.Label(content, text="Position:").pack(anchor="w")
-
+            # Position dropdown
             position_var = tk.StringVar(value=asset.get("position", "Random"))
             frame.position_var = position_var
 
             def update_quantity_logic():
                 pos = position_var.get()
-                if pos in ["Center", "Distributed", "Exact Position"]:
+                if pos in ("Center", "Distributed", "Exact Position"):
                     frame.range.set(1, 1)
                     frame.range.disable()
                 else:
                     frame.range.enable()
 
-            def update_position_options(*_):
+            def update_position_options():
+                # Clear old option widgets
                 for child in option_container.winfo_children():
                     child.destroy()
-                selected = position_var.get()
+                frame.position_options.clear()
 
-                if selected == "Perimeter":
-                    perimeter_opts = ttk.Frame(option_container)
-                    perimeter_opts.pack(fill=tk.X)
-
-                    frame.position_options["border_shift"] = Range(perimeter_opts, label="Border Shift (%)", min_bound=0, max_bound=200, set_min=100, set_max=100); frame.position_options["border_shift"].pack(fill=tk.X, pady=(2, 4))
-                    frame.position_options["sector_center"] = Range(perimeter_opts, label="Active Sector Center", min_bound=0, max_bound=360, set_min=0, set_max=0); frame.position_options["sector_center"].pack(fill=tk.X, pady=(2, 4))
-                    frame.position_options["sector_range"] = Range(perimeter_opts, label="Sector Range", min_bound=0, max_bound=360, set_min=360, set_max=360); frame.position_options["sector_range"].pack(fill=tk.X, pady=(2, 4))
-
-
-                elif selected == "Distributed":
-                    d = ttk.Frame(option_container)
-                    d.pack(fill=tk.X)
-                    frame.position_options["grid_spacing"] = Range(d, label="Grid Spacing", min_bound=0, max_bound=400, set_min=100, set_max=100); frame.position_options["grid_spacing"].pack(fill=tk.X)
-                    frame.position_options["jitter"] = Range(d, label="Jitter", min_bound=0, max_bound=200, set_min=0, set_max=0); frame.position_options["jitter"].pack(fill=tk.X)
-                    frame.position_options["empty_grid_spaces"] = Range(d, label="Empty Grid Spaces", min_bound=0, max_bound=100, set_min=0, set_max=0); frame.position_options["empty_grid_spaces"].pack(fill=tk.X)
-
-                elif selected == "Exact Position":
-                    e = ttk.Frame(option_container)
-                    e.pack(fill=tk.X)
-
-                    frame.position_options["ep_x"] = Range(
-                        e, label="X Position (%)", min_bound=0, max_bound=100, set_min=50, set_max=50
+                sel = position_var.get()
+                if sel == "Perimeter":
+                    opts = ttk.Frame(option_container); opts.pack(fill=tk.X)
+                    frame.position_options["border_shift"] = Range(
+                        opts, label="Border Shift (%)", min_bound=0, max_bound=200,
+                        set_min=asset.get("border_shift_min", 100),
+                        set_max=asset.get("border_shift_max", 100)
                     )
-                    frame.position_options["ep_x"].var_random.set(False)
-                    frame.position_options["ep_x"]._draw_sliders()
-                    frame.position_options["ep_x"].pack(fill=tk.X)
-
-                    frame.position_options["ep_y"] = Range(
-                        e, label="Y Position (%)", min_bound=0, max_bound=100, set_min=50, set_max=50
+                    frame.position_options["border_shift"].pack(fill=tk.X, pady=2)
+                    frame.position_options["sector_center"] = Range(
+                        opts, label="Active Sector Center", min_bound=0, max_bound=360,
+                        set_min=asset.get("sector_center_min", 0),
+                        set_max=asset.get("sector_center_max", 0)
                     )
-                    frame.position_options["ep_y"].var_random.set(False)
-                    frame.position_options["ep_y"]._draw_sliders()
-                    frame.position_options["ep_y"].pack(fill=tk.X)
+                    frame.position_options["sector_center"].pack(fill=tk.X, pady=2)
+                    frame.position_options["sector_range"] = Range(
+                        opts, label="Sector Range", min_bound=0, max_bound=360,
+                        set_min=asset.get("sector_range_min", 360),
+                        set_max=asset.get("sector_range_max", 360)
+                    )
+                    frame.position_options["sector_range"].pack(fill=tk.X, pady=2)
 
+                elif sel == "Distributed":
+                    opts = ttk.Frame(option_container); opts.pack(fill=tk.X)
+                    frame.position_options["grid_spacing"] = Range(
+                        opts, label="Grid Spacing", min_bound=0, max_bound=400,
+                        set_min=asset.get("grid_spacing_min", 100),
+                        set_max=asset.get("grid_spacing_max", 100)
+                    )
+                    frame.position_options["grid_spacing"].pack(fill=tk.X, pady=2)
+                    frame.position_options["jitter"] = Range(
+                        opts, label="Jitter", min_bound=0, max_bound=200,
+                        set_min=asset.get("jitter_min", 0),
+                        set_max=asset.get("jitter_max", 0)
+                    )
+                    frame.position_options["jitter"].pack(fill=tk.X, pady=2)
+                    frame.position_options["empty_grid_spaces"] = Range(
+                        opts, label="Empty Grid Spaces", min_bound=0, max_bound=100,
+                        set_min=asset.get("empty_grid_spaces_min", 0),
+                        set_max=asset.get("empty_grid_spaces_max", 0)
+                    )
+                    frame.position_options["empty_grid_spaces"].pack(fill=tk.X, pady=2)
 
-            position_dropdown = ttk.Combobox(content, textvariable=position_var, values=["Random", "Center", "Perimeter", "Entrance", "Distributed", "Exact Position", "Intersection"], state="readonly")
+                elif sel == "Exact Position":
+                    opts = ttk.Frame(option_container); opts.pack(fill=tk.X)
+                    rwx = Range(
+                        opts, label="X Position (%)", min_bound=0, max_bound=100,
+                        set_min=asset.get("ep_x_min", 50),
+                        set_max=asset.get("ep_x_max", 50),
+                        force_fixed=True
+                    )
+                    rwx.pack(fill=tk.X, pady=2)
+                    frame.position_options["ep_x"] = rwx
+
+                    rwy = Range(
+                        opts, label="Y Position (%)", min_bound=0, max_bound=100,
+                        set_min=asset.get("ep_y_min", 50),
+                        set_max=asset.get("ep_y_max", 50),
+                        force_fixed=True
+                    )
+                    rwy.pack(fill=tk.X, pady=2)
+                    frame.position_options["ep_y"] = rwy
+
+            # Dropdown widget
+            position_dropdown = ttk.Combobox(
+                content, textvariable=position_var,
+                values=["Random", "Center", "Perimeter", "Entrance", "Distributed", "Exact Position", "Intersection"],
+                state="readonly"
+            )
             position_dropdown.pack(fill=tk.X, pady=(0, 4))
-            position_dropdown.bind("<<ComboboxSelected>>", lambda *_: [update_position_options(), update_quantity_logic(), self.save_assets()])
+            position_dropdown.bind("<<ComboboxSelected>>", lambda *_: (
+                update_position_options(),
+                update_quantity_logic(),
+                self.save_assets()
+            ))
 
-            option_container = ttk.Frame(content)
-            option_container.pack(fill=tk.X)
+            # Container for per-type controls
+            option_container = ttk.Frame(content); option_container.pack(fill=tk.X)
             frame.position_options = {}
-
             update_position_options()
             update_quantity_logic()
 
-        ttk.Button(frame, text="Delete", command=lambda f=frame: self._delete_asset(f), width=10).pack(side=tk.RIGHT, padx=8)
+            # Bind *all* nested Ranges to save on change
+            for rw in frame.position_options.values():
+                rw.var_min.trace_add("write", lambda *_: self.save_assets())
+                rw.var_max.trace_add("write", lambda *_: self.save_assets())
+                if hasattr(rw, "var_random"):
+                    rw.var_random.trace_add("write", lambda *_: self.save_assets())
+
+        # ─── Delete Button ────────────────────────────────────────────────────────
+        ttk.Button(frame, text="Delete", width=10,
+                   command=lambda f=frame: self._delete_asset(f)).pack(side=tk.RIGHT, padx=8)
+
+        # Finally, keep track of this frame
         self.asset_frames.append(frame)
+
+
+
 
     def _add_asset_dialog(self):
         window = AssetSearchWindow(self)
@@ -232,22 +308,26 @@ class AssetEditor(ttk.Frame):
     def get_assets(self):
         assets = []
         for f in self.asset_frames:
-            data = {
-                "name": f.asset_name,
-                "min_number": f.range.get_min() if f.range.var_random.get() else f.range.get_min(),
-                "max_number": f.range.get_max() if f.range.var_random.get() else f.range.get_min(),
-                "position": f.position_var.get() if self.positioning and hasattr(f, "position_var") else "Distributed",
-                "exact_position": None,
-                "inherited": getattr(f, "inherited", False),
-                "check_overlap": f.check_overlap_var.get() if hasattr(f, "check_overlap_var") else False,
-                "check_min_spacing": f.check_min_spacing_var.get() if hasattr(f, "check_min_spacing_var") else False,
-                "tag": getattr(f, "tag", False)
-            }
-            for key, rw in f.position_options.items():
-                data[key + "_min"] = rw.get_min() if rw.var_random.get() else rw.get_min()
-                data[key + "_max"] = rw.get_max() if rw.var_random.get() else rw.get_min()
+            # 1) Start with a *copy* of the original dict
+            data = f.asset_data.copy()
+            # 2) Overwrite just the fields we actually have controls for:
+            data["min_number"] = f.range.get_min()
+            data["max_number"] = f.range.get_max()
+            if self.positioning and hasattr(f, "position_var"):
+                data["position"] = f.position_var.get()
+            # Keep any existing exact_position if you had one:
+            data["exact_position"] = data.get("exact_position", None)
+            data["inherited"] = getattr(f, "inherited", data.get("inherited", False))
+            data["check_overlap"] = f.check_overlap_var.get() if hasattr(f, "check_overlap_var") else False
+            data["check_min_spacing"] = f.check_min_spacing_var.get() if hasattr(f, "check_min_spacing_var") else False
+            data["tag"] = getattr(f, "tag", data.get("tag", False))
+            # 3) Overwrite any position-option ranges
+            for key, rw in getattr(f, "position_options", {}).items():
+                data[f"{key}_min"] = rw.get_min()
+                data[f"{key}_max"] = rw.get_max()
             assets.append(data)
         return assets
+
 
     def save_assets(self):
         self.set_asset_list(self.get_assets())

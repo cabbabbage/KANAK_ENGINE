@@ -123,68 +123,24 @@ class TagsPage(ttk.Frame):
             self.text.delete("1.0", tk.END)
             self.text.insert("1.0", ", ".join(tags))
 
-
     def _save_tags(self):
         if not self.json_path:
             return
 
+        # Gather tags from the text widget
         raw = self.text.get("1.0", tk.END).strip()
         new_tags = [t.strip() for t in raw.split(",") if t.strip()]
         self.data["tags"] = new_tags
 
+        # Save spawn range
         self.data["rnd_spawn_min"] = self.spawn_range.get_min()
         self.data["rnd_spawn_max"] = self.spawn_range.get_max()
 
+        # Write back to the per-asset JSON
         try:
             with open(self.json_path, "w") as f:
                 json.dump(self.data, f, indent=2)
         except Exception as e:
             messagebox.showerror("Save Failed", str(e))
 
-        # === Update tag_map.csv ===
-        asset_folder = os.path.dirname(self.json_path)
-        parent_dir = os.path.abspath(os.path.join(asset_folder, ".."))
-        tag_map_path = os.path.join(parent_dir, "tag_map.csv")
-
-        asset_name = os.path.basename(asset_folder)
-        if not asset_name:
-            print("[Tag Save] Could not determine asset name from folder path.")
-            return
-
-        import csv
-
-        # Read the existing CSV into a dict: tag -> list of assets
-        tag_rows = {}  # tag : set of asset names
-        if os.path.exists(tag_map_path):
-            with open(tag_map_path, newline='') as f:
-                reader = csv.reader(f)
-                for row in reader:
-                    if not row: continue
-                    tag = row[0].strip()
-                    assets = [cell.strip() for cell in row[1:] if cell.strip()]
-                    tag_rows[tag] = set(assets)
-
-        # Make sure each tag in new_tags is represented
-        for tag in new_tags:
-            if tag not in tag_rows:
-                tag_rows[tag] = set()
-            tag_rows[tag].add(asset_name)
-
-        # Remove asset name from tags it no longer has
-        for tag, assets in list(tag_rows.items()):
-            if tag not in new_tags:
-                assets.discard(asset_name)
-            if not assets:
-                del tag_rows[tag]  # Delete tag row entirely if empty
-
-        # Sort by tag name
-        sorted_rows = sorted(tag_rows.items(), key=lambda x: x[0].lower())
-
-        # Write it back
-        with open(tag_map_path, "w", newline='') as f:
-            writer = csv.writer(f)
-            for tag, assets in sorted_rows:
-                row = [tag] + sorted(assets)
-                writer.writerow(row)
-
-        self._load_common_tags()
+        # (No tag_map.csv handling here)

@@ -35,9 +35,14 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name, SDL_Renderer* rendere
     tags.clear();
     if (data.contains("tags") && data["tags"].is_array()) {
         for (const auto& tag : data["tags"]) {
-            if (tag.is_string()) tags.push_back(tag.get<std::string>());
+            if (tag.is_string()) {
+                std::string str = tag.get<std::string>();
+                if (!str.empty())
+                    tags.push_back(str);
+            }
         }
     }
+
 
     load_base_properties(data);
 

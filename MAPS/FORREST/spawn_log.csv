@@ -2,10 +2,10 @@
 
 
 BOUNDARY
-Big_Rock,0.083,300741,3627924,distributed_batch,23518.786,166,47840.582
-Tree_Darker,0.083,5398424,65347477,distributed_batch,23519.911,166,47830.244
-Tree,0.083,5407985,65357172,distributed_batch,23531.146,166,47805.740
-Tree_Dark,0.083,5396721,65347862,distributed_batch,23538.591,166,47799.236
+Big_Rock,0.092,337399,3664582,distributed_batch,27850.837,181,1317.843
+Tree_Darker,0.091,6000278,65949331,distributed_batch,27851.263,181,1309.613
+Tree,0.092,6044964,65994151,distributed_batch,27860.501,181,1290.044
+Tree_Dark,0.091,5998667,65949808,distributed_batch,27867.392,181,1283.713
 
 
 
@@ -50,14 +50,19 @@ SKull_pile,0.007,488,72082,random,29.707,64,-10.801
 
 
 TRAILS
-Grass_1_FPS_2,0.121,134297,1113868,distributed_batch,24.876,576,-12.969
-Grass_FPS_2,0.121,134849,1114274,distributed_batch,23.149,576,-11.853
-Mushroom_2,0.710,12904,18170,random,51.696,1515,30.206
-okkkkk_babyyy,0.678,5459,8051,random,158.874,1024,128.696
-lantern,0.583,605,1037,random,1422.645,267,910.122
+Grass_1_FPS_2,0.135,152984,1132555,distributed_batch,22.609,688,-12.199
+Grass_FPS_2,0.136,154706,1134131,distributed_batch,20.708,688,-10.909
+Mushroom_2,0.715,13222,18489,random,52.481,1556,-26.659
+okkkkk_babyyy,0.934,71,76,random,145.871,22,-23.718
+lantern,0.611,754,1235,random,1400.085,334,2084.700
 Bush_FPS_2,0.108,899,8313,distributed_batch,35.910,498,37.801
 Bush_1_FPS_2,0.119,988,8313,distributed_batch,43.448,498,39.941
-Rock,0.132,5056,38261,random,8.663,267,-5.767
+Rock,0.146,5770,39614,random,7.166,334,-5.881
+Mushroom,1.000,7401,7401,distributed_batch,925.381,9,528.510
+Mushroom_1,1.000,4,4,random,0.196,2,0.027
+brick,1.000,28324,28324,distributed_batch,22.396,59,-18.737
+light,0.000,0,0,distributed_batch,24.316,59,-16.500
+bush,0.000,0,0,distributed_batch,19.628,57,-1.197
 
 
 
@@ -92,32 +97,35 @@ Bone,1.000,3444,3444,distributed,3.167,23,0.105
 
 
 rooms\fountain.json
-Fountain,1.000,124,124,center,245.814,124,7.782
+Fountain,1.000,33,33,center,276.628,33,-34.472
 Grass_FPS_2,0.123,6547,53213,distributed_batch,8.383,50,2.972
 Grass_1_FPS_2,0.123,6569,53213,distributed_batch,73.366,50,-32.008
 Bush_FPS_2,0.116,46,398,distributed_batch,82.460,50,-31.519
 Bush_1_FPS_2,0.141,56,398,distributed_batch,90.829,50,-29.355
 Bench,1.000,37,37,random,0.054,37,-0.017
+flower,0.003,1,310,distributed,26.741,31,-27.631
+Barrel,1.000,45,45,distributed_batch,4559.766,4,5072.907
 
 
 
 rooms\spawn.json
-Davey,1.000,112,112,center,667.542,112,-241.080
+Davey,1.000,11,11,center,480.126,11,35.931
 Sigil_Of_Fortune,0.000,0,10,distributed,0.003,1,0.000
 Grass_FPS_2,0.129,183,1414,distributed_batch,5.383,2,-0.453
 Grass_1_FPS_2,0.114,161,1414,distributed_batch,8.942,2,0.369
 Bush_FPS_2,0.000,0,10,distributed_batch,15.424,2,0.189
 Bush_1_FPS_2,0.100,1,10,distributed_batch,22.543,2,-1.821
+Mushroom_2,0.904,47,52,random,513.564,1,0.000
 
 
 
 rooms\skulls.json
-Bone,0.010,1712,167678,random,353.653,110,-356.517
-Bone_1,0.016,1716,105006,random,134.526,106,-83.168
-Bone_Pile,0.021,2494,117770,random,147.153,106,-130.904
-Skull,0.512,14358,28035,random,240.967,106,-239.576
-Skull_1,0.016,1719,107579,random,188.200,106,-175.923
-SKull_pile,0.009,1221,132357,random,264.568,106,-260.074
+Bone,0.010,1735,169208,random,347.663,112,-350.503
+Bone_1,0.016,1740,105456,random,133.367,107,-124.026
+Bone_Pile,0.021,2535,119770,random,146.240,107,-97.702
+Skull,0.515,14520,28199,random,238.763,107,-235.800
+Skull_1,0.016,1745,108749,random,186.723,107,-158.078
+SKull_pile,0.009,1239,133287,random,262.311,107,-241.477
 Grass_FPS_2,0.123,8416,68194,distributed_batch,11.863,48,56.819
 Grass_1_FPS_2,0.125,8505,68194,distributed_batch,12.588,48,56.777
 Bush_FPS_2,0.107,55,514,distributed_batch,20.600,48,58.378
@@ -126,11 +134,18 @@ Bush_1_FPS_2,0.107,55,514,distributed_batch,28.107,48,57.618
 
 
 rooms\chest.json
-Chest,1.000,93,93,center,224.152,93,225.934
+Chest,1.000,115,115,center,261.134,115,51.288
 Grass_FPS_2,0.118,15401,130437,distributed_batch,17.063,62,-5.008
 Grass_1_FPS_2,0.120,15665,130437,distributed_batch,17.687,62,-4.947
 Bush_FPS_2,0.106,103,971,distributed_batch,26.544,62,-4.101
 Bush_1_FPS_2,0.098,95,971,distributed_batch,34.497,62,-2.950
+okkkkk_babyyy,0.634,315,497,random,688.820,22,-245.549
+Bone_Pile,0.009,15,1580,random,33.040,1,0.000
+SKull_pile,0.005,12,2550,random,26.026,2,-15.571
+Bone,0.006,44,7130,random,25.649,6,-2.406
+Bone_1,0.007,26,3780,random,22.342,4,20.432
+Skull_1,0.007,14,1880,random,19.701,2,6.770
+plant,0.000,0,0,distributed_batch,0.133,2,-0.081
 
 
 
@@ -146,8 +161,8 @@ okkkkk_babyyy,0.971,34,35,random,72.356,22,-32.589
 
 
 rooms\RND.json
-Mushroom_1,0.059,432,7280,distributed,2.771,9,0.136
-Mushroom_2,0.463,8811,19036,random,694.839,116,153.805
+Mushroom_1,0.059,476,8020,distributed,2.810,10,0.389
+Mushroom_2,0.467,8981,19221,random,697.999,118,206.214
 Grass_1_FPS_2,0.117,112,958,distributed_batch,8.747,2,-0.229
 Grass_FPS_2,0.126,121,958,distributed_batch,3.866,2,-0.686
 Bush_FPS_2,0.000,0,8,distributed_batch,15.082,2,-1.966
@@ -176,19 +191,19 @@ okkkkk_babyyy,1.000,40,40,random,48.158,40,-6.999
 
 
 rooms\Key.json
-Key,1.000,102,102,center,407.020,102,204.968
-Box,0.349,247,708,random,9.291,102,-9.285
+Key,1.000,104,104,center,417.991,104,222.413
+Box,0.351,249,710,random,9.114,104,-9.044
 Grass_1_FPS_2,0.121,211,1737,distributed_batch,11.431,3,-6.287
 Grass_FPS_2,0.120,208,1737,distributed_batch,4.822,3,0.077
 Bush_FPS_2,0.083,1,12,distributed_batch,18.431,3,-8.113
 Bush_1_FPS_2,0.083,1,12,distributed_batch,24.926,3,-9.344
-Barrel,1.000,29,29,random,0.109,29,0.001
-okkkkk_babyyy,1.000,29,29,random,52.781,29,-14.733
+Barrel,1.000,31,31,random,0.107,31,-0.026
+okkkkk_babyyy,1.000,31,31,random,52.220,31,-9.639
 
 
 
 rooms\stumps.json
-Stump,0.289,2682,9288,random,62.082,112,-60.975
+Stump,0.290,2701,9310,random,61.542,113,-60.971
 okkkkk_babyyy,0.472,554,1174,random,181.777,103,78.658
 Grass_1_FPS_2,0.126,312,2482,distributed_batch,10.966,2,-2.128
 Grass_FPS_2,0.121,300,2482,distributed_batch,10.494,2,-2.122
@@ -216,8 +231,8 @@ Bush_1_FPS_2,0.178,3864,21731,distributed_batch,209256.449,1,0.000
 
 rooms\intersection.json
 Sign,1.000,67,67,center,0.080,67,-0.026
-Grass_FPS_2,0.133,3871,29028,distributed_batch,2.594,95,-1.302
-Grass_1_FPS_2,0.131,3797,28949,distributed_batch,8.511,95,-1.824
+Grass_FPS_2,0.144,4216,29373,distributed_batch,2.479,103,-1.193
+Grass_1_FPS_2,0.139,4056,29208,distributed_batch,8.578,103,1.468
 Bush_FPS_2,0.057,12,212,distributed_batch,16.845,67,-2.752
 Bush_1_FPS_2,0.104,22,212,distributed_batch,24.743,67,-3.338
 okkkkk_babyyy,1.000,61,61,random,46.563,61,-7.513
@@ -227,3 +242,14 @@ Mushroom_1,1.000,61,61,random,0.085,61,0.016
 
 rooms\TEST.json
 Bush_1_FPS_2,0.125,1,8,distributed,0.180,1,0.000
+
+
+
+rooms\random.json
+Bone_1,0.008,338,44495,random,61.242,16,112.637
+lantern,1.000,15,15,center,663.275,15,-114.188
+Bone,0.005,132,24659,random,37.848,13,35.446
+okkkkk_babyyy,1.000,16,16,center,45.311,16,-3.513
+Skull_1,0.006,163,27490,random,53.861,11,63.629
+Bone_Pile,0.014,336,23540,random,56.996,9,30.039
+SKull_pile,0.007,227,31777,random,51.449,13,11.505

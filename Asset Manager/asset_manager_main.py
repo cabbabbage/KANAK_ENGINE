@@ -33,7 +33,7 @@ class AssetOrganizerApp(tk.Toplevel):
             style.configure(w, foreground='black')
 
         self.assets = self._scan_assets()
-        self.save_all_tags_to_csv()
+
         self.current_asset = None
         self.pages = {}
         self.asset_thumbnails = {}
