@@ -89,12 +89,20 @@ class MapManagerApp(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
 
         scrollable_frame = ttk.Frame(canvas)
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        scroll_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=canvas.winfo_width())
+
+        def _resize_canvas(event):
+            canvas.itemconfig(scroll_window, width=event.width)
+
+        canvas.bind("<Configure>", _resize_canvas)
 
         scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
+
+
+
         scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel_assets)
 
         self.notebook = ttk.Notebook(scrollable_frame)

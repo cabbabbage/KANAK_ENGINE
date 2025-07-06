@@ -107,12 +107,12 @@ void AssetSpawner::spawn_item_distributed(const SpawnInfo& item, const Area* are
 
             if (!area->contains_point({cx, cy})) continue;
 
-            auto nearest = checker_.get_closest_assets(cx, cy, 3);
-            if (!checker_.check_spacing_overlap(item.info, cx, cy, nearest)) {
+
+
                 spawn_(item.name, item.info, *area, cx, cy, 0, nullptr);
                 ++placed;
                 logger_.progress(item.info, placed, item.quantity);
-            }
+            
         }
     }
 
@@ -162,11 +162,10 @@ void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
             auto it = asset_info_library_.find(selected.name);
             if (it == asset_info_library_.end()) continue;
 
-            auto nearest = checker_.get_closest_assets(cx, cy, 3);
-            if (!checker_.check_spacing_overlap(it->second, cx, cy, nearest)) {
-                spawn_(selected.name, it->second, *area, cx, cy, 0, nullptr);
-                ++placed_quantities[selected.name];
-            }
+
+            spawn_(selected.name, it->second, *area, cx, cy, 0, nullptr);
+            ++placed_quantities[selected.name];
+            
         }
     }
 
@@ -238,12 +237,7 @@ void AssetSpawner::spawn_item_exact(const SpawnInfo& item, const Area* area) {
 
     int final_x = center.first + static_cast<int>(normalized_x * actual_width);
     int final_y = center.second + static_cast<int>(normalized_y * actual_height);
-
-    auto nearest = checker_.get_closest_assets(final_x, final_y, 5);
-    if (!checker_.check_spacing_overlap(item.info, final_x, final_y, nearest) &&
-        !checker_.check_min_type_distance(item.info, {final_x, final_y})) {
-        spawn_(item.name, item.info, *area, final_x, final_y, 0, nullptr);
-    }
+    spawn_(item.name, item.info, *area, final_x, final_y, 0, nullptr);
 }
 
 
@@ -349,10 +343,8 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
         x += item.perimeter_x_offset;
         y += item.perimeter_y_offset;
 
-        auto nearest = checker_.get_closest_assets(x, y, 5);
-        if (!checker_.check_spacing_overlap(item.info, x, y, nearest)) {
-            spawn_(item.name, item.info, *area, x, y, 0, nullptr);
-        }
+
+        spawn_(item.name, item.info, *area, x, y, 0, nullptr);
     }
 }
 

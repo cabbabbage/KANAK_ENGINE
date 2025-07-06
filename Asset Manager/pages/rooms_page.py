@@ -55,35 +55,60 @@ class RoomsPage(ttk.Frame):
         name_entry = ttk.Entry(self.editor_frame, textvariable=self.name_var, state="readonly")
         name_entry.pack(fill=tk.X, pady=4)
 
-        self.width_range = Range(self.editor_frame, min_bound=500, max_bound=5000, label="Room Width")
+        # Room Width slider + autosave on change
+        self.width_range = Range(self.editor_frame, min_bound=700, max_bound=2500, label="Room Width")
         self.width_range.pack(fill=tk.X, pady=6)
+        self.width_range.var_min.trace_add("write", lambda *a: self._on_field_change())
+        self.width_range.var_max.trace_add("write", lambda *a: self._on_field_change())
 
-        self.height_range = Range(self.editor_frame, min_bound=500, max_bound=5000, label="Room Height")
+        # Room Height slider + autosave on change
+        self.height_range = Range(self.editor_frame, min_bound=700, max_bound=2500, label="Room Height")
         self.height_range.pack(fill=tk.X, pady=6)
+        self.height_range.var_min.trace_add("write", lambda *a: self._on_field_change())
+        self.height_range.var_max.trace_add("write", lambda *a: self._on_field_change())
 
-        self.edge_smoothness = Range(self.editor_frame, min_bound=0, max_bound=100, label="Edge Smoothness", force_fixed=True)
+        # Edge Smoothness slider + autosave on change
+        self.edge_smoothness = Range(
+            self.editor_frame, min_bound=0, max_bound=100,
+            label="Edge Smoothness", force_fixed=True
+        )
         self.edge_smoothness.pack(fill=tk.X, pady=6)
+        # autosave whenever the fixed value changes
+        self.edge_smoothness.var_min.trace_add("write", lambda *a: self._on_field_change())
+        self.edge_smoothness.var_max.trace_add("write", lambda *a: self._on_field_change())
 
+
+        # Geometry dropdown + autosave when changed
         ttk.Label(self.editor_frame, text="Geometry:").pack(anchor="w", pady=(8, 0))
         self.geometry_var = tk.StringVar()
-        self.geometry_dropdown = ttk.Combobox(self.editor_frame, textvariable=self.geometry_var, state="readonly",
-                                            values=["Random", "Circle", "Square"])
+        self.geometry_dropdown = ttk.Combobox(
+            self.editor_frame, textvariable=self.geometry_var, state="readonly",
+            values=["Random", "Circle", "Square"]
+        )
         self.geometry_dropdown.pack(fill=tk.X, pady=2)
+        self.geometry_dropdown.bind(
+            "<<ComboboxSelected>>",
+            lambda e: (self._on_field_change(), self._toggle_height_state())
+)
 
+        # Spawn / Boss checkboxes with exclusive logic + autosave
         self.spawn_var = tk.BooleanVar()
         self.boss_var = tk.BooleanVar()
-
         self._last_changed = "spawn"
-        self.spawn_checkbox = ttk.Checkbutton(self.editor_frame, text="Is Spawn", variable=self.spawn_var,
-                                            command=lambda: self._checkbox_logic("spawn"))
+        self.spawn_checkbox = ttk.Checkbutton(
+            self.editor_frame, text="Is Spawn", variable=self.spawn_var,
+            command=lambda: (self._checkbox_logic("spawn"), self._on_field_change())
+        )
         self.spawn_checkbox.pack(anchor="w", pady=(6, 2))
-
-        self.boss_checkbox = ttk.Checkbutton(self.editor_frame, text="Is Boss", variable=self.boss_var,
-                                            command=lambda: self._checkbox_logic("boss"))
+        self.boss_checkbox = ttk.Checkbutton(
+            self.editor_frame, text="Is Boss", variable=self.boss_var,
+            command=lambda: (self._checkbox_logic("boss"), self._on_field_change())
+        )
         self.boss_checkbox.pack(anchor="w", pady=(0, 6))
 
-        ttk.Label(self.editor_frame, text="Basic Assets", font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(10, 4))
-
+        # Basic Assets editor
+        ttk.Label(self.editor_frame, text="Basic Assets", font=("Segoe UI", 11, "bold"))\
+            .pack(anchor="w", pady=(10, 4))
         self.asset_editor = AssetEditor(
             self.editor_frame,
             get_asset_list=lambda: self.room_data["assets"],
@@ -95,13 +120,13 @@ class RoomsPage(ttk.Frame):
         self.asset_editor.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 20))
         self.asset_editor.config(width=600, height=600)
 
-
-
-        ttk.Label(self.editor_frame, text="Batch Asset Editor", font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(0, 4))
-
+        # Batch Asset Editor
+        ttk.Label(self.editor_frame, text="Batch Asset Editor", font=("Segoe UI", 11, "bold"))\
+            .pack(anchor="w", pady=(0, 4))
         self.batch_editor = BatchAssetEditor(self.editor_frame, save_callback=self._save_json)
         self.batch_editor.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 10))
         self.batch_editor.config(width=600, height=600)
+
 
     def _add_asset_to_editor(self):
         asset = {
@@ -237,6 +262,13 @@ class RoomsPage(ttk.Frame):
 
 
 
+
+    def _toggle_height_state(self):
+        """Grey out height when circle geometry is selected."""
+        if self.geometry_var.get() == "Circle":
+            self.height_range.disable()
+        else:
+            self.height_range.enable()
 
 
     def _add_room(self):

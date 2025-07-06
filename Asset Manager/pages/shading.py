@@ -16,53 +16,74 @@ class ShadingPage(ttk.Frame):
         self.COLOR_ACCENT = "#005f73"
 
         ttk.Style(self).configure('Shading.TCheckbutton', font=self.FONT)
-
         ttk.Label(self, text="Shading Settings", font=self.BOLD, foreground=self.COLOR_ACCENT)\
             .pack(anchor='w', padx=12, pady=(10, 14))
 
+        # Master toggle
         self.has_shading_var = tk.BooleanVar()
-        ttk.Checkbutton(self, text="Has Shading", variable=self.has_shading_var,
+        ttk.Checkbutton(self, text="Has Shading",
+                        variable=self.has_shading_var,
                         command=self._toggle_ui_state,
                         style='Shading.TCheckbutton')\
             .pack(anchor='w', padx=20, pady=4)
 
+        # Container for all shading controls
         self.options_frame = ttk.Frame(self)
         self.options_frame.pack(fill=tk.X, padx=12, pady=8)
 
         # Base Shadow
         self.base_shadow_var = tk.BooleanVar()
-        ttk.Checkbutton(self.options_frame, text="Has Base Shadow", variable=self.base_shadow_var,
+        ttk.Checkbutton(self.options_frame, text="Has Base Shadow",
+                        variable=self.base_shadow_var,
                         style='Shading.TCheckbutton')\
             .pack(anchor='w', pady=4)
-        self.base_intensity = Range(self.options_frame, min_bound=0, max_bound=100, label="Base Shadow Intensity")
+        self.base_intensity = Range(self.options_frame,
+                                    min_bound=0, max_bound=100,
+                                    label="Base Shadow Intensity")
         self.base_intensity.set_fixed()
         self.base_intensity.pack(fill=tk.X, pady=4)
 
         # Gradient Shadow
         self.gradient_shadow_var = tk.BooleanVar()
-        ttk.Checkbutton(self.options_frame, text="Has Gradient Shadow", variable=self.gradient_shadow_var,
+        ttk.Checkbutton(self.options_frame, text="Has Gradient Shadow",
+                        variable=self.gradient_shadow_var,
                         style='Shading.TCheckbutton')\
             .pack(anchor='w', pady=4)
         self.gradient_count_var = tk.IntVar()
-        ttk.Label(self.options_frame, text="Number of Gradient Shadows (1–3)", font=self.FONT)\
+        ttk.Label(self.options_frame,
+                  text="Number of Gradient Shadows (1–3)",
+                  font=self.FONT)\
             .pack(anchor='w')
-        ttk.Spinbox(self.options_frame, from_=1, to=3, textvariable=self.gradient_count_var, width=5)\
-            .pack(anchor='w', pady=(0, 6))
-        self.gradient_intensity = Range(self.options_frame, min_bound=0, max_bound=100, label="Gradient Shadow Intensity")
+        ttk.Spinbox(self.options_frame,
+                    from_=1, to=3,
+                    textvariable=self.gradient_count_var,
+                    width=5)\
+            .pack(anchor='w', pady=(0,6))
+        self.gradient_intensity = Range(self.options_frame,
+                                        min_bound=0, max_bound=100,
+                                        label="Gradient Shadow Intensity")
         self.gradient_intensity.set_fixed()
         self.gradient_intensity.pack(fill=tk.X, pady=4)
 
         # Casted Shadow
         self.cast_shadow_var = tk.BooleanVar()
-        ttk.Checkbutton(self.options_frame, text="Has Casted Shadow", variable=self.cast_shadow_var,
+        ttk.Checkbutton(self.options_frame, text="Has Casted Shadow",
+                        variable=self.cast_shadow_var,
                         style='Shading.TCheckbutton')\
             .pack(anchor='w', pady=4)
         self.cast_count_var = tk.IntVar()
-        ttk.Label(self.options_frame, text="Number of Casted Shadows (1–3)", font=self.FONT)\
+        ttk.Label(self.options_frame,
+                  text="Number of Casted Shadows (1–3)",
+                  font=self.FONT)\
             .pack(anchor='w')
-        ttk.Spinbox(self.options_frame, from_=1, to=3, textvariable=self.cast_count_var, width=5)\
-            .pack(anchor='w', pady=(0, 6))
-        self.cast_intensity = Range(self.options_frame, min_bound=0, max_bound=100, label="Cast Shadow Intensity")
+        ttk.Spinbox(self.options_frame,
+                    from_=1, to=3,
+                    textvariable=self.cast_count_var,
+                    width=5)\
+            .pack(anchor='w', pady=(0,6))
+        self.cast_intensity = Range(self.options_frame,
+                                    min_bound=0, max_bound=100,
+                                    label="Cast Shadow Intensity")
         self.cast_intensity.set_fixed()
         self.cast_intensity.pack(fill=tk.X, pady=4)
 
@@ -71,40 +92,45 @@ class ShadingPage(ttk.Frame):
     def _toggle_ui_state(self):
         state = 'normal' if self.has_shading_var.get() else 'disabled'
         for child in self.options_frame.winfo_children():
-            try:
-                child.configure(state=state)
-            except:
-                pass
+            try: child.configure(state=state)
+            except: pass
             for grand in child.winfo_children():
-                try:
-                    grand.configure(state=state)
-                except:
-                    pass
+                try: grand.configure(state=state)
+                except: pass
 
     def load(self, path):
         self.asset_path = path
         if not os.path.isfile(path):
             return
 
-        with open(path, 'r') as f:
-            data = json.load(f)
+        try:
+            with open(path, 'r') as f:
+                data = json.load(f)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load JSON: {e}")
+            return
 
         shading = data.get("shading_info", {})
 
-        self.has_shading_var.set(shading.get("has_shading", False))
-        self.base_shadow_var.set(shading.get("has_base_shadow", False))
-        self.base_intensity.set(shading.get("base_shadow_intensity", 100),
-                                shading.get("base_shadow_intensity", 100))
+        # Booleans: treat None/null as False
+        self.has_shading_var.set(bool(shading.get("has_shading")))
+        self.base_shadow_var.set(bool(shading.get("has_base_shadow")))
 
-        self.gradient_shadow_var.set(shading.get("has_gradient_shadow", False))
-        self.gradient_count_var.set(shading.get("number_of_gradient_shadows", 1))
-        self.gradient_intensity.set(shading.get("gradient_shadow_intensity", 100),
-                                    shading.get("gradient_shadow_intensity", 100))
+        # Numeric: treat None/null as 0
+        base_val = shading.get("base_shadow_intensity") or 0
+        self.base_intensity.set(base_val, base_val)
 
-        self.cast_shadow_var.set(shading.get("has_casted_shadows", False))
-        self.cast_count_var.set(shading.get("number_of_casted_shadows", 1))
-        self.cast_intensity.set(shading.get("cast_shadow_intensity", 100),
-                                shading.get("cast_shadow_intensity", 100))
+        self.gradient_shadow_var.set(bool(shading.get("has_gradient_shadow")))
+        grad_count = shading.get("number_of_gradient_shadows") or 0
+        self.gradient_count_var.set(grad_count)
+        grad_val = shading.get("gradient_shadow_intensity") or 0
+        self.gradient_intensity.set(grad_val, grad_val)
+
+        self.cast_shadow_var.set(bool(shading.get("has_casted_shadows")))
+        cast_count = shading.get("number_of_casted_shadows") or 0
+        self.cast_count_var.set(cast_count)
+        cast_val = shading.get("cast_shadow_intensity") or 0
+        self.cast_intensity.set(cast_val, cast_val)
 
         self._toggle_ui_state()
 
@@ -113,8 +139,12 @@ class ShadingPage(ttk.Frame):
             messagebox.showerror("Error", "No asset selected.")
             return
 
-        with open(self.asset_path, 'r') as f:
-            data = json.load(f)
+        try:
+            with open(self.asset_path, 'r') as f:
+                data = json.load(f)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load JSON: {e}")
+            return
 
         if self.has_shading_var.get():
             data["shading_info"] = {
@@ -128,32 +158,22 @@ class ShadingPage(ttk.Frame):
                 "number_of_casted_shadows": self.cast_count_var.get(),
                 "cast_shadow_intensity": self.cast_intensity.get_min()
             }
-
-            data["lighting_info"] = {
-                "has_light_source": False,
-                "light_intensity": None,
-                "light_color": None,
-                "radius": None,
-                "fall_off": None,
-                "jitter_min": None,
-                "jitter_max": None,
-                "flicker": None
-            }
-
         else:
             data["shading_info"] = {
                 "has_shading": False,
-                "has_base_shadow": None,
-                "base_shadow_intensity": None,
-                "has_gradient_shadow": None,
-                "number_of_gradient_shadows": None,
-                "gradient_shadow_intensity": None,
-                "has_casted_shadows": None,
-                "number_of_casted_shadows": None,
-                "cast_shadow_intensity": None
+                "has_base_shadow": False,
+                "base_shadow_intensity": 0,
+                "has_gradient_shadow": False,
+                "number_of_gradient_shadows": 0,
+                "gradient_shadow_intensity": 0,
+                "has_casted_shadows": False,
+                "number_of_casted_shadows": 0,
+                "cast_shadow_intensity": 0
             }
 
-        with open(self.asset_path, 'w') as f:
-            json.dump(data, f, indent=4)
-
-        messagebox.showinfo("Saved", "Shading settings saved. Lighting disabled.")
+        try:
+            with open(self.asset_path, 'w') as f:
+                json.dump(data, f, indent=4)
+            messagebox.showinfo("Saved", "Shading settings saved.")
+        except Exception as e:
+            messagebox.showerror("Save Error", str(e))

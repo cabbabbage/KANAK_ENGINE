@@ -63,10 +63,16 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
         int quantity = std::uniform_int_distribution<int>(min_num, max_num)(rng);
 
         std::string position = asset.value("position", "Random");
-        if (!(min_num == 1 && max_num == 1 && (position == "Center" || position == "center"))) {
+        // skip scaling when it's a single-center spawn or a perimeter spawn
+        bool isSingleCenter = (min_num == 1 && max_num == 1 &&
+                            (position == "Center" || position == "center"));
+        bool isPerimeter    = (position == "Perimeter" || position == "perimeter");
+
+        if (!isSingleCenter && !isPerimeter) {
             quantity = static_cast<int>(std::round(quantity * (area / REPRESENTATIVE_SPAWN_AREA)));
             if (quantity < 1) quantity = 1;
         }
+
 
         SpawnInfo s;
         s.name = name;
