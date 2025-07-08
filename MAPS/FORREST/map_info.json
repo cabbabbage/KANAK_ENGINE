@@ -1,39 +1,34 @@
 {
-  "map_name": "FORREST",
-  "map_width_": 42452,
-  "map_height_": 42046,
-  "min_rooms": 7,
-  "max_rooms": 11,
-  "map_assets": "map_assets.json",
-  "map_boundary": "map_boundary.json",
-  "rooms": [
+  "map_layers": [
     {
-      "room_path": "rooms\\chest.json",
-      "max_instances": 5,
-      "required": true
+      "level": 0,
+      "name": "layer_0",
+      "radius": 0,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": [
+        {
+          "name": "spawn",
+          "min_instances": 0,
+          "max_instances": 0,
+          "required_children": []
+        }
+      ]
     },
     {
-      "room_path": "rooms\\fountain.json",
-      "max_instances": 5,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\random.json",
-      "max_instances": 5,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\spawn.json",
-      "max_instances": 1,
-      "required": true
-    }
-  ],
-  "trails": [
-    {
-      "trail_path": "trails\\basic.json"
-    },
-    {
-      "trail_path": "trails\\brick.json"
+      "level": 1,
+      "name": "layer_1",
+      "radius": 1567,
+      "min_rooms": 0,
+      "max_rooms": 2,
+      "rooms": [
+        {
+          "name": "basic_fight_room",
+          "min_instances": 0,
+          "max_instances": 3,
+          "required_children": []
+        }
+      ]
     }
   ]
 }

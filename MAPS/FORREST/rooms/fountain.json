@@ -1,7 +1,7 @@
 {
   "name": "fountain",
-  "min_width": 937,
-  "max_width": 937,
+  "min_width": 1021,
+  "max_width": 1021,
   "min_height": 956,
   "max_height": 956,
   "edge_smoothness": 100,
