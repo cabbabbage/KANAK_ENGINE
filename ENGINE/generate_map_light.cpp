@@ -111,7 +111,7 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon(float /*norm*/) const {
         SDL_Color color;
     };
 
-    double mult = 0.8;
+    double mult = 0.4;
 
     std::vector<KeyColor> keys = {
         {  0.0f,   { 255,   255,   255,   static_cast<Uint8>(200) }},   // top - transparent

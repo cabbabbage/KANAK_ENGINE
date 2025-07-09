@@ -15,20 +15,20 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 89,
+        "percent": 91,
         "color": "#CCCCCC"
-      },
-      {
-        "name": "brick",
-        "tag": false,
-        "percent": 10,
-        "color": "#a6e41f"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 1,
+        "percent": 4,
         "color": "#2911cb"
+      },
+      {
+        "name": "flower",
+        "tag": false,
+        "percent": 5,
+        "color": "#8c7735"
       }
     ]
   }

@@ -6,6 +6,7 @@ import math
 import random
 from colorsys import hsv_to_rgb
 
+
 class MapRenderer:
     def __init__(self, rooms_dir, preview_canvas, preview_size, layer_widgets, factor):
         self.rooms_dir = rooms_dir
@@ -14,16 +15,18 @@ class MapRenderer:
         self.layer_widgets = layer_widgets
         self.factor = factor
         self._suspend_save = False
+        self.layer_radii = []  # ✅ FIX: Always define this
+
 
     def calculate_radii(self):
         self._suspend_save = True
         try:
-            shapes_meta = []
+            areas_meta = []
             largest_sizes = []
             all_rooms = []
             global_room_lookup = {}
 
-            def load_room_shape(name):
+            def load_room_area(name):
                 if name in global_room_lookup:
                     return global_room_lookup[name]
 
@@ -39,7 +42,7 @@ class MapRenderer:
                 geo = info.get("geometry", "square").lower()
                 w, h = info.get("max_width", 0), info.get("max_height", 0)
 
-                shape = {
+                area = {
                     "room_name": name,
                     "type": "circle" if geo == "circle" else "square",
                     "diameter": w if geo == "circle" else None,
@@ -49,55 +52,78 @@ class MapRenderer:
                     "max_instances": 0,
                     "required_children": []
                 }
-                global_room_lookup[name] = shape
-                return shape
+                global_room_lookup[name] = area
+                return area
 
             # First pass: collect rooms from each layer widget
             for layer in self.layer_widgets:
                 for room_widget in layer.rooms:
                     name = room_widget.room_name
-                    shape = load_room_shape(name)
-                    if not shape:
+                    area = load_room_area(name)
+                    if not area:
                         continue
 
-                    shape["min_instances"] = room_widget.min_var.get()
-                    shape["max_instances"] = room_widget.max_var.get()
-                    shape["required_children"] = getattr(room_widget, "required_children", [])
+                    area["min_instances"] = room_widget.min_var.get()
+                    area["max_instances"] = room_widget.max_var.get()
+                    area["required_children"] = getattr(room_widget, "required_children", [])
 
-                    all_rooms.append(shape)
+                    all_rooms.append(area)
 
-            # Second pass: resolve required children for each shape
-            for shape in all_rooms:
-                resolved = []
-                for child_name in shape.get("required_children", []):
-                    child_shape = load_room_shape(child_name)
-                    if child_shape:
-                        resolved.append(child_shape)
-                shape["required_children"] = resolved
+                            # Second pass: resolve required children for each area
+                for area in all_rooms:
+                    resolved = []
+                    for child in area.get("required_children", []):
+                        if isinstance(child, dict):
+                            resolved.append(child)
+                        else:
+                            child_area = load_room_area(child)
+                            if child_area:
+                                resolved.append(child_area)
+                    area["required_children"] = resolved
 
-            # Build shapes_meta by layer and find max size for radius calculation
+
+
+
+                
+
+            # Build areas_meta by layer and find max size for radius calculation (including required children)
             for layer in self.layer_widgets:
                 layer_meta = []
                 max_span = 0
+                required_areas = []
                 for room_widget in layer.rooms:
-                    shape = global_room_lookup.get(room_widget.room_name)
-                    if not shape:
+                    area = global_room_lookup.get(room_widget.room_name)
+                    if not area:
                         continue
-                    if shape["type"] == "circle":
-                        span = shape["diameter"]
+
+                    # Add base area
+                    layer_meta.append(area)
+
+                    # Track max span
+                    if area["type"] == "circle":
+                        span = area["diameter"]
                     else:
-                        span = math.hypot(shape["width"], shape["height"])
+                        span = math.hypot(area["width"], area["height"])
                     max_span = max(max_span, span)
-                    layer_meta.append(shape)
+
+                    # Include required children in next layer's size consideration
+                    for child in area.get("required_children", []):
+                        if child["type"] == "circle":
+                            c_span = child["diameter"]
+                        else:
+                            c_span = math.hypot(child["width"], child["height"])
+                        max_span = max(max_span, c_span)
+
                 largest_sizes.append(max_span)
-                shapes_meta.append(layer_meta)
+                areas_meta.append(layer_meta)
+
 
             # Debug print
-            for idx, layer in enumerate(shapes_meta):
+            for idx, layer in enumerate(areas_meta):
                 for room in layer:
                     print(f"[DEBUG] Layer {idx} Room '{room['room_name']}' required_children: {[c['room_name'] for c in room.get('required_children', [])]}")
 
-            if not largest_sizes or not shapes_meta or all(s == 0 for s in largest_sizes):
+            if not largest_sizes or not areas_meta or all(s == 0 for s in largest_sizes):
                 print("No valid room geometry found for radius calculation.")
                 return
 
@@ -122,7 +148,7 @@ class MapRenderer:
                 for room_widget in layer.rooms:
                     roominfo_lookup[room_widget.room_name] = room_widget
 
-            self.render_preview(radii, shapes_meta, radii[-1] + (largest_sizes[-1] / 2.0) + 540, global_room_lookup, roominfo_lookup)
+            self.render_preview(radii, areas_meta, radii[-1] + (largest_sizes[-1] / 2.0) + 540, global_room_lookup, roominfo_lookup)
 
         finally:
             self._suspend_save = False
@@ -133,7 +159,7 @@ class MapRenderer:
         r, g, b = hsv_to_rgb(hue, 0.4, 0.95)
         return '#{:02x}{:02x}{:02x}'.format(int(r*255), int(g*255), int(b*255))
 
-    def render_preview(self, radii, shapes_meta, map_radius_actual, global_room_lookup, roominfo_lookup):
+    def render_preview(self, radii, areas_meta, map_radius_actual, global_room_lookup, roominfo_lookup):
         print("Generating Map Preview:")
         C = self.PREVIEW_SIZE // 2
         self.preview_canvas.delete("all")
@@ -143,21 +169,25 @@ class MapRenderer:
         self.preview_canvas.create_text(C, self.PREVIEW_SIZE - 20, text=f"Map radius: {int(map_radius_actual)}", font=("Segoe UI", 12, "bold"))
 
         # Root layer, single root room
-        root_shape = shapes_meta[0][0]
+        if not areas_meta or not areas_meta[0]:
+            print("[ERROR] No root room found for preview rendering.")
+            return
+
+        root_area = areas_meta[0][0]
         parents = [{
             "pos": (C, C),
             "layer": 0,
-            "shape": root_shape,
+            "area": root_area,
             "sector_start": 0.0,
             "sector_size": 2 * math.pi
         }]
-        placed_shapes = [parents[0]]
-        self._draw_shape(C, C, root_shape, self.room_type_to_color(root_shape["room_name"]), self._ring_color(0), scale)
+        placed_areas = [parents[0]]
+        self._draw_area(C, C, root_area, self.room_type_to_color(root_area["room_name"]), self._ring_color(0), scale)
 
         for i in range(1, len(radii)):
             ring_px = radii[i] * scale
             col = self._ring_color(i)
-            next_meta = shapes_meta[i]
+            next_meta = areas_meta[i]
             self.preview_canvas.create_oval(C - ring_px, C - ring_px, C + ring_px, C + ring_px, outline=col, width=2)
 
             layer_widget = self.layer_widgets[i]
@@ -166,91 +196,115 @@ class MapRenderer:
             room_pool = self.get_children_from_layer(next_meta, min_rooms, max_rooms)
 
             new_parents = []
-            evenly_spaced = (i == 1)
-            even_slice_size = (2 * math.pi / len(room_pool)) if evenly_spaced and room_pool else None
-            global_angle_offset = 0.0
 
-            # Assign rooms evenly to parents
-            assignments = room_pool[:]
-            parent_counts = {p["pos"]: 0 for p in parents}
-            parent_room_map = {p["pos"]: [] for p in parents}
+            if i == 1:
+                # Special case: evenly space all children individually on layer 1
+                combined_rooms = []
 
-            while assignments:
-                # Find parents with least assignments
-                min_count = min(parent_counts.values())
-                eligible_parents = [p for p in parents if parent_counts[p["pos"]] == min_count]
-                for p in eligible_parents:
-                    if not assignments:
-                        break
-                    room = assignments.pop()
-                    parent_room_map[p["pos"]].append(room)
-                    parent_counts[p["pos"]] += 1
+                for parent in parents:
+                    parent_name = parent["area"]["room_name"]
+                    roominfo = roominfo_lookup.get(parent_name)
+                    if roominfo:
+                        for name in getattr(roominfo, "required_children", []):
+                            area = global_room_lookup.get(name)
+                            if area:
+                                combined_rooms.append(area)
 
-            for parent in parents:
-                p_x, p_y = parent["pos"]
-                sector_start = parent["sector_start"]
-                sector_size = parent["sector_size"]
-
-                parent_name = parent["shape"]["room_name"]
-                roominfo = roominfo_lookup.get(parent_name)
-                required_children = []
-                if roominfo:
-                    for name in getattr(roominfo, "required_children", []):
-                        shape = global_room_lookup.get(name)
-                        if shape:
-                            required_children.append(shape)
-
-                assigned_rooms = parent_room_map[parent["pos"]]
-                combined_rooms = required_children + assigned_rooms
-
-                print(f"[DEBUG] Parent '{parent_name}' has children: {[r['room_name'] for r in combined_rooms]}")
-
+                combined_rooms.extend(room_pool)
+                random.shuffle(combined_rooms)
                 if not combined_rooms:
                     continue
 
-                slice_size = sector_size / len(combined_rooms)
-                buffer_angle = slice_size * 0.05
-
+                slice_size = 2 * math.pi / len(combined_rooms)
                 for idx, room in enumerate(combined_rooms):
-                    fill = self.room_type_to_color(room["room_name"])
-                    child_sector_start = sector_start + idx * slice_size + buffer_angle
-                    child_sector_size = slice_size - 2 * buffer_angle
+                    angle = idx * slice_size
+                    cx = C + ring_px * math.cos(angle)
+                    cy = C + ring_px * math.sin(angle)
 
-                    if evenly_spaced:
-                        angle = global_angle_offset + even_slice_size / 2
-                        global_angle_offset += even_slice_size
-                        cx = C + ring_px * math.cos(angle)
-                        cy = C + ring_px * math.sin(angle)
-                    else:
+                    fill = self.room_type_to_color(room["room_name"])
+                    self._draw_area(cx, cy, room, fill, col, scale)
+                    self.preview_canvas.create_line(C, C, cx, cy, fill="black")
+
+                    new_parents.append({
+                        "pos": (cx, cy),
+                        "layer": i,
+                        "area": room,
+                        "sector_start": angle - slice_size / 2,
+                        "sector_size": slice_size
+                    })
+                    placed_areas.append({"pos": (cx, cy), "area": room})
+            else:
+                # General case for deeper layers
+                parent_to_children = {}
+                for parent in parents:
+                    required = parent["area"].get("required_children", [])
+                    parent_to_children[parent["pos"]] = required[:]
+
+
+                # Distribute optional children fairly
+                assignments = room_pool[:]
+                parent_counts = {pos: len(children) for pos, children in parent_to_children.items()}
+
+                while assignments:
+                    min_count = min(parent_counts.values())
+                    eligible = [pos for pos in parent_to_children if parent_counts[pos] == min_count]
+                    for pos in eligible:
+                        if not assignments:
+                            break
+                        room = assignments.pop()
+                        parent_to_children[pos].append(room)
+                        parent_counts[pos] += 1
+
+                # Spawn children per parent
+                for parent in parents:
+                    p_x, p_y = parent["pos"]
+                    sector_start = parent["sector_start"]
+                    sector_size = parent["sector_size"]
+
+                    children = parent_to_children[parent["pos"]]
+                    random.shuffle(children)
+                    print(f"[DEBUG] Parent '{parent['area']['room_name']}' has children: {[r['room_name'] for r in children]}")
+
+                    if not children:
+                        continue
+
+                    slice_size = sector_size / len(children)
+                    buffer_angle = slice_size * 0.05
+
+                    for idx, room in enumerate(children):
+                        fill = self.room_type_to_color(room["room_name"])
+                        child_sector_start = sector_start + idx * slice_size + buffer_angle
+                        child_sector_size = slice_size - 2 * buffer_angle
+
                         placed = False
                         for attempt in range(100):
                             angle = child_sector_start + random.random() * child_sector_size
                             cx = C + ring_px * math.cos(angle)
                             cy = C + ring_px * math.sin(angle)
-                            if not self._does_overlap(cx, cy, room, placed_shapes, scale):
+                            if not self._does_overlap(cx, cy, room, placed_areas, scale):
                                 placed = True
                                 break
                         if not placed:
                             print(f"[DEBUG] Failed to place room '{room['room_name']}' on layer {i} due to overlap.")
                             continue
 
-                    self._draw_shape(cx, cy, room, fill, col, scale)
-                    self.preview_canvas.create_line(p_x, p_y, cx, cy, fill="black")
-                    new_parents.append({
-                        "pos": (cx, cy),
-                        "layer": i,
-                        "shape": room,
-                        "sector_start": child_sector_start,
-                        "sector_size": child_sector_size
-                    })
-                    placed_shapes.append({"pos": (cx, cy), "shape": room})
+                        self._draw_area(cx, cy, room, fill, col, scale)
+                        self.preview_canvas.create_line(p_x, p_y, cx, cy, fill="black")
+                        new_parents.append({
+                            "pos": (cx, cy),
+                            "layer": i,
+                            "area": room,
+                            "sector_start": child_sector_start,
+                            "sector_size": child_sector_size
+                        })
+                        placed_areas.append({"pos": (cx, cy), "area": room})
 
             parents = new_parents
 
         # Draw Color Legend
         legend_items = {}
-        for placed in placed_shapes:
-            name = placed["shape"]["room_name"]
+        for placed in placed_areas:
+            name = placed["area"]["room_name"]
             legend_items[name] = self.room_type_to_color(name)
 
         sorted_items = sorted(legend_items.items())
@@ -260,9 +314,13 @@ class MapRenderer:
         spacing = 100
 
         for name, color in sorted_items:
+            if key_x + spacing > self.PREVIEW_SIZE - 100:
+                key_x = 20
+                key_y -= 20
             self.preview_canvas.create_rectangle(key_x, key_y, key_x + box_size, key_y + box_size, fill=color, outline="black")
             self.preview_canvas.create_text(key_x + box_size + 5, key_y + box_size // 2, text=name, anchor="w", font=("Segoe UI", 9))
             key_x += spacing
+
 
 
     def get_children_from_layer(self, next_meta, min_rooms, max_rooms):
@@ -287,22 +345,22 @@ class MapRenderer:
         return pool
 
 
-    def _draw_shape(self, x, y, shape, color_fill, color_outline, scale):
-        if shape["type"] == "circle":
-            d = shape["diameter"] * scale
+    def _draw_area(self, x, y, area, color_fill, color_outline, scale):
+        if area["type"] == "circle":
+            d = area["diameter"] * scale
             self.preview_canvas.create_oval(x - d / 2, y - d / 2, x + d / 2, y + d / 2, fill=color_fill, outline=color_outline)
         else:
-            w = shape["width"] * scale
-            h = shape["height"] * scale
+            w = area["width"] * scale
+            h = area["height"] * scale
             self.preview_canvas.create_rectangle(x - w / 2, y - h / 2, x + w / 2, y + h / 2, fill=color_fill, outline=color_outline)
 
-    def _does_overlap(self, x, y, shape, placed, scale):
+    def _does_overlap(self, x, y, area, placed, scale):
         buffer_radius = 300 * scale
-        r1 = shape["diameter"] * scale / 2 if shape["type"] == "circle" else math.hypot(shape["width"], shape["height"]) * scale / 2
+        r1 = area["diameter"] * scale / 2 if area["type"] == "circle" else math.hypot(area["width"], area["height"]) * scale / 2
         for other in placed:
             ox, oy = other["pos"]
-            oshape = other["shape"]
-            r2 = oshape["diameter"] * scale / 2 if oshape["type"] == "circle" else math.hypot(oshape["width"], oshape["height"]) * scale / 2
+            oarea = other["area"]
+            r2 = oarea["diameter"] * scale / 2 if oarea["type"] == "circle" else math.hypot(oarea["width"], oarea["height"]) * scale / 2
             if math.hypot(x - ox, y - oy) < r1 + r2 + buffer_radius:
                 return True
         return False

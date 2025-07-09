@@ -2,10 +2,10 @@
 
 
 BOUNDARY
-Big_Rock,0.094,345025,3672208,distributed_batch,26906.029,189,-26845.900
-Tree_Darker,0.094,6243696,66192749,distributed_batch,26906.106,189,-26857.203
-Tree,0.095,6303641,66252828,distributed_batch,26914.505,189,-26877.436
-Tree_Dark,0.094,6249992,66201133,distributed_batch,26921.139,189,-26883.328
+Big_Rock,0.096,355277,3682460,distributed_batch,25435.880,200,-25392.538
+Tree_Darker,0.099,6568718,66517771,distributed_batch,25435.453,200,-25400.805
+Tree,0.100,6648753,66597940,distributed_batch,25442.752,200,-25420.433
+Tree_Dark,0.099,6585944,66537085,distributed_batch,25449.074,200,-25426.100
 
 
 
@@ -50,8 +50,8 @@ SKull_pile,0.007,488,72082,random,29.707,64,-10.801
 
 
 TRAILS
-Grass_1_FPS_2,0.141,160276,1139847,distributed_batch,21.632,738,-12.090
-Grass_FPS_2,0.142,162337,1141762,distributed_batch,19.555,738,-16.009
+Grass_1_FPS_2,0.149,171020,1150591,distributed_batch,20.394,816,-11.240
+Grass_FPS_2,0.151,173679,1153104,distributed_batch,17.897,816,-14.693
 Mushroom_2,0.715,13222,18489,random,52.481,1556,-26.659
 okkkkk_babyyy,0.934,71,76,random,145.871,22,-23.718
 lantern,0.611,754,1235,random,1400.085,334,2084.700
@@ -60,9 +60,10 @@ Bush_1_FPS_2,0.119,988,8313,distributed_batch,43.448,498,39.941
 Rock,0.146,5770,39614,random,7.166,334,-5.881
 Mushroom,1.000,7401,7401,distributed_batch,925.381,9,528.510
 Mushroom_1,1.000,4,4,random,0.196,2,0.027
-brick,1.000,31512,31512,distributed_batch,14.225,109,-12.809
-light,0.000,0,0,distributed_batch,15.192,109,-4.415
-bush,0.000,0,0,distributed_batch,17.877,107,-0.134
+brick,1.000,32239,32239,distributed_batch,12.731,126,-11.360
+light,0.000,0,0,distributed_batch,780.335,182,7666.677
+bush,0.000,0,0,distributed_batch,17.742,185,-0.531
+flower,1.000,1158,1158,distributed_batch,5009.488,28,3521.923
 
 
 
@@ -97,27 +98,27 @@ Bone,1.000,3444,3444,distributed,3.167,23,0.105
 
 
 rooms\fountain.json
-Fountain,1.000,53,53,center,269.617,53,18.749
+Fountain,1.000,74,74,center,273.754,74,26.925
 Grass_FPS_2,0.123,6547,53213,distributed_batch,8.383,50,2.972
 Grass_1_FPS_2,0.123,6569,53213,distributed_batch,73.366,50,-32.008
 Bush_FPS_2,0.116,46,398,distributed_batch,82.460,50,-31.519
 Bush_1_FPS_2,0.141,56,398,distributed_batch,90.829,50,-29.355
 Bench,1.000,37,37,random,0.054,37,-0.017
-flower,0.002,1,510,distributed,16.257,51,-16.580
-Barrel,1.000,174,174,distributed_batch,8337.234,24,27194.424
+flower,0.035,22,636,distributed,109.190,72,41.008
+Barrel,1.000,247,247,distributed_batch,4763.184,45,-4871.180
 
 
 
 rooms\spawn.json
-Davey,1.000,19,19,center,466.464,19,-73.761
+Davey,1.000,30,30,center,482.576,30,105.908
 Sigil_Of_Fortune,0.000,0,10,distributed,0.003,1,0.000
-Grass_FPS_2,0.243,396,1627,distributed_batch,2.124,6,-1.976
-Grass_1_FPS_2,0.227,368,1621,distributed_batch,10.024,6,4.480
+Grass_FPS_2,0.346,651,1882,distributed_batch,1.037,17,-0.787
+Grass_1_FPS_2,0.337,637,1890,distributed_batch,4.872,17,-3.567
 Bush_FPS_2,0.000,0,10,distributed_batch,15.424,2,0.189
 Bush_1_FPS_2,0.100,1,10,distributed_batch,22.543,2,-1.821
 Mushroom_2,0.904,47,52,random,513.564,1,0.000
-Book,1.000,652,652,distributed_batch,5689.036,4,4986.186
-bush,0.000,0,0,distributed_batch,19.309,4,9.943
+Book,1.000,722,722,distributed_batch,4692.024,5,-4985.059
+bush,0.000,0,0,distributed_batch,15.002,15,-3.877
 
 
 
@@ -136,7 +137,7 @@ Bush_1_FPS_2,0.107,55,514,distributed_batch,28.107,48,57.618
 
 
 rooms\chest.json
-Chest,1.000,120,120,center,273.713,120,293.728
+Chest,1.000,137,137,center,309.869,137,88.405
 Grass_FPS_2,0.118,15401,130437,distributed_batch,17.063,62,-5.008
 Grass_1_FPS_2,0.120,15665,130437,distributed_batch,17.687,62,-4.947
 Bush_FPS_2,0.106,103,971,distributed_batch,26.544,62,-4.101
@@ -147,9 +148,9 @@ SKull_pile,0.005,12,2550,random,26.026,2,-15.571
 Bone,0.006,44,7130,random,25.649,6,-2.406
 Bone_1,0.007,26,3780,random,22.342,4,20.432
 Skull_1,0.007,14,1880,random,19.701,2,6.770
-plant,0.000,0,0,distributed_batch,12.206,16,120.689
-candle,0.000,0,20,distributed,0.004,2,-0.000
-lantern,0.000,0,30,distributed,0.003,3,0.001
+plant,0.000,0,0,distributed_batch,33.844,33,-26.462
+candle,0.000,0,130,distributed,0.004,13,-0.001
+lantern,0.000,0,90,distributed,0.004,9,-0.000
 
 
 
@@ -250,11 +251,48 @@ Bush_1_FPS_2,0.125,1,8,distributed,0.180,1,0.000
 
 
 rooms\random.json
-Bone_1,0.007,445,62535,random,53.775,27,0.684
-lantern,1.000,23,23,center,634.706,23,25.472
-Bone,0.007,278,41579,random,40.724,21,5.215
+Bone_1,0.007,465,64415,random,49.077,31,-48.677
+lantern,1.000,32,32,center,654.687,32,90.399
+Bone,0.007,310,44809,random,34.500,27,-12.596
 okkkkk_babyyy,1.000,25,25,center,44.870,25,1.153
-Skull_1,0.006,278,45380,random,50.929,19,-46.221
-Bone_Pile,0.013,487,36670,random,47.236,17,-45.720
-SKull_pile,0.006,286,44317,random,52.427,18,-32.490
-candle,1.000,3,3,center,46.507,3,5.945
+Skull_1,0.006,315,48840,random,37.590,28,-28.030
+Bone_Pile,0.013,537,39990,random,36.152,25,-25.578
+SKull_pile,0.007,314,47247,random,40.550,25,-32.360
+candle,1.000,11,11,center,75.432,11,30.530
+
+
+
+rooms\bar.json
+Booze_1,1.000,45,45,random,0.149,12,-0.059
+Booze_2,1.000,36,36,random,0.127,12,-0.020
+candle,1.000,16,16,random,106.649,12,-10.122
+Barrel,0.951,39,41,random,0.202,12,0.060
+Grass_FPS_2,1.000,366,366,distributed_batch,0.302,12,-0.009
+Grass_1_FPS_2,1.000,297,297,distributed_batch,8.324,12,-1.645
+bush,0.000,0,0,distributed_batch,16.727,12,-2.510
+
+
+
+rooms\Grave_Yard.json
+candle,0.951,39,41,random,200.771,16,164.195
+Skull,1.000,8,8,random,0.180,3,0.038
+Grave_1,1.000,564,564,distributed_batch,9.322,16,0.295
+Grave_2,1.000,579,579,distributed_batch,17.693,16,-0.913
+Bone_Pile,0.750,3,4,random,0.176,1,0.000
+SKull_pile,0.225,29,129,random,0.812,5,1.310
+Skull_1,0.512,22,43,random,0.367,4,0.152
+Bone,0.296,8,27,random,0.372,2,0.389
+Bone_1,0.800,4,5,random,0.225,1,0.000
+
+
+
+rooms\OBJ.json
+flower,0.030,2,67,distributed,33.472,7,-39.050
+Bone_1,0.000,0,30,distributed,0.002,3,-0.001
+Fountain,1.000,7,7,center,260.473,7,35.912
+Grass_FPS_2,1.000,548,548,distributed_batch,0.877,7,0.116
+Grass_1_FPS_2,1.000,500,500,distributed_batch,11.185,7,-0.824
+bush,0.000,0,0,distributed_batch,20.602,7,-2.535
+SKull_pile,0.000,0,20,distributed,0.002,2,-0.000
+Skull,0.000,0,10,distributed,0.002,1,0.000
+Skull_1,0.000,0,10,distributed,0.002,1,0.000

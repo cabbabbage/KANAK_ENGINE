@@ -1,7 +1,7 @@
 {
   "name": "chest",
-  "min_width": 750,
-  "max_width": 750,
+  "min_width": 1510,
+  "max_width": 1510,
   "min_height": 730,
   "max_height": 730,
   "edge_smoothness": 100,

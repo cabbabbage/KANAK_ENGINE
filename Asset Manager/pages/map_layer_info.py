@@ -24,8 +24,14 @@ class MapLayerInfo(ttk.Frame):
         self.rooms = []
         self.rooms_data = rooms_data or []
 
-        bg_color = level_to_hex_color(level)
-        self.bg_frame = tk.Frame(parent, background=bg_color, borderwidth=1, relief="solid")
+        outline_color = level_to_hex_color(level)
+        self.bg_frame = tk.Frame(
+            parent,
+            background="#f0f0f0",  # Default bg or neutral
+            highlightbackground=outline_color,
+            highlightthickness=3,
+            bd=0
+        )
         self.bg_frame.pack(side="left", fill="y", padx=6, pady=6)
 
         super().__init__(self.bg_frame, borderwidth=0, relief="flat", padding=6)

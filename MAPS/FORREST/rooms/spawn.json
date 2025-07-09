@@ -18,7 +18,7 @@
     {
       "name": "candle",
       "min_number": 10,
-      "max_number": 30,
+      "max_number": 20,
       "position": "Perimeter",
       "exact_position": null,
       "tag": false,
@@ -33,15 +33,15 @@
       "sector_range_max": 360
     }
   ],
-  "min_height": 1682,
-  "max_height": 1682,
+  "min_height": 700,
+  "max_height": 700,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": true,
   "is_boss": false,
   "inherits_map_assets": false,
   "batch_assets": {
-    "has_batch_assets": true,
+    "has_batch_assets": false,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
@@ -50,14 +50,8 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 50,
+        "percent": 100,
         "color": "#CCCCCC"
-      },
-      {
-        "name": "Book",
-        "tag": false,
-        "percent": 50,
-        "color": "#bd6f2e"
       }
     ]
   }

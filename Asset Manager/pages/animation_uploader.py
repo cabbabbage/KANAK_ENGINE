@@ -42,6 +42,9 @@ class AnimationUploader(tk.Toplevel):
         btn_gif = ttk.Button(self.upload_frame, text="Select GIF", command=self._handle_gif_upload)
         btn_gif.pack(pady=6)
 
+        btn_gif = ttk.Button(self.upload_frame, text="Select PNG", command=self._handle_png_upload)
+        btn_gif.pack(pady=6)
+
         btn_edit = ttk.Button(self.upload_frame, text="Edit Existing", command=self._handle_edit_existing)
         btn_edit.pack(pady=6)
 
@@ -91,6 +94,24 @@ class AnimationUploader(tk.Toplevel):
 
         self.uploaded = True
         self._load_edit_page()
+
+    def _handle_png_upload(self):
+        file = filedialog.askopenfilename(filetypes=[("PNG files", "*.png")])
+        if not file:
+            return
+
+        try:
+            image = Image.open(file).convert("RGBA")
+        except Exception as e:
+            messagebox.showerror("PNG Error", f"Failed to load PNG: {e}")
+            return
+
+        self._clear_existing()
+        image.save(os.path.join(self.output_path, "0.png"))
+
+        self.uploaded = True
+        self._load_edit_page()
+
 
     def _handle_edit_existing(self):
         if not os.path.isdir(self.output_path):
