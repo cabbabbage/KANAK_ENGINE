@@ -30,7 +30,7 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "passable"
+        "impassable"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400

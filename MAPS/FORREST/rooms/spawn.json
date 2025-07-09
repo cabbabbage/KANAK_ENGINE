@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 750,
-  "max_width": 750,
+  "min_width": 1400,
+  "max_width": 1400,
   "curvyness": 1,
   "assets": [
     {
@@ -16,34 +16,34 @@
       "inherited": false
     },
     {
-      "name": "okkkkk_babyyy",
-      "min_number": 65,
-      "max_number": 65,
+      "name": "candle",
+      "min_number": 10,
+      "max_number": 20,
       "position": "Perimeter",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
       "check_min_spacing": false,
       "inherited": false,
-      "border_shift_min": 173,
-      "border_shift_max": 173,
+      "border_shift_min": 160,
+      "border_shift_max": 160,
       "sector_center_min": 0,
       "sector_center_max": 0,
       "sector_range_min": 360,
       "sector_range_max": 360
     }
   ],
-  "min_height": 750,
-  "max_height": 750,
+  "min_height": 700,
+  "max_height": 700,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": true,
   "is_boss": false,
-  "inherits_map_assets": true,
+  "inherits_map_assets": false,
   "batch_assets": {
     "has_batch_assets": false,
-    "grid_spacing_min": 264,
-    "grid_spacing_max": 264,
+    "grid_spacing_min": 100,
+    "grid_spacing_max": 100,
     "jitter_min": 0,
     "jitter_max": 0,
     "batch_assets": [
@@ -51,7 +51,7 @@
         "name": "null",
         "tag": false,
         "percent": 100,
-        "color": "#d62ba5"
+        "color": "#CCCCCC"
       }
     ]
   }

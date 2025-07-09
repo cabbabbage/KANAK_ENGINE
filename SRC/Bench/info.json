@@ -1,33 +1,33 @@
 {
-  "impassable_area": null,
-  "asset_name": "Bench",
-  "asset_type": "Object",
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2,
-  "tags": [
-    "passable",
-    "default",
-    "wood"
-  ],
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "",
-      "event_data": [],
-      "randomize": false,
-      "audio_path": "",
-      "volume": 50
+    "impassable_area": null,
+    "asset_name": "Bench",
+    "asset_type": "Object",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "tags": [
+        "passable",
+        "wood",
+        "default"
+    ],
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "z_threshold": 29,
+    "size_settings": {
+        "scale_percentage": 15,
+        "variability_percentage": 0
     }
-  },
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400,
-  "z_threshold": 29,
-  "size_settings": {
-    "scale_percentage": 15,
-    "variability_percentage": 0
-  }
 }

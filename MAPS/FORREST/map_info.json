@@ -26,6 +26,16 @@
       "room_path": "rooms\\spawn.json",
       "max_instances": 1,
       "required": true
+    },
+    {
+      "room_path": "rooms\\Grave_Yard.json",
+      "max_instances": 1,
+      "required": true
+    },
+    {
+      "room_path": "rooms\\bar.json",
+      "max_instances": 1,
+      "required": true
     }
   ],
   "trails": [

@@ -34,7 +34,7 @@ Area::Area(int center_x, int center_y, int w, int h,
     }
 
     if (geometry == "Circle") {
-        generate_circle(center_x, center_y, w, edge_smoothness, map_width, map_height);
+        generate_circle(center_x, center_y, w/2, edge_smoothness, map_width, map_height);
     } else if (geometry == "Square") {
         generate_square(center_x, center_y, w, h, edge_smoothness, map_width, map_height);
     } else if (geometry == "Random") {

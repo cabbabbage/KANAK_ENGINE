@@ -1,0 +1,63 @@
+{
+  "name": "Grave_Yard",
+  "min_width": 1057,
+  "max_width": 1991,
+  "min_height": 1044,
+  "max_height": 2500,
+  "edge_smoothness": 100,
+  "geometry": "Square",
+  "is_spawn": false,
+  "is_boss": false,
+  "inherits_map_assets": true,
+  "assets": [
+    {
+      "name": "candle",
+      "min_number": 5,
+      "max_number": 5,
+      "position": "Random",
+      "exact_position": null,
+      "tag": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    },
+    {
+      "name": "bone",
+      "min_number": 10,
+      "max_number": 10,
+      "position": "Random",
+      "exact_position": null,
+      "tag": true,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    }
+  ],
+  "batch_assets": {
+    "has_batch_assets": true,
+    "grid_spacing_min": 100,
+    "grid_spacing_max": 100,
+    "jitter_min": 25,
+    "jitter_max": 25,
+    "batch_assets": [
+      {
+        "name": "null",
+        "tag": false,
+        "percent": 72,
+        "color": "#CCCCCC"
+      },
+      {
+        "name": "Grave_1",
+        "tag": false,
+        "percent": 14,
+        "color": "#c9683c"
+      },
+      {
+        "name": "Grave_2",
+        "tag": false,
+        "percent": 14,
+        "color": "#335364"
+      }
+    ]
+  }
+}

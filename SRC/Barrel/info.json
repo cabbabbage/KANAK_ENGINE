@@ -1,69 +1,69 @@
 {
-  "asset_name": "Barrel",
-  "asset_type": "Object",
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2,
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "event_data": [],
-      "randomize": false,
-      "audio_path": "",
-      "volume": 50
+    "asset_name": "Barrel",
+    "asset_type": "Object",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        },
+        "collision": {
+            "frames_path": "collision",
+            "speed": 1.0,
+            "on_end": "default",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50,
+            "area_path": "collision_area.json"
+        }
     },
-    "collision": {
-      "frames_path": "collision",
-      "speed": 1.0,
-      "on_end": "default",
-      "event_data": [],
-      "randomize": false,
-      "audio_path": "",
-      "volume": 50,
-      "area_path": "collision_area.json"
-    }
-  },
-  "available_animations": [
-    "frames_path",
-    "speed",
-    "on_end",
-    "event_data",
-    "randomize",
-    "audio_path",
-    "volume"
-  ],
-  "tags": [
-    "impassable",
-    "collision",
-    "default",
-    "wood"
-  ],
-  "impassable_area": "impassable_area.json",
-  "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 0,
-  "z_threshold": 11,
-  "size_settings": {
-    "scale_percentage": 9.487341772151899,
-    "variability_percentage": 0.0
-  },
-  "child_assets": [
-    {
-      "asset": "okkkkk_babyyy",
-      "point": {
-        "x": 990,
-        "y": 148,
-        "radius": 91
-      },
-      "z_offset": 1,
-      "min": 3,
-      "max": 3,
-      "terminate_with_parent": false
-    }
-  ],
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400
+    "available_animations": [
+        "frames_path",
+        "speed",
+        "on_end",
+        "event_data",
+        "randomize",
+        "audio_path",
+        "volume"
+    ],
+    "tags": [
+        "default",
+        "collision",
+        "impassable",
+        "wood"
+    ],
+    "impassable_area": "impassable_area.json",
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 0,
+    "z_threshold": 11,
+    "size_settings": {
+        "scale_percentage": 9.487341772151899,
+        "variability_percentage": 0.0
+    },
+    "child_assets": [
+        {
+            "asset": "okkkkk_babyyy",
+            "point": {
+                "x": 990,
+                "y": 148,
+                "radius": 91
+            },
+            "z_offset": 1,
+            "min": 3,
+            "max": 3,
+            "terminate_with_parent": false
+        }
+    ],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400
 }
