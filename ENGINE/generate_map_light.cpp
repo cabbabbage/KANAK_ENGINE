@@ -114,21 +114,21 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon(float /*norm*/) const {
     double mult = 0.4;
 
     std::vector<KeyColor> keys = {
-        {  0.0f,   { 255,   255,   255,   static_cast<Uint8>(200) }},   // top - transparent
+        {  0.0f,   { 255,   255,   255,   static_cast<Uint8>(255) }},   // top - transparent
         {  85.0f,  { 255,   255,   255,   static_cast<Uint8>(200) }},   // still transparent
 
         {  95.0f,  { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},   // warm orange
         { 105.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},   // dusk purple
-        { 120.0f,  { 60,  70,  150, static_cast<Uint8>(40 * mult) }},   // cool blue
+        { 120.0f,  { 60,  70,  150, static_cast<Uint8>(20 * mult) }},   // cool blue
         { 150.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},   // fade to transparent
 
         { 210.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},   // transparent resume
-        { 240.0f,  { 60,  70,  150, static_cast<Uint8>(40 * mult) }},   // cool blue (mirror)
+        { 240.0f,  { 60,  70,  150, static_cast<Uint8>(20 * mult) }},   // cool blue (mirror)
         { 255.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},   // dusk purple (mirror)
         { 265.0f,  { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},   // warm orange (mirror)
 
         { 275.0f,  { 255,   255,   255,   static_cast<Uint8>(200) }},   // fade to transparent
-        { 360.0f,  { 255,   255,   255,   static_cast<Uint8>(200) }}    // top again - transparent
+        { 360.0f,  { 255,   255,   255,   static_cast<Uint8>(255) }}    // top again - transparent
     };
 
 
