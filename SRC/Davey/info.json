@@ -70,12 +70,12 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 500,
     "tags": [
-        "passable",
-        "left",
-        "right",
-        "backward",
         "forward",
+        "backward",
+        "left",
         "player",
+        "right",
+        "passable",
         "default",
         "start"
     ],

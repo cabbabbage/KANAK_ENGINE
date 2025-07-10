@@ -19,10 +19,10 @@
         }
     },
     "tags": [
-        "impassable",
-        "default"
+        "default",
+        "impassable"
     ],
-    "z_threshold": 71,
+    "z_threshold": 5,
     "size_settings": {
         "scale_percentage": 15,
         "variability_percentage": 0
