@@ -21,9 +21,9 @@
     "tags": [
         "orange",
         "passable",
-        "light",
         "default",
-        "man-made"
+        "man-made",
+        "light"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -49,7 +49,7 @@
             "jitter_min": 16,
             "jitter_max": 20,
             "offset_x": 0,
-            "offset_y": 0,
+            "offset_y": -30,
             "flicker": true
         }
     ],

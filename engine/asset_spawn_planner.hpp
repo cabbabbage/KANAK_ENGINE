@@ -42,7 +42,6 @@ class AssetSpawnPlanner {
 public:
     AssetSpawnPlanner(const nlohmann::json& json_data,
                       double area,
-                      SDL_Renderer* renderer,
                       AssetLibrary& asset_library);
 
     const std::vector<SpawnInfo>& get_spawn_queue() const;
@@ -56,7 +55,6 @@ private:
     void parse_batch_assets();
     nlohmann::json resolve_asset_from_tag(const nlohmann::json& tag_entry);
 
-    SDL_Renderer* renderer_ = nullptr;
     nlohmann::json root_json_;
     AssetLibrary* asset_library_ = nullptr;
 

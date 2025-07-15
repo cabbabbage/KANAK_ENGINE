@@ -8,10 +8,8 @@
 #include <iomanip>
 #include <sstream>
 
-static constexpr int max_fade_distance = 2000;
+static constexpr int max_fade_distance = 500;
 static constexpr int max_fade_intensity = 100;
-static constexpr int PERIMETER_SKIP_STEP = 5;
-static constexpr int PRINT_RATE = 20;
 
 GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                                        const std::vector<Area>& zones,
@@ -20,21 +18,13 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
 {
     if (!game_assets) return;
 
-    std::vector<std::pair<int, int>> all_points;
-    all_points.reserve(10000);
-    for (const Area& zone : zones) {
-        const auto& pts = zone.get_points();
-        for (size_t i = 0; i < pts.size(); i += PERIMETER_SKIP_STEP) {
-            all_points.emplace_back(pts[i]);
-        }
-    }
-
     const int total = static_cast<int>(game_assets->all.size());
     int count = 0;
 
     for (Asset& asset : game_assets->all) {
         if (!asset.info || asset.info->type != "Background") {
             asset.gradient_opacity = 1.0;
+            asset.has_base_shadow = false;
             continue;
         }
 
@@ -51,29 +41,43 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
 
         if (is_inside) {
             asset.gradient_opacity = 1.0;
+            asset.has_base_shadow = false;
         } else {
             double minDist = std::numeric_limits<double>::infinity();
-            for (const auto& [zx, zy] : all_points) {
-                double dx = zx - x;
-                double dy = zy - y;
-                double d = std::hypot(dx, dy);
-                if (d < minDist) minDist = d;
+
+            for (const Area& zone : zones) {
+                const auto& pts = zone.get_points();
+                size_t n = pts.size();
+                if (n < 2) continue;
+                for (size_t i = 0; i < n; ++i) {
+                    auto [x1, y1] = pts[i];
+                    auto [x2, y2] = pts[(i + 1) % n];
+                    double vx = x2 - x1;
+                    double vy = y2 - y1;
+                    double wx = x - x1;
+                    double wy = y - y1;
+                    double len2 = vx*vx + vy*vy;
+                    double t = len2 > 0.0 ? (vx*wx + vy*wy) / len2 : 0.0;
+                    t = std::clamp(t, 0.0, 1.0);
+                    double projx = x1 + t * vx;
+                    double projy = y1 + t * vy;
+                    double dx = projx - x;
+                    double dy = projy - y;
+                    double d = std::hypot(dx, dy);
+                    if (d < minDist) minDist = d;
+                }
             }
 
-            int raw_opacity = (minDist >= max_fade_distance)
+            int raw = (minDist >= max_fade_distance)
                 ? max_fade_intensity
                 : static_cast<int>(std::round(max_fade_intensity * (minDist / max_fade_distance)));
 
-            double reversed = 1.0 - std::clamp(raw_opacity, 0, max_fade_intensity) / 100.0;
+            double reversed = 1.0 - (std::clamp(raw, 0, max_fade_intensity) / 100.0);
             asset.gradient_opacity = reversed;
-            if (reversed < 0.5){
-                asset.has_base_shadow = false;
-            }
+            asset.has_base_shadow = (reversed < 1.0);
         }
 
-        asset.has_base_shadow = true;
         ++count;
-
         std::ostringstream oss;
         oss << "[Shadow] "
             << std::left << std::setw(20) << asset.info->name
@@ -86,5 +90,6 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
 
         std::cout << oss.str() << std::flush;
     }
+
     std::cout << std::endl;
 }

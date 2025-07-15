@@ -41,7 +41,7 @@ private:
     int intensity_ = 255;
     int orbit_radius = 400;
     int frame_counter_ = 0;
-    int update_interval_ = 5;
+    int update_interval_ = 30;
 
     void build_texture();
     float compute_opacity_from_horizon(float norm) const;

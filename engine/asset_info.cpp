@@ -1,4 +1,3 @@
-// === File: asset_info.cpp ===
 #include "asset_info.hpp"
 #include <SDL_image.h>
 #include <iostream>
@@ -18,10 +17,17 @@ static SDL_BlendMode parse_blend_mode(const std::string& mode_str) {
     return SDL_BLENDMODE_BLEND;
 }
 
-AssetInfo::AssetInfo(const std::string& asset_folder_name, SDL_Renderer* renderer) {
+AssetInfo::AssetInfo(const std::string& asset_folder_name)
+    : blendmode(SDL_BLENDMODE_BLEND),
+      has_light_source(false),
+      has_shading(false),
+      has_base_shadow(false),
+      has_gradient_shadow(false),
+      has_casted_shadows(false)
+{
     name = asset_folder_name;
-    std::string dir_path = "SRC/" + asset_folder_name;
-    std::string info_path = dir_path + "/info.json";
+    dir_path_ = "SRC/" + asset_folder_name;
+    std::string info_path = dir_path_ + "/info.json";
 
     std::ifstream in(info_path);
     if (!in.is_open()) {
@@ -30,8 +36,12 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name, SDL_Renderer* rendere
     nlohmann::json data;
     in >> data;
 
-    blendmode = parse_blend_mode(data.value("blend_mode", "SDL_BLENDMODE_BLEND"));
+    // Blend mode
+    if (data.contains("blend_mode") && data["blend_mode"].is_string()) {
+        blendmode = parse_blend_mode(data["blend_mode"].get<std::string>());
+    }
 
+    // Tags
     tags.clear();
     if (data.contains("tags") && data["tags"].is_array()) {
         for (const auto& tag : data["tags"]) {
@@ -43,44 +53,39 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name, SDL_Renderer* rendere
         }
     }
 
-
-    load_base_properties(data);
-
+    // Record animations JSON for later
     if (data.contains("animations")) {
-        const auto& anims = data["animations"];
-        interaction = anims.contains("interaction") && !anims["interaction"].is_null();
-        hit         = anims.contains("hit")        && !anims["hit"].is_null();
-        collision   = anims.contains("collision")  && !anims["collision"].is_null();
+        anims_json_ = data["animations"];
+        interaction = anims_json_.contains("interaction") && !anims_json_["interaction"].is_null();
+        hit         = anims_json_.contains("hit")        && !anims_json_["hit"].is_null();
+        collision   = anims_json_.contains("collision")  && !anims_json_["collision"].is_null();
     }
 
+    // Base properties
+    load_base_properties(data);
+
+    // Lighting & shading
+    load_lighting_info(data);
+    load_shading_info(data);
+
+    // Size settings
     const auto& ss = data.value("size_settings", nlohmann::json::object());
     scale_percentage       = ss.value("scale_percentage", 100.0f);
     variability_percentage = ss.value("variability_percentage", 0.0f);
-    scale_factor = scale_percentage / 100.0f;
+    scale_factor           = scale_percentage / 100.0f;
 
-    original_canvas_width = 0;
-    original_canvas_height = 0;
-    int scaled_sprite_w = 0;
-    int scaled_sprite_h = 0;
-    SDL_Texture* base_sprite = nullptr;
-
-    if (data.contains("animations")) {
-        load_animations(data["animations"], dir_path, renderer, base_sprite, scaled_sprite_w, scaled_sprite_h);
-    }
-
+    // Warn if default animation missing (frames will be loaded later)
     if (!animations.count("default") || animations["default"].frames.empty()) {
         std::cerr << "[AssetInfo] WARNING: no valid 'default' animation for '" << name << "'\n";
     }
 
-    load_lighting_info(data);
-    load_shading_info(data);
-
+    // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);
     int scaled_canvas_h = static_cast<int>(original_canvas_height * scale_factor);
-    int offset_x = (scaled_canvas_w - scaled_sprite_w) / 2;
-    int offset_y = (scaled_canvas_h - scaled_sprite_h);
+    int offset_x = (scaled_canvas_w - 0) / 2;
+    int offset_y = (scaled_canvas_h - 0);
 
-    load_collision_areas(data, dir_path, offset_x, offset_y);
+    load_collision_areas(data, dir_path_, offset_x, offset_y);
     load_child_assets(data, scale_factor, offset_x, offset_y);
 }
 
@@ -88,7 +93,6 @@ AssetInfo::~AssetInfo() {
     std::ostringstream oss;
     oss << "[AssetInfo] Destructor for '" << name << "'\r";
     std::cout << std::left << std::setw(60) << oss.str() << std::flush;
-
 
     for (auto& [key, anim] : animations) {
         for (SDL_Texture* tex : anim.frames) {
@@ -100,6 +104,14 @@ AssetInfo::~AssetInfo() {
     child_assets.clear();
 }
 
+void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
+    if (anims_json_.is_null()) return;
+
+    SDL_Texture* base_sprite = nullptr;
+    int scaled_sprite_w = 0;
+    int scaled_sprite_h = 0;
+    load_animations(anims_json_, dir_path_, renderer, base_sprite, scaled_sprite_w, scaled_sprite_h);
+}
 
 void AssetInfo::load_base_properties(const nlohmann::json& data) {
     type = data.value("asset_type", "Object");
@@ -316,6 +328,12 @@ void AssetInfo::load_child_assets(const nlohmann::json& data,
     }
 }
 
+
+
+
+
+
+
 void AssetInfo::load_animations(const nlohmann::json& anims_json,
                                 const std::string& dir_path,
                                 SDL_Renderer* renderer,
@@ -323,58 +341,129 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
                                 int& scaled_sprite_w,
                                 int& scaled_sprite_h)
 {
+    namespace fs = std::filesystem;
+
+    // Base cache directory: ./cache/<asset_name>/animations/
+    std::string root_cache = "cache/" + name + "/animations";
     for (auto it = anims_json.begin(); it != anims_json.end(); ++it) {
-        const std::string& trigger = it.key();
-        const auto& anim_json = it.value();
-        if (anim_json.is_null() || !anim_json.contains("frames_path")) continue;
+        const std::string& trigger   = it.key();
+        const auto&        anim_json = it.value();
+        if (anim_json.is_null() || !anim_json.contains("frames_path"))
+            continue;
 
-        std::string folder = anim_json["frames_path"];
-        std::string frame_path = dir_path + "/" + folder;
+        std::string src_folder   = dir_path + "/" + anim_json["frames_path"].get<std::string>();
+        std::string cache_folder = root_cache + "/" + trigger;
+        std::string meta_file    = cache_folder + "/metadata.json";
 
-        Animation anim;
-        anim.on_end = anim_json.value("on_end", "");
-        anim.randomize = anim_json.value("randomize", false);
-        anim.loop = (anim.on_end == trigger);
-
-        std::vector<SDL_Surface*> loaded_surfaces;
-        int frame_count = 0;
-
-        for (int i = 0;; ++i) {
-            std::string frame_file = frame_path + "/" + std::to_string(i) + ".png";
-            if (!fs::exists(frame_file)) break;
-
-            SDL_Surface* surface = IMG_Load(frame_file.c_str());
-            if (!surface) {
-                std::cerr << "[AssetInfo] Failed to load: " << frame_file << "\n";
-                continue;
+        // 1) Scan source to determine expected metadata
+        int expected_frames = 0;
+        int orig_w = 0, orig_h = 0;
+        while (true) {
+            std::string f = src_folder + "/" + std::to_string(expected_frames) + ".png";
+            if (!fs::exists(f)) break;
+            if (expected_frames == 0) {
+                if (SDL_Surface* s = IMG_Load(f.c_str())) {
+                    orig_w = s->w;
+                    orig_h = s->h;
+                    SDL_FreeSurface(s);
+                }
             }
-            SDL_SetSurfaceBlendMode(surface, blendmode);
+            ++expected_frames;
+        }
+        if (expected_frames == 0) continue;
 
-            if (frame_count == 0) {
-                original_canvas_width = surface->w;
-                original_canvas_height = surface->h;
+        // 2) Try to load metadata and decide if cache is valid
+        bool use_cache = false;
+        if (fs::exists(meta_file)) {
+            std::ifstream mfs(meta_file);
+            if (mfs) {
+                nlohmann::json meta;
+                mfs >> meta;
+                if (meta.value("frame_count", -1)     == expected_frames
+                    && meta.value("scale_factor", -1.0f) == scale_factor
+                    && meta.value("original_width",  -1) == orig_w
+                    && meta.value("original_height", -1) == orig_h
+                    && meta.value("blend_mode", -1)      == int(blendmode))
+                {
+                    use_cache = true;
+                }
             }
-
-            int new_w = static_cast<int>(surface->w * scale_factor + 0.5f);
-            int new_h = static_cast<int>(surface->h * scale_factor + 0.5f);
-            if (frame_count == 0) {
-                scaled_sprite_w = new_w;
-                scaled_sprite_h = new_h;
-            }
-
-            SDL_Surface* scaled_surf = SDL_CreateRGBSurfaceWithFormat(0, new_w, new_h, 32, SDL_PIXELFORMAT_RGBA32);
-            SDL_BlitScaled(surface, nullptr, scaled_surf, nullptr);
-            SDL_FreeSurface(surface);
-
-            loaded_surfaces.push_back(scaled_surf);
-            ++frame_count;
         }
 
-        for (SDL_Surface* surface : loaded_surfaces) {
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_FreeSurface(surface);
+        std::vector<SDL_Surface*> loaded_surfaces;
+        // 3a) If cache valid, load surfaces from cache
+        if (use_cache) {
+            for (int i = 0; i < expected_frames; ++i) {
+                std::string f = cache_folder + "/" + std::to_string(i) + ".png";
+                SDL_Surface* s = IMG_Load(f.c_str());
+                if (!s) { use_cache = false; break; }
+                loaded_surfaces.push_back(s);
+            }
+        }
+
+        // 3b) Otherwise regenerate and rewrite cache
+        if (!use_cache) {
+            fs::remove_all(cache_folder);
+            fs::create_directories(cache_folder);
+
+            for (int i = 0; i < expected_frames; ++i) {
+                std::string f = src_folder + "/" + std::to_string(i) + ".png";
+                SDL_Surface* surface = IMG_Load(f.c_str());
+                if (!surface) {
+                    std::cerr << "[AssetInfo] Failed to load: " << f << "\n";
+                    continue;
+                }
+                SDL_SetSurfaceBlendMode(surface, blendmode);
+
+                if (i == 0) {
+                    original_canvas_width  = surface->w;
+                    original_canvas_height = surface->h;
+                }
+
+                int new_w = int(surface->w * scale_factor + 0.5f);
+                int new_h = int(surface->h * scale_factor + 0.5f);
+                if (i == 0) {
+                    scaled_sprite_w = new_w;
+                    scaled_sprite_h = new_h;
+                }
+
+                SDL_Surface* scaled = SDL_CreateRGBSurfaceWithFormat(
+                    0, new_w, new_h, 32, SDL_PIXELFORMAT_RGBA32);
+                SDL_BlitScaled(surface, nullptr, scaled, nullptr);
+                SDL_FreeSurface(surface);
+
+                // save to cache
+                std::string out = cache_folder + "/" + std::to_string(i) + ".png";
+                if (IMG_SavePNG(scaled, out.c_str()) != 0) {
+                    std::cerr << "[AssetInfo] Failed to save cache: " << out << "\n";
+                }
+
+                loaded_surfaces.push_back(scaled);
+            }
+
+            // write new metadata
+            nlohmann::json meta;
+            meta["frame_count"]     = expected_frames;
+            meta["scale_factor"]    = scale_factor;
+            meta["original_width"]  = orig_w;
+            meta["original_height"] = orig_h;
+            meta["blend_mode"]      = int(blendmode);
+            std::ofstream mofs(meta_file);
+            mofs << meta.dump(4);
+        }
+
+        // 4) Turn surfaces into textures
+        Animation anim;
+        anim.on_end    = anim_json.value("on_end", "");
+        anim.randomize = anim_json.value("randomize", false);
+        anim.loop      = (anim.on_end == trigger);
+
+        for (SDL_Surface* surf : loaded_surfaces) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+            SDL_FreeSurface(surf);
             if (!tex) {
-                std::cerr << "[AssetInfo] Failed to create texture\n";
+                std::cerr << "[AssetInfo] Failed to create texture for '"
+                          << trigger << "'\n";
                 continue;
             }
             SDL_SetTextureBlendMode(tex, blendmode);
@@ -384,15 +473,20 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         if (trigger == "default" && !anim.frames.empty()) {
             base_sprite = anim.frames[0];
         }
-       
 
-        std::cout << "[AssetInfo] Loaded " << frame_count
-                  << " frames (and gradients) for animation '" << trigger << "'\n";
+        std::cout << "[AssetInfo] Loaded " << anim.frames.size()
+                  << " frames for '" << trigger << "'\n";
 
         animations[trigger] = std::move(anim);
     }
-
 }
+
+
+
+
+
+
+
 
 void AssetInfo::try_load_area(const nlohmann::json& data,
                               const std::string& key,

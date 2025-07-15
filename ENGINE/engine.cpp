@@ -48,17 +48,37 @@ Engine::~Engine() {
 
 void Engine::init() {
     srand(static_cast<unsigned int>(time(nullptr)));
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) return;
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
-    if (TTF_Init() < 0) return;
-    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) return;
+
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        std::cerr << "[Engine] SDL_Init failed: " << SDL_GetError() << "\n";
+        return;
+    }
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "[Engine] Mix_OpenAudio failed: " << Mix_GetError() << "\n";
+        return;
+    }
+    if (TTF_Init() < 0) {
+        std::cerr << "[Engine] TTF_Init failed\n";
+        return;
+    }
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        std::cerr << "[Engine] IMG_Init failed\n";
+        return;
+    }
 
     window = SDL_CreateWindow("Game Window",
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
-    if (!window) return;
+                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                              0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    if (!window) {
+        std::cerr << "[Engine] SDL_CreateWindow failed: " << SDL_GetError() << "\n";
+        return;
+    }
+
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) return;
+    if (!renderer) {
+        std::cerr << "[Engine] SDL_CreateRenderer failed: " << SDL_GetError() << "\n";
+        return;
+    }
     SDL_GetRendererOutputSize(renderer, &SCREEN_WIDTH, &SCREEN_HEIGHT);
 
     overlay_texture = IMG_LoadTexture(renderer, (map_path + "/over.png").c_str());
@@ -66,18 +86,36 @@ void Engine::init() {
         SDL_SetTextureBlendMode(overlay_texture, SDL_BLENDMODE_BLEND);
         SDL_SetTextureAlphaMod(overlay_texture, static_cast<Uint8>(255 * 0.2));
     }
+
     map_light = get_map_light();
+
     try {
         AssetLoader loader(map_path, renderer);
-
+        std::cout << "LOADING GOOD \n"; 
         // grab and tint the room/trail areas
         roomTrailAreas = loader.getAllRoomAndTrailAreas();
-        for (auto& area : roomTrailAreas) {
-            area.set_color(background_color.r, background_color.g, background_color.b);
-        }
 
+        std::cout << "AREAS GOOD \n"; 
         // pull back all assets by value
         std::vector<Asset> assets = loader.extract_all_assets();
+        minimap_texture_ = loader.createMinimap(200, 200); 
+
+        std::cout << "[Engine] Extracted " << assets.size() << " assets\n";
+
+        if (assets.size() > 100000) {  // arbitrary large number threshold
+            throw std::runtime_error("Asset vector too large, possible duplication or leak");
+        }
+
+        // Optional: Print counts by type for debugging
+        std::unordered_map<std::string, int> type_counts;
+        for (const auto& asset : assets) {
+            if (asset.info) {
+                ++type_counts[asset.info->type];
+            }
+        }
+        for (const auto& [type, count] : type_counts) {
+            std::cout << "  - " << type << ": " << count << "\n";
+        }
 
         // find the player in that list
         Asset* player_ptr = nullptr;
@@ -106,19 +144,8 @@ void Engine::init() {
         return;
     }
 
-
-   // std::cout << "Generating Fade Textures\n ********************************************* \n";
-   // {
-        //FadeTextureGenerator fade_gen(renderer, background_color, 1);  // expand factor can be tweaked
-       // static_faded_areas.clear();
-     //   for (const auto& [tex, rect] : fade_gen.generate_all(roomTrailAreas)) {
-         //   static_faded_areas[tex] = rect;
-   //     }
-
- //   }
-
-    std::cout << "Generating Base Shadows\n ********************************************* \n";
-    GenerateBaseShadow(renderer, roomTrailAreas, game_assets);
+    std::cout << "Generating Base Shadows\n*********************************************\n";
+    //GenerateBaseShadow(renderer, roomTrailAreas, game_assets);
 
     game_loop();
 }
@@ -187,10 +214,6 @@ void render_light_distorted(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Rect c
     SDL_RenderCopyEx(renderer, tex, nullptr, &scaled, rotation, nullptr, SDL_FLIP_NONE);
 }
 
-
-
-
-
 void Engine::render_asset_with_trapezoid(SDL_Renderer* renderer, SDL_Texture* tex, int screen_x, int screen_y, int w, int h, float top_scale_x, float top_scale_y, SDL_Color color) {
     if (!tex) return;
 
@@ -225,25 +248,18 @@ void Engine::render_asset_with_trapezoid(SDL_Renderer* renderer, SDL_Texture* te
     SDL_RenderGeometry(renderer, tex, verts, 4, indices, 6);
 }
 
-
-
-
-
-
-
-
 void Engine::render_visible() {
     // === Camera Shake Parameters ===
     static float shake_intensity = 0.5f;   // Final motion capped by logic below
-    static float shake_speed = 0.05f;      // Very slow
-    static float shake_timer = 0.0f;
-    static int last_px = 0;
-    static int last_py = 0;
+    static float shake_speed     = 0.05f;  // Very slow
+    static float shake_timer     = 0.0f;
+    static int   last_px         = 0;
+    static int   last_py         = 0;
 
     const float MIN_SHAKE_INTENSITY = 0.0f;
     const float MAX_SHAKE_INTENSITY = 0.0f;
-    const float MIN_SHAKE_SPEED = 0.0f;
-    const float MAX_SHAKE_SPEED = 0.0f;
+    const float MIN_SHAKE_SPEED     = 0.0f;
+    const float MAX_SHAKE_SPEED     = 0.0f;
 
     const int px = game_assets->player->pos_X;
     const int py = game_assets->player->pos_Y;
@@ -251,10 +267,10 @@ void Engine::render_visible() {
     // === Adjust shake based on movement ===
     if (px != last_px || py != last_py) {
         shake_intensity = std::max(MIN_SHAKE_INTENSITY, shake_intensity * 0.97f);
-        shake_speed = std::max(MIN_SHAKE_SPEED, shake_speed * 0.9f);
+        shake_speed     = std::max(MIN_SHAKE_SPEED,     shake_speed * 0.9f);
     } else {
         shake_intensity = std::min(MAX_SHAKE_INTENSITY, shake_intensity * 1.03f);
-        shake_speed = std::min(MAX_SHAKE_SPEED, shake_speed * 1.05f);
+        shake_speed     = std::min(MAX_SHAKE_SPEED,     shake_speed * 1.05f);
     }
 
     last_px = px;
@@ -262,7 +278,6 @@ void Engine::render_visible() {
 
     // === Smooth, capped shake output ===
     shake_timer += shake_speed;
-
     float raw_x = std::sin(shake_timer * 0.7f) * shake_intensity;
     float raw_y = std::sin(shake_timer * 1.05f + 2.0f) * shake_intensity;
 
@@ -273,81 +288,70 @@ void Engine::render_visible() {
     const int cx = SCREEN_WIDTH / 2 + shake_x;
     const int cy = SCREEN_HEIGHT / 2 + shake_y;
 
-
-
-auto get_scale_factors = [&](int ax, int ay) -> std::pair<float, float> {
-    float y_offset = static_cast<float>(ay - py);
-    float x_offset = static_cast<float>(ax - px);
-
-    float norm_y = std::clamp(y_offset / 1000.0f, -1.0f, 1.0f); // -1 = top, 1 = bottom
-    float norm_x = std::clamp(x_offset / 1000.0f, -1.0f, 1.0f); // -1 = left, 1 = right
-
-    // === Control points: (L, R, T, B) for key areas ===
-    struct EdgeScales { float L, R, T, B; };
-
-
-    //const EdgeScales bottom_left   = { 1.1f, 1.1f, 0.8f, 1.0f };
-    //const EdgeScales top_left      = { 0.6f, 0.6f, 2.0f, 1.0f };
-    
-    
-    const EdgeScales bottom_middle  = { 1.0f, 1.0f, .7f, 1.0f };
-    const EdgeScales top_middle     = { .8f, .8f, 1.1f, .9f };
-    
-
-    const EdgeScales bottom_left    = bottom_middle; 
-    const EdgeScales middle_left    = { .9f, .9f, 1.0f, .95f };
-    const EdgeScales top_left       = top_middle;
-
-    
-    auto lerp = [](float a, float b, float t) {
-        return a + (b - a) * t;
-    };
-
-    auto lerp_edges = [&](const EdgeScales& a, const EdgeScales& b, float t) -> EdgeScales {
-        return {
-            lerp(a.L, b.L, t),
-            lerp(a.R, b.R, t),
-            lerp(a.T, b.T, t),
-            lerp(a.B, b.B, t)
-        };
-    };
-
-    EdgeScales left_interp, middle_interp;
-
-    if (norm_y < 0.0f) {
-        float t = norm_y + 1.0f; // -1 to 0 → 0 to 1
-        left_interp   = lerp_edges(top_left, middle_left, t);
-        middle_interp = lerp_edges(top_middle, middle_left, t);
-    } else {
-        float t = norm_y; // 0 to 1
-        left_interp   = lerp_edges(middle_left, bottom_left, t);
-        middle_interp = lerp_edges(middle_left, bottom_middle, t);
-    }
-
-    float tx = (norm_x + 1.0f) * 0.5f; // -1 to 1 → 0 to 1
-    EdgeScales s = lerp_edges(left_interp, middle_interp, tx);
-
-    if (norm_x > 0.0f) std::swap(s.L, s.R); // flip if on right side
-
-    float scale_x = (s.L + s.R) * 0.5f;
-    float scale_y = (s.T + s.B) * 0.5f;
-
-    return { scale_x, scale_y };
-};
-
-
-
-    auto apply_parallax = [&](int ax, int ay) -> SDL_Point {
+    auto get_scale_factors = [&](int ax, int ay) -> std::pair<float, float> {
         float y_offset = static_cast<float>(ay - py);
         float x_offset = static_cast<float>(ax - px);
 
-        float strength_y = std::clamp(y_offset / 2000.0f, -1.0f, 1.0f);
-        float strength_x = std::clamp(x_offset / 2000.0f, -1.0f, 1.0f);
+        float norm_y = std::clamp(y_offset / 1000.0f, -1.0f, 1.0f);
+        float norm_x = std::clamp(x_offset / 1000.0f, -1.0f, 1.0f);
 
-        int screen_x = ax - px + cx + static_cast<int>(strength_x * 40.0f); // horizontal slide
-        int screen_y = ay - py + cy + static_cast<int>(strength_y * 20.0f); // vertical slight float
+        struct EdgeScales { float L, R, T, B; };
+        const EdgeScales bottom_middle = { 0.98f, 0.98f, 0.82f, 0.98f };
+        const EdgeScales top_middle    = { 0.88f, 0.88f, 1.05f, 0.92f };
+        const EdgeScales middle_left   = { 0.94f, 0.94f, 0.96f, 0.97f };
+        const EdgeScales bottom_left   = bottom_middle;
+        const EdgeScales top_left      = top_middle;
+        auto lerp = [](float a, float b, float t) { return a + (b - a) * t; };
+        auto lerp_edges = [&](const EdgeScales& A, const EdgeScales& B, float t) -> EdgeScales {
+            return {
+                lerp(A.L, B.L, t),
+                lerp(A.R, B.R, t),
+                lerp(A.T, B.T, t),
+                lerp(A.B, B.B, t)
+            };
+        };
+        auto ease = [](float t) { return t * t * (3.0f - 2.0f * t); };
 
-        return {screen_x, screen_y};
+        EdgeScales left_interp, mid_interp;
+        if (norm_y < 0.0f) {
+            float t  = norm_y + 1.0f;          // -1→0 → 0→1
+            float et = ease(t);
+            left_interp = lerp_edges(top_left,  middle_left, et);
+            mid_interp  = lerp_edges(top_middle, middle_left, et);
+        } else {
+            float t  = norm_y;                // 0→1
+            float et = ease(t);
+            left_interp = lerp_edges(middle_left, bottom_left, et);
+            mid_interp  = lerp_edges(middle_left, bottom_middle, et);
+        }
+
+        float tx  = (norm_x + 1.0f) * 0.5f;    // -1→1 → 0→1
+        float ex  = ease(tx);
+        EdgeScales S = lerp_edges(left_interp, mid_interp, ex);
+
+        if (norm_x > 0.0f) std::swap(S.L, S.R);
+
+        return { (S.L + S.R) * 0.5f, (S.T + S.B) * 0.5f };
+    };
+
+
+    auto apply_parallax = [&](int ax, int ay) -> SDL_Point {
+        // normalized offsets from center
+        float dx = std::clamp((ax - px) / (SCREEN_WIDTH  * 0.5f), -1.0f, 1.0f);
+        float dy = std::clamp((ay - py) / (SCREEN_HEIGHT * 0.5f), -1.0f, 1.0f);
+
+        // horizontal shift scales with vertical position and left/right offset
+        float hx = dx * dy;  
+        float hy = dy;
+
+        int maxX = 10;
+        int maxY = 5;
+        int offX = static_cast<int>(hx * maxX);
+        int offY = static_cast<int>(hy * maxY);
+
+        int screen_x = ax - px + cx + offX;
+        int screen_y = ay - py + cy + offY;
+        return { screen_x, screen_y };
     };
 
 
@@ -357,11 +361,12 @@ auto get_scale_factors = [&](int ax, int ay) -> std::pair<float, float> {
     for (const auto& [tex, dst] : static_faded_areas) {
         SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
         SDL_Point p = apply_parallax(dst.x, dst.y);
-        SDL_Rect shifted = {p.x, p.y - 40, dst.w, dst.h};
+        SDL_Rect shifted = { p.x, p.y - 40, dst.w, dst.h };
         SDL_RenderCopy(renderer, tex, nullptr, &shifted);
     }
 
-    if (map_light->current_color_.a < dusk_thresh) {
+    // only render per-asset lights when map_light alpha is above dusk_thresh
+    if (map_light->current_color_.a > dusk_thresh) {
         for (const auto* asset : game_assets->active_assets) {
             if (!asset || !asset->is_lit || asset->light_textures.empty() || asset->info->lights.empty())
                 continue;
@@ -369,43 +374,41 @@ auto get_scale_factors = [&](int ax, int ay) -> std::pair<float, float> {
             const auto& lights = asset->info->lights;
             for (size_t i = 0; i < asset->light_textures.size() && i < lights.size(); ++i) {
                 SDL_Texture* light = asset->light_textures[i];
-                const auto& light_data = lights[i];
+                const auto& ld = lights[i];
 
                 int lw, lh;
                 SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
-                SDL_Point p = apply_parallax(asset->pos_X + light_data.offset_x,
-                                            asset->pos_Y + light_data.offset_y);
-                SDL_Rect highlight = {p.x - lw / 2, p.y - lh / 2, lw, lh};
+
+                SDL_Point lp = apply_parallax(asset->pos_X + ld.offset_x,
+                                              asset->pos_Y + ld.offset_y);
+                SDL_Rect hl = { lp.x - lw/2, lp.y - lh/2, lw, lh };
 
                 SDL_SetTextureBlendMode(light, SDL_BLENDMODE_BLEND);
                 SDL_SetTextureColorMod(light, 255, 235, 180);
-
-                int flicker_alpha = light_data.flicker ? std::clamp(28 + (rand() % 12), 10, 48) : 32;
+                int flick = ld.flicker ? std::clamp(28 + (rand() % 12), 10, 48) : 32;
                 float t = 1.0f - std::clamp(map_light->current_color_.a / dusk_thresh, 0.0f, 1.0f);
-                SDL_SetTextureAlphaMod(light, static_cast<int>(flicker_alpha * t));
+                SDL_SetTextureAlphaMod(light, static_cast<int>(flick * t));
 
-                render_light_distorted(renderer, light, highlight, SCREEN_WIDTH, SCREEN_HEIGHT);
+                render_light_distorted(renderer, light, hl, SCREEN_WIDTH, SCREEN_HEIGHT);
             }
         }
     }
-
 
     for (const auto* asset : game_assets->active_assets) {
         if (!asset) continue;
         SDL_Texture* tex = asset->get_current_frame();
         if (!tex) continue;
+
         int w, h;
         SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
         SDL_Point p = apply_parallax(asset->pos_X, asset->pos_Y);
 
+        auto [sx, sy] = get_scale_factors(asset->pos_X, asset->pos_Y);
 
-        auto [scale_x, scale_y] = get_scale_factors(asset->pos_X, asset->pos_Y);
-
-        // Calculate color darkness and opacity
         float curved_opacity = std::pow(asset->gradient_opacity, 1.2f);
         int darkness = static_cast<int>(255 * curved_opacity);
         if (asset->info->type == "Player" || asset->info->type == "player") {
-            darkness = std::min(255, static_cast<int>(darkness * 3.0f));
+            darkness = std::min(255, darkness * 3);
         }
 
         SDL_Color mod_color = {
@@ -416,60 +419,63 @@ auto get_scale_factors = [&](int ax, int ay) -> std::pair<float, float> {
         };
 
         SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-
-        // Use trapezoid rendering with locked bottom edge
-        render_asset_with_trapezoid(renderer, tex, p.x, p.y, w, h, scale_x, scale_y, mod_color);
-
-
+        render_asset_with_trapezoid(renderer, tex, p.x, p.y, w, h, sx, sy, mod_color);
     }
 
-
-
-    SDL_Texture* lightmap = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_Texture* lightmap = SDL_CreateTexture(renderer,
+        SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+        SCREEN_WIDTH, SCREEN_HEIGHT);
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_ADD);
     SDL_SetRenderTarget(renderer, lightmap);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 220);
     SDL_RenderClear(renderer);
 
-    for (const auto* asset : game_assets->active_assets) {
-        if (!asset || !asset->is_lit || asset->light_textures.empty() || asset->info->lights.empty())
-            continue;
+    // only add per-asset lights into the lightmap when past dusk
+    if (map_light->current_color_.a > dusk_thresh) {
+        for (const auto* asset : game_assets->active_assets) {
+            if (!asset || !asset->is_lit || asset->light_textures.empty() || asset->info->lights.empty())
+                continue;
 
-        const auto& lights = asset->info->lights;
-        for (size_t i = 0; i < asset->light_textures.size() && i < lights.size(); ++i) {
-            SDL_Texture* light = asset->light_textures[i];
-            const auto& light_data = lights[i];
+            const auto& lights = asset->info->lights;
+            for (size_t i = 0; i < asset->light_textures.size() && i < lights.size(); ++i) {
+                SDL_Texture* light = asset->light_textures[i];
+                const auto& ld = lights[i];
 
-            int lw, lh;
-            SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
-            SDL_Point p = apply_parallax(asset->pos_X + light_data.offset_x,
-                                        asset->pos_Y + light_data.offset_y);
-            SDL_Rect dest = {p.x - lw / 2, p.y - lh / 2, lw, lh};
+                int lw, lh;
+                SDL_QueryTexture(light, nullptr, nullptr, &lw, &lh);
 
-            SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
-            int flicker_alpha = light_data.flicker ? 200 + (rand() % 56) : 255;
-            SDL_SetTextureAlphaMod(light, flicker_alpha);
+                SDL_Point lp = apply_parallax(asset->pos_X + ld.offset_x,
+                                              asset->pos_Y + ld.offset_y);
+                SDL_Rect dst = { lp.x - lw/2, lp.y - lh/2, lw, lh };
 
-            if (asset->info->type == "Player" || asset->info->type == "player") {
-                double angle = -0.05 * SDL_GetTicks() * 0.001;
-                double degrees = angle * (180.0 / M_PI);
-                SDL_RenderCopyEx(renderer, light, nullptr, &dest, degrees, nullptr, SDL_FLIP_NONE);
-            } else {
-                SDL_RenderCopy(renderer, light, nullptr, &dest);
+                SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
+                int flick = ld.flicker ? 200 + (rand() % 56) : 255;
+                SDL_SetTextureAlphaMod(light, flick);
+
+                if (asset->info->type == "Player" || asset->info->type == "player") {
+                    double angle = -0.05 * SDL_GetTicks() * 0.001;
+                    double deg   = angle * (180.0 / M_PI);
+                    SDL_RenderCopyEx(renderer, light, nullptr, &dst, deg, nullptr, SDL_FLIP_NONE);
+                } else {
+                    SDL_RenderCopy(renderer, light, nullptr, &dst);
+                }
             }
         }
     }
-
 
     map_light->update();
     if (map_light) {
         auto [lx, ly] = map_light->get_position();
         int size = SCREEN_WIDTH * 3 * 2;
-        SDL_Rect dest = {lx - size / 2, ly - size / 2, size, size};
+        SDL_Rect dest = { lx - size/2, ly - size/2, size, size };
         SDL_Texture* tex = map_light->get_texture();
         if (tex) {
             SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_ADD);
-            SDL_SetTextureColorMod(tex, map_light->current_color_.r, map_light->current_color_.g, map_light->current_color_.b);
+            SDL_SetTextureColorMod(tex,
+                map_light->current_color_.r,
+                map_light->current_color_.g,
+                map_light->current_color_.b
+            );
             SDL_SetTextureAlphaMod(tex, map_light->current_color_.a);
             SDL_RenderCopy(renderer, tex, nullptr, &dest);
         }
@@ -479,5 +485,18 @@ auto get_scale_factors = [&](int ax, int ay) -> std::pair<float, float> {
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_MOD);
     SDL_RenderCopy(renderer, lightmap, nullptr, nullptr);
     SDL_DestroyTexture(lightmap);
+
+    // — Draw minimap in bottom-right —
+    if (minimap_texture_) {
+        int mw, mh;
+        SDL_QueryTexture(minimap_texture_, nullptr, nullptr, &mw, &mh);
+        SDL_Rect miniDst = {
+            SCREEN_WIDTH - mw - 10,
+            SCREEN_HEIGHT - mh - 10,
+            mw, mh
+        };
+        SDL_SetTextureBlendMode(minimap_texture_, SDL_BLENDMODE_BLEND);
+        SDL_RenderCopy(renderer, minimap_texture_, nullptr, &miniDst);
+    }
     SDL_RenderPresent(renderer);
 }

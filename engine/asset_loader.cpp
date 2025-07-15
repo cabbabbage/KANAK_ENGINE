@@ -1,211 +1,134 @@
-// asset_loader.cpp
-
+// === File: asset_loader.cpp ===
 #include "asset_loader.hpp"
 #include <fstream>
 #include <iostream>
-#include <filesystem>
-#include <unordered_map>
-#include <algorithm>
-#include <random>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
-    : map_path_(map_dir),
-      renderer_(renderer),
-      rng_(std::random_device{}())
+  : map_path_(map_dir),
+    renderer_(renderer),
+    rng_(std::random_device{}())
 {
-    asset_library_ = std::make_unique<AssetLibrary>(renderer_);
+    load_map_json();
 
-    // Load map_info.json
-    std::ifstream in(map_path_ + "/map_info.json");
-    if (!in.is_open()) throw std::runtime_error("Could not open map_info.json");
-    nlohmann::json root;
-    in >> root;
-    in.close();
+    asset_library_ = std::make_unique<AssetLibrary>();
 
-    map_width_          = root["map_width_"];
-    map_height_         = root["map_height_"];
-    int min_rooms       = root["min_rooms"];
-    int max_rooms       = root["max_rooms"];
-    map_boundary_file_  = root["map_boundary"].get<std::string>();
-    room_templates_     = root["rooms"];
+    // Generate rooms and trails (no renderer passed into generator)
+    GenerateRooms generator(map_layers_, map_center_x_, map_center_y_, map_path_);
+    auto room_ptrs = generator.build(asset_library_.get(),
+                                     map_radius_,
+                                     map_boundary_file_);
 
-    std::uniform_int_distribution<int> room_dist(min_rooms, max_rooms);
-    target_room_count_ = room_dist(rng_);
-
-    // Single shared spawner instance
-    spawner_ = std::make_unique<AssetSpawner>(
-        renderer_, map_width_, map_height_, asset_library_.get()
-    );
-
-
-    std::ifstream jin2(map_path_ + "/map_assets.json");
-    nlohmann::json mapConfig;
-    jin2 >> mapConfig;
-
-
-// === ROOM Assets ===
-std::cout << "Generating ROOM Assets\n";
-{
-    std::unordered_map<std::string,int> room_counts;
-    std::vector<std::string> room_paths;
-
-    // Required rooms
-    for (auto& e : room_templates_) {
-        if (e.value("required", false)) {
-            std::string p = e["room_path"].get<std::string>();
-            if (room_counts[p]++ == 0) room_paths.push_back(p);
-        }
+    for (auto& up : room_ptrs) {
+        rooms_.push_back(up.get());
+        all_rooms_.push_back(std::move(up));
     }
 
-    // Candidates for random fill
-    std::vector<nlohmann::json> candidates(room_templates_.begin(),
-                                            room_templates_.end());
-    candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-        [&](auto& e) {
-            return room_counts[e["room_path"]] >=
-                   e["max_instances"].get<int>();
-        }), candidates.end());
+    // Load all animations from AssetInfo data
+    asset_library_->loadAllAnimations(renderer_);
 
-    // Fill up to target count
-    while ((int)room_paths.size() < target_room_count_ && !candidates.empty()) {
-        size_t idx = std::uniform_int_distribution<size_t>(
-            0, candidates.size() - 1
-        )(rng_);
-        auto& e = candidates[idx];
-        std::string p = e["room_path"].get<std::string>();
-        if (++room_counts[p] <= e["max_instances"].get<int>()) {
-            room_paths.push_back(p);
-        }
-        if (room_counts[p] >= e["max_instances"].get<int>()) {
-            candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-                [&](auto& v){ return v["room_path"] == p; }),
-                candidates.end());
-        }
-    }
-
-    std::cout << "Rooms to generate (" << room_paths.size() << "):\n";
-    for (auto& p : room_paths) {
-        std::cout << "  - " << p << "\n";
-    }
-
-    // Spawn assets for each room and save each GenerateRoom
-    for (auto& p : room_paths) {
-        // collect existing room pointers
-        std::vector<GenerateRoom*> existing_ptrs;
-        for (auto& r : rooms_) existing_ptrs.push_back(&r);
-
-        // create and store the new room
-        rooms_.emplace_back(
-            map_path_,
-            existing_ptrs,
-            map_width_,
-            map_height_,
-            map_path_ + "/" + p,
-            renderer_
-        );
-        const Area& area = rooms_.back().getArea();
-
-        // load the room's JSON configuration
-        std::ifstream jin(map_path_ + "/" + p);
-        if (!jin.is_open()) continue;
-        nlohmann::json roomConfig;
-        jin >> roomConfig;
-
-        // spawn the assets into that area
-        spawner_->spawn(area, roomConfig, map_path_, p);
-        if (!rooms_.back().inherits){
-            
-
-            spawner_->spawn(area, mapConfig, map_path_, p);
-
+    // Finalize every spawned Asset with lighting/textures
+    for (Room* room : rooms_) {
+        // assume Room has a method to get its assets without moving them
+        for (auto& asset_up : room->assets) {
+            asset_up->finalize_setup(renderer_);
         }
     }
 }
 
+void AssetLoader::load_map_json() {
+    std::ifstream f(map_path_ + "/map_info.json");
+    if (!f) throw std::runtime_error("Failed to open map_info.json");
 
+    json j; f >> j;
 
-    // === TRAIL Assets ===
-    std::cout << "Generating TRAIL Assets\n";
-    trail_gen_ = std::make_unique<GenerateTrails>(
-        map_path_, rooms_, map_width_, map_height_);
-    for (auto& area : trail_gen_->getTrailAreas()) {
-        std::string cfg;
-        try { cfg = trail_gen_->pickAssetsPath(); }
-        catch (...) { continue; }
-        std::ifstream tin(cfg);
-        if (!tin.is_open()) continue;
-        nlohmann::json config;
-        tin >> config;
-        tin.close();
+    map_radius_        = j.at("map_radius").get<int>();
+    map_boundary_file_ = j.at("map_boundary").get<std::string>();
+    map_center_x_      = map_center_y_ = map_radius_;
 
-        spawner_->spawn(area, config, map_path_, "TRAILS");
-        spawner_->spawn(area, mapConfig, map_path_, "TRAILS");
-    }
-
-        // === BOUNDARY Assets ===
-    std::cout << "Generating BOUNDARY Assets\n";
-    {
-        std::ifstream jin(map_path_ + "/" + map_boundary_file_);
-        if (jin.is_open()) {
-            nlohmann::json aset;
-            jin >> aset;
-            jin.close();
-            if (aset.contains("assets")) {
-                int scaled_w = static_cast<int>(map_width_ * 1.5);
-                int scaled_h = static_cast<int>(map_height_ * 1.5);
-                int cx = map_width_ / 2, cy = map_height_ / 2;
-                Area area(cx, cy, scaled_w, scaled_h, "Square", 1, map_width_, map_height_);
-                auto [minx, miny, maxx, maxy] = area.get_bounds();
-                area.apply_offset(cx - (minx + maxx) / 2,
-                                  cy - (miny + maxy) / 2);
-
-                spawner_->spawn(area, aset, map_path_, "BOUNDARY");
-            }
+    for (auto& L : j.at("map_layers")) {
+        LayerSpec spec;
+        spec.level     = L.at("level").get<int>();
+        spec.radius    = L.at("radius").get<int>();
+        spec.min_rooms = L.at("min_rooms").get<int>();
+        spec.max_rooms = L.at("max_rooms").get<int>();
+        for (auto& R : L.at("rooms")) {
+            RoomSpec rs;
+            rs.name              = R.at("name").get<std::string>();
+            rs.min_instances     = R.at("min_instances").get<int>();
+            rs.max_instances     = R.at("max_instances").get<int>();
+            for (auto& c : R.at("required_children"))
+                rs.required_children.push_back(c.get<std::string>());
+            spec.rooms.push_back(std::move(rs));
         }
+        map_layers_.push_back(std::move(spec));
     }
-
 }
 
 std::vector<Asset> AssetLoader::extract_all_assets() {
-    // grab all spawned assets
-    auto ptrs = spawner_->extract_all_assets();  // vector<unique_ptr<Asset>>
-    // build exclusion zones from rooms and trails
-    auto exclusionZones = getAllRoomAndTrailAreas();
     std::vector<Asset> out;
-    out.reserve(ptrs.size());
+    out.reserve(rooms_.size() * 4);
 
-    for (auto& up : ptrs) {
-        Asset* a = up.get();
-        // if this is a boundary/background asset, skip it when inside any exclusion zone
-        if (a->info && a->info->type == "Background") {
-            bool insideAny = false;
-            for (const auto& zone : exclusionZones) {
-                if (zone.contains(a->pos_X, a->pos_Y)) {
-                    insideAny = true;
-                    break;
-                }
-            }
-            if (insideAny) continue;
+    for (Room* room : rooms_) {
+        // move each Asset into the output vector
+        for (auto& aup : room->assets) {
+            out.push_back(std::move(*aup));
         }
-        // otherwise move it into the output list
-        out.push_back(std::move(*up));
     }
 
+    // finalize_setup on each
+    for (auto& a : out) {
+        a.finalize_setup(renderer_);
+    }
     return out;
-}
-
-
-int AssetLoader::get_screen_center_x() const {
-    return map_width_ / 2;
-}
-
-int AssetLoader::get_screen_center_y() const {
-    return map_height_ / 2;
 }
 
 std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
     std::vector<Area> areas;
-    for (auto& r : rooms_) areas.push_back(r.getArea());
-    for (auto& a : trail_gen_->getTrailAreas()) areas.push_back(a);
+    areas.reserve(rooms_.size());
+
+    for (Room* r : rooms_) {
+        areas.push_back(r->room_area);
+    }
     return areas;
+}
+
+SDL_Texture* AssetLoader::createMinimap(int width, int height) {
+    if (!renderer_ || width <= 0 || height <= 0) return nullptr;
+
+    SDL_Texture* minimap = SDL_CreateTexture(
+        renderer_,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        width, height
+    );
+    if (!minimap) {
+        std::cerr << "[Minimap] SDL_CreateTexture failed: " << SDL_GetError() << "\n";
+        return nullptr;
+    }
+    SDL_SetTextureBlendMode(minimap, SDL_BLENDMODE_BLEND);
+
+    SDL_Texture* prev = SDL_GetRenderTarget(renderer_);
+    SDL_SetRenderTarget(renderer_, minimap);
+
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
+    SDL_RenderClear(renderer_);
+
+    SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 255);
+    float scaleX = float(width)  / float(map_radius_ * 2);
+    float scaleY = float(height) / float(map_radius_ * 2);
+
+    for (Room* room : rooms_) {
+        auto [minx, miny, maxx, maxy] = room->room_area.get_bounds();
+        SDL_Rect r{ int(std::round(minx * scaleX)),
+                    int(std::round(miny * scaleY)),
+                    int(std::round((maxx - minx) * scaleX)),
+                    int(std::round((maxy - miny) * scaleY)) };
+        SDL_RenderFillRect(renderer_, &r);
+    }
+
+    SDL_SetRenderTarget(renderer_, prev);
+    return minimap;
 }

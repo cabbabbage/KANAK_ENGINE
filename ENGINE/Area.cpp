@@ -22,7 +22,7 @@ Area::Area(const std::vector<Point>& pts)
     }
 }
 
-// === In area.cpp ===
+
 
 Area::Area(int center_x, int center_y, int w, int h,
            const std::string& geometry,
@@ -66,7 +66,7 @@ Area::Area(const std::string& json_path, float scale)
     in >> j;
     in.close();
 
-    // Validate JSON
+
     if (!j.contains("points") || !j["points"].is_array()) {
         throw std::runtime_error("[Area] JSON missing 'points' array: " + json_path);
     }

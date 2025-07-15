@@ -1,7 +1,7 @@
 {
   "name": "chest",
-  "min_width": 1510,
-  "max_width": 1510,
+  "min_width": 1684,
+  "max_width": 1684,
   "min_height": 730,
   "max_height": 730,
   "edge_smoothness": 100,
@@ -49,14 +49,20 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 50,
+        "percent": 44,
         "color": "#34d6ad"
       },
       {
         "name": "plant",
         "tag": true,
-        "percent": 50,
+        "percent": 45,
         "color": "#06a004"
+      },
+      {
+        "name": "Mushroom_1",
+        "tag": false,
+        "percent": 11,
+        "color": "#f026ea"
       }
     ]
   }

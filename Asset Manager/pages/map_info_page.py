@@ -132,20 +132,23 @@ class MapInfoPage(ttk.Frame):
 
         self.renderer.calculate_radii()
 
-        # pull updated radii from each MapLayerInfo
         for i, lw in enumerate(self.layer_widgets):
             if i < len(self.renderer.layer_radii):
                 lw.set_radius(self.renderer.layer_radii[i])
 
-        # full save with radius, min_rooms, max_rooms
         self.map_data['map_layers'] = [
             self._layer_to_data(lw) for lw in self.layer_widgets
         ]
 
+        # Save map_radius from renderer
+        if hasattr(self.renderer, 'map_radius_actual'):
+            self.map_data['map_radius'] = self.renderer.map_radius_actual
+
         with open(self.json_path, 'w') as f:
             json.dump(self.map_data, f, indent=2)
 
-        print(f"Saved map_layers to {self.json_path}")
+        print(f"Saved map_layers and map_radius to {self.json_path}")
+
 
     def _layer_to_data(self, layer):
         data = layer.get_data()

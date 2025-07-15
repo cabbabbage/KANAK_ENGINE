@@ -1,8 +1,8 @@
 {
   "name": "brick",
-  "min_width": 550,
-  "max_width": 550,
-  "curvyness": 5,
+  "min_width": 600,
+  "max_width": 600,
+  "curvyness": 3,
   "inherits_map_assets": true,
   "assets": [],
   "batch_assets": {
@@ -15,13 +15,13 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 91,
+        "percent": 85,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 4,
+        "percent": 10,
         "color": "#2911cb"
       },
       {

@@ -1,13 +1,12 @@
+// === File: asset_library.cpp ===
 #include "asset_library.hpp"
 #include <filesystem>
 #include <iostream>
-#include <iomanip>  // required for std::setw
+#include <iomanip>  // for std::setw
 
 namespace fs = std::filesystem;
 
-AssetLibrary::AssetLibrary(SDL_Renderer* renderer)
-    : renderer_(renderer)
-{
+AssetLibrary::AssetLibrary() {
     load_all_from_SRC();
 }
 
@@ -27,7 +26,7 @@ void AssetLibrary::load_all_from_SRC() {
 
         std::string name = entry.path().filename().string();
         try {
-            auto info = std::make_shared<AssetInfo>(name, renderer_);
+            auto info = std::make_shared<AssetInfo>(name);
             info_by_name_[name] = info;
             ++loaded;
         } catch (const std::exception&) {
@@ -40,7 +39,8 @@ void AssetLibrary::load_all_from_SRC() {
                   << "\r" << std::flush;
     }
 
-    std::cout << std::endl << "[AssetLibrary] Loaded " << info_by_name_.size() << " assets.\n";
+    std::cout << std::endl
+              << "[AssetLibrary] Loaded " << info_by_name_.size() << " assets.\n";
 }
 
 std::shared_ptr<AssetInfo> AssetLibrary::get(const std::string& name) const {
@@ -51,6 +51,17 @@ std::shared_ptr<AssetInfo> AssetLibrary::get(const std::string& name) const {
     return nullptr;
 }
 
-const std::unordered_map<std::string, std::shared_ptr<AssetInfo>>& AssetLibrary::all() const {
+const std::unordered_map<std::string, std::shared_ptr<AssetInfo>>&
+AssetLibrary::all() const {
     return info_by_name_;
+}
+
+
+// asset_library.cpp
+// implement:
+
+void AssetLibrary::loadAllAnimations(SDL_Renderer* renderer) {
+    for (auto& [name, info] : info_by_name_) {
+        info->loadAnimations(renderer);
+    }
 }
