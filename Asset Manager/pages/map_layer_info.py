@@ -15,8 +15,8 @@ def level_to_hex_color(level):
 
 class MapLayerInfo(ttk.Frame):
     def __init__(self, parent, level, rooms_dir,
-                 name="", radius=0, rooms_data=None,
-                 save_callback=None, delete_callback=None):
+                name="", radius=0, rooms_data=None,
+                save_callback=None, delete_callback=None):
         self.level = level
         self.rooms_dir = rooms_dir
         self.save = save_callback or (lambda: None)
@@ -27,7 +27,7 @@ class MapLayerInfo(ttk.Frame):
         outline_color = level_to_hex_color(level)
         self.bg_frame = tk.Frame(
             parent,
-            background="#f0f0f0",  # Default bg or neutral
+            background="#f0f0f0",
             highlightbackground=outline_color,
             highlightthickness=3,
             bd=0
@@ -42,8 +42,13 @@ class MapLayerInfo(ttk.Frame):
         self.min_rooms_var = tk.IntVar(value=0)
         self.max_rooms_var = tk.IntVar(value=0)
 
+        # 🔧 FIX: Ensure changes to min/max_rooms_var trigger save()
+        self.min_rooms_var.trace_add("write", lambda *_: self.save())
+        self.max_rooms_var.trace_add("write", lambda *_: self.save())
+
         self._build_ui()
         self._load_rooms_data(self.rooms_data)
+
 
     def _build_ui(self):
         top_frame = ttk.Frame(self); top_frame.pack(fill="x", pady=2)

@@ -31,17 +31,6 @@
       "sector_center_max": 0,
       "sector_range_min": 360,
       "sector_range_max": 360
-    },
-    {
-      "name": "Book",
-      "min_number": 1,
-      "max_number": 1,
-      "position": "Center",
-      "exact_position": null,
-      "tag": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
     }
   ],
   "min_height": 701,
@@ -65,10 +54,10 @@
         "color": "#CCCCCC"
       },
       {
-        "name": "Book",
+        "name": "Barrel",
         "tag": false,
         "percent": 50,
-        "color": "#67370d"
+        "color": "#5683dd"
       }
     ]
   }

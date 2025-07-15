@@ -10,6 +10,7 @@
 #include <SDL_image.h>
 #include "generate_light.hpp"
 #include "asset.hpp"
+#include <iostream>
 
 // Constructor: initialize animation state, position, z-index, shading flags
 Asset::Asset(std::shared_ptr<AssetInfo> info_,
@@ -62,7 +63,6 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
         }
     }
 }
-
 
 void Asset::finalize_setup(SDL_Renderer* renderer) {
     if (!info || !renderer) return;
@@ -162,7 +162,12 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
             change_animation(it->first);
         }
     }
+
+    // -- spawn children regardless of light source --
+    spawn_children(renderer);
 }
+
+
 
 
 
@@ -271,5 +276,65 @@ void Asset::set_z_index() {
                              parent->z_index + 1000);
     } else {
         z_index = pos_Y + info->z_threshold;
+    }
+}
+
+
+
+void Asset::spawn_children(SDL_Renderer* renderer) {
+    if (!info || !renderer) {
+        std::cout << "[spawn_children] Missing asset info or renderer.\n";
+        return;
+    }
+
+    std::mt19937 rng(std::random_device{}());
+
+    for (const auto& ca : info->child_assets) {
+        std::cout << "[spawn_children] Attempting to spawn child asset: " << ca.asset << "\n";
+
+        std::shared_ptr<AssetInfo> child_info = std::make_shared<AssetInfo>(ca.asset);
+        if (!child_info) {
+            std::cout << "[spawn_children] Failed to construct AssetInfo for: " << ca.asset << "\n";
+            continue;
+        }
+
+        std::uniform_int_distribution<int> dist(ca.min, ca.max);
+        int count = dist(rng);
+        std::cout << "[spawn_children] Will attempt to spawn " << count << " instances.\n";
+
+        Area aligned_area = ca.area;
+
+        // Align to bottom-center of parent sprite
+        int anchor_x = pos_X;
+        int anchor_y = pos_Y + static_cast<int>(info->original_canvas_height * info->scale_factor / 2.0f);
+        aligned_area.align(anchor_x, anchor_y);
+
+        const auto& valid_points = aligned_area.get_points();
+        std::cout << "[spawn_children] Aligned area has " << valid_points.size() << " candidate points.\n";
+
+        if (valid_points.empty()) {
+            std::cout << "[spawn_children] No valid points to spawn within area.\n";
+            continue;
+        }
+
+        std::uniform_int_distribution<size_t> point_picker(0, valid_points.size() - 1);
+
+        for (int i = 0; i < count; ++i) {
+            Area::Point pt = valid_points[point_picker(rng)];
+            std::cout << "[spawn_children] Spawning at (" << pt.first << ", " << pt.second << ")\n";
+
+            Asset child(child_info,
+                        ca.z_offset,
+                        aligned_area,
+                        pt.first,
+                        pt.second,
+                        this);
+
+            child_info->loadAnimations(renderer);
+            child.finalize_setup(renderer);
+
+            std::cout << "[spawn_children] Child asset created and finalized.\n";
+            children.push_back(std::move(child));
+        }
     }
 }

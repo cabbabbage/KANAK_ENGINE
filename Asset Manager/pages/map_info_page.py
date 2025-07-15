@@ -101,13 +101,12 @@ class MapInfoPage(ttk.Frame):
             delete_callback=self._on_delete_layer
         )
 
-        if "min_rooms" in layer_data:
-            layer.min_rooms_var.set(layer_data["min_rooms"])
-        if "max_rooms" in layer_data:
-            layer.max_rooms_var.set(layer_data["max_rooms"])
+        # ✅ Use the correct loader to populate full data
+        layer.load(layer_data)
 
         layer.bg_frame.pack(side='left', fill='y', padx=6, pady=6)
         self.layer_widgets.append(layer)
+
 
     def _on_add_layer(self):
         lvl = len(self.layer_widgets)

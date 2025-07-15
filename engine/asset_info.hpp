@@ -115,9 +115,11 @@ private:
     void load_collision_areas  (const nlohmann::json& data,
                                 const std::string& dir_path,
                                 int offset_x, int offset_y);
-    void load_child_assets     (const nlohmann::json& data,
-                                float scale_factor,
-                                int offset_x, int offset_y);
+    void load_child_assets(const nlohmann::json& data,
+                        const std::string& dir_path,
+                        float scale_factor,
+                        int offset_x, int offset_y);
+
     void load_animations       (const nlohmann::json& anims_json,
                                 const std::string& dir_path,
                                 SDL_Renderer* renderer,

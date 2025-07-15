@@ -86,7 +86,8 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     int offset_y = (scaled_canvas_h - 0);
 
     load_collision_areas(data, dir_path_, offset_x, offset_y);
-    load_child_assets(data, scale_factor, offset_x, offset_y);
+    load_child_assets(data, dir_path_, scale_factor, offset_x, offset_y);
+
 }
 
 AssetInfo::~AssetInfo() {
@@ -289,35 +290,22 @@ void AssetInfo::load_collision_areas(const nlohmann::json& data,
 }
 
 void AssetInfo::load_child_assets(const nlohmann::json& data,
+                                  const std::string& dir_path,
                                   float scale_factor,
                                   int offset_x,
                                   int offset_y)
 {
-    if (!data.contains("child_assets")) return;
-
-    int anchor_x = static_cast<int>(std::round(offset_x * scale_factor));
-    int anchor_y = static_cast<int>(std::round(offset_y * scale_factor));
+    if (!data.contains("child_assets") || !data["child_assets"].is_array()) return;
 
     for (const auto& c : data["child_assets"]) {
-        if (!c.contains("point") || !c["point"].is_object()) continue;
+        if (!c.contains("asset") || !c["area_path"].is_string()) continue;
 
-        const auto& point = c["point"];
-        int raw_x = point.value("x", 0);
-        int raw_y = point.value("y", 0);
-        int raw_r = point.value("radius", 0);
-
-        int scaled_x = static_cast<int>(std::round(anchor_x + raw_x * scale_factor));
-        int scaled_y = static_cast<int>(std::round(anchor_y + raw_y * scale_factor));
-        int scaled_r = static_cast<int>(std::round(raw_r * scale_factor));
-
-        Area child_area;
-        child_area.generate_circle(scaled_x, scaled_y, scaled_r, 100, 99999, 99999);
+        // Load the child area from its JSON file and apply scaling
+        std::string area_file = dir_path + "/" + c["area_path"].get<std::string>();
+        Area child_area(area_file, scale_factor);
 
         ChildAsset ca;
-        ca.asset                 = c.value("asset", "");
-        ca.point_x               = scaled_x;
-        ca.point_y               = scaled_y;
-        ca.radius                = scaled_r;
+        ca.asset                 = c["asset"].get<std::string>();
         ca.z_offset              = c.value("z_offset", 0);
         ca.min                   = c.value("min", 0);
         ca.max                   = c.value("max", 0);
@@ -327,7 +315,6 @@ void AssetInfo::load_child_assets(const nlohmann::json& data,
         child_assets.push_back(std::move(ca));
     }
 }
-
 
 
 
