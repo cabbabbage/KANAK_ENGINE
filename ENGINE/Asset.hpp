@@ -74,6 +74,7 @@ public:
     std::vector<Asset> children;
 
 private:
+    void spawn_children(SDL_Renderer* renderer);
     void set_z_index();
     int current_frame_index = 0;
     bool static_frame = true;
