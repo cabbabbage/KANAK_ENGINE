@@ -1,49 +1,90 @@
 {
   "map_name": "FORREST",
-  "map_width_": 42452,
-  "map_height_": 42046,
-  "min_rooms": 7,
-  "max_rooms": 11,
   "map_assets": "map_assets.json",
   "map_boundary": "map_boundary.json",
-  "rooms": [
-    {
-      "room_path": "rooms\\chest.json",
-      "max_instances": 5,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\fountain.json",
-      "max_instances": 5,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\random.json",
-      "max_instances": 5,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\spawn.json",
-      "max_instances": 1,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\Grave_Yard.json",
-      "max_instances": 1,
-      "required": true
-    },
-    {
-      "room_path": "rooms\\bar.json",
-      "max_instances": 1,
-      "required": true
-    }
-  ],
   "trails": [
     {
-      "trail_path": "trails\\basic.json"
+      "trail_path": "basic.json"
     },
     {
-      "trail_path": "trails\\brick.json"
+      "trail_path": "brick.json"
     }
-  ]
+  ],
+  "map_layers": [
+    {
+      "level": 0,
+      "name": "layer_0",
+      "radius": 750,
+      "min_rooms": 1,
+      "max_rooms": 1,
+      "rooms": [
+        {
+          "name": "spawn",
+          "min_instances": 1,
+          "max_instances": 1,
+          "required_children": []
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "name": "layer_1",
+      "radius": 3639,
+      "min_rooms": 3,
+      "max_rooms": 4,
+      "rooms": [
+        {
+          "name": "basic_fight_room",
+          "min_instances": 1,
+          "max_instances": 4,
+          "required_children": []
+        },
+        {
+          "name": "random",
+          "min_instances": 1,
+          "max_instances": 4,
+          "required_children": []
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "name": "layer_2",
+      "radius": 6819,
+      "min_rooms": 6,
+      "max_rooms": 6,
+      "rooms": [
+        {
+          "name": "fountain",
+          "min_instances": 0,
+          "max_instances": 9,
+          "required_children": []
+        },
+        {
+          "name": "bar",
+          "min_instances": 0,
+          "max_instances": 8,
+          "required_children": [
+            "KEY"
+          ]
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "name": "layer_3",
+      "radius": 9999,
+      "min_rooms": 0,
+      "max_rooms": 1,
+      "rooms": [
+        {
+          "name": "random",
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": []
+        }
+      ]
+    }
+  ],
+  "map_radius": 13134.022616637962
 }

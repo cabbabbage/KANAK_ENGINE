@@ -8,9 +8,8 @@ namespace fs = std::filesystem;
 
 AssetSpawnPlanner::AssetSpawnPlanner(const nlohmann::json& json_data,
                                      double area,
-                                     SDL_Renderer* renderer,
                                      AssetLibrary& asset_library)
-    : renderer_(renderer), asset_library_(&asset_library) {
+    : asset_library_(&asset_library) {
     root_json_ = json_data;
     parse_asset_spawns(area);
     parse_batch_assets();

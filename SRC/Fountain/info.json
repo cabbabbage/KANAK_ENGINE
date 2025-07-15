@@ -27,20 +27,24 @@
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "lighting_info": {
-        "has_light_source": true,
-        "light_intensity": 68,
-        "light_color": [
-            0,
-            255,
-            255
-        ],
-        "radius": 492,
-        "fall_off": 100,
-        "jitter_min": 0,
-        "jitter_max": 0,
-        "flicker": false
-    },
+    "lighting_info": [
+        {
+            "has_light_source": true,
+            "light_intensity": 78,
+            "light_color": [
+                193,
+                255,
+                255
+            ],
+            "radius": 602,
+            "fall_off": 100,
+            "jitter_min": 0,
+            "jitter_max": 0,
+            "offset_x": 0,
+            "offset_y": 0,
+            "flicker": false
+        }
+    ],
     "shading_info": {
         "has_shading": false,
         "has_base_shadow": null,

@@ -22,7 +22,7 @@ public:
 
 private:
     void render_asset_with_trapezoid(SDL_Renderer* renderer, SDL_Texture* tex, int screen_x, int screen_y, int w, int h, float top_scale_x, float top_scale_y, SDL_Color color);
-    float dusk_thresh = 110.0f;
+    float dusk_thresh = 25.0f;
     int brightness_level;
     std::string map_path;
     SDL_Window* window;
@@ -30,7 +30,7 @@ private:
     Assets* game_assets;
     int SCREEN_WIDTH;
     int SCREEN_HEIGHT;
-
+    SDL_Texture* minimap_texture_ = nullptr;
     SDL_Color background_color;
     SDL_Texture* overlay_texture;
     std::vector<Area> roomTrailAreas;
@@ -42,7 +42,7 @@ private:
     void generate_static_faded_areas();
     void game_loop();
     void render_visible();
-    void render_asset_gradient(const Asset* asset, const SDL_Rect& dest);
+
 };
 
 #endif // ENGINE_HPP

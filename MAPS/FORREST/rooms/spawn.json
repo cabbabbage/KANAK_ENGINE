@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 1400,
-  "max_width": 1400,
+  "min_width": 1548,
+  "max_width": 1548,
   "curvyness": 1,
   "assets": [
     {
@@ -31,17 +31,28 @@
       "sector_center_max": 0,
       "sector_range_min": 360,
       "sector_range_max": 360
+    },
+    {
+      "name": "Book",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Center",
+      "exact_position": null,
+      "tag": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
     }
   ],
-  "min_height": 700,
-  "max_height": 700,
+  "min_height": 701,
+  "max_height": 701,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": true,
   "is_boss": false,
   "inherits_map_assets": false,
   "batch_assets": {
-    "has_batch_assets": false,
+    "has_batch_assets": true,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
@@ -50,8 +61,14 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 100,
+        "percent": 50,
         "color": "#CCCCCC"
+      },
+      {
+        "name": "Book",
+        "tag": false,
+        "percent": 50,
+        "color": "#67370d"
       }
     ]
   }

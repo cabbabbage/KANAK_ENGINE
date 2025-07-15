@@ -3,10 +3,10 @@
   "inherits_map_assets": false,
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 135,
-    "grid_spacing_max": 135,
-    "jitter_min": 61,
-    "jitter_max": 61,
+    "grid_spacing_min": 98,
+    "grid_spacing_max": 98,
+    "jitter_min": 37,
+    "jitter_max": 37,
     "batch_assets": [
       {
         "name": "Tree",

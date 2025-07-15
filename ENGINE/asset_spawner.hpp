@@ -14,27 +14,24 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <SDL.h>
+#include "room.hpp"
 
 class AssetSpawner {
 public:
     using Point = std::pair<int, int>;
 
-    AssetSpawner(SDL_Renderer* renderer,
-                 int map_width,
-                 int map_height,
-                 AssetLibrary* asset_library);
+    AssetSpawner(AssetLibrary* asset_library,
+                 std::vector<Area> exclusion_zones);
 
-    void spawn(const Area& spawn_area,
-               const nlohmann::json& assets_json,
-               const std::string& map_dir,
-               const std::string& room_dir);
-
-    std::vector<std::unique_ptr<Asset>>&& extract_all_assets();
-    void removeAsset(Asset* asset);
-
-private:
-    void spawn_item_random(const SpawnInfo& item, const Area* area);
+    void spawn(Room& room);
+    std::vector<std::unique_ptr<Asset>> spawn_boundary_from_file(const std::string& json_path, const Area& spawn_area);
+    
+    std::vector<std::unique_ptr<Asset>> extract_all_assets();
     void spawn_distributed_batch(const std::vector<BatchSpawnInfo>& items, const Area* area, int spacing, int jitter);
+private:
+    std::vector<Area> exclusion_zones;
+
+    void spawn_item_random(const SpawnInfo& item, const Area* area);
 
     void spawn_item_distributed(const SpawnInfo& item, const Area* area);
     void spawn_item_exact(const SpawnInfo& item, const Area* area);
@@ -49,18 +46,15 @@ private:
                   const Area& area,
                   int x, int y, int depth, Asset* parent);
 
-    SDL_Renderer*                                     renderer_;
-    int                                               map_width_;
-    int                                               map_height_;
-    AssetLibrary*                                     asset_library_;
-    std::mt19937                                      rng_;
-    Check                                             checker_;
-    SpawnLogger                                       logger_;
+    AssetLibrary* asset_library_;
+    std::mt19937 rng_;
+    Check checker_;
+    SpawnLogger logger_;
 
-    nlohmann::json                                    assets_json_;
-    std::string                                       map_dir_;
-    std::string                                       room_dir_;
-    std::vector<SpawnInfo>                            spawn_queue_;
+    nlohmann::json assets_json_;
+    std::string map_dir_;
+    std::string room_dir_;
+    std::vector<SpawnInfo> spawn_queue_;
     std::unordered_map<std::string, std::shared_ptr<AssetInfo>> asset_info_library_;
-    std::vector<std::unique_ptr<Asset>>               all_;
+    std::vector<std::unique_ptr<Asset>> all_;
 };

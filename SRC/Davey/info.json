@@ -70,14 +70,14 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 500,
     "tags": [
-        "forward",
-        "backward",
-        "left",
         "player",
+        "start",
         "right",
+        "forward",
         "passable",
         "default",
-        "start"
+        "left",
+        "backward"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -87,10 +87,10 @@
             "light_intensity": 100,
             "light_color": [
                 255,
-                128,
+                255,
                 255
             ],
-            "radius": 661,
+            "radius": 687,
             "fall_off": 100,
             "jitter_min": 0,
             "jitter_max": 0,

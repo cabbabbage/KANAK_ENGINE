@@ -134,7 +134,8 @@ class MapRenderer:
                     r = 0
                 else:
                     r = prev_r + 1.2 * ((size / 2.0) + (largest_sizes[i - 1] / 2.0))
-                radii.append(r)
+
+                radii.append(r + 750)
                 prev_r = r
 
             self.layer_radii = radii
@@ -147,8 +148,8 @@ class MapRenderer:
             for layer in self.layer_widgets:
                 for room_widget in layer.rooms:
                     roominfo_lookup[room_widget.room_name] = room_widget
-
-            self.render_preview(radii, areas_meta, radii[-1] + (largest_sizes[-1] / 2.0) + 540, global_room_lookup, roominfo_lookup)
+            map_radius = radii[-1] + (largest_sizes[-1] / 2.0) + 1500
+            self.render_preview(radii, areas_meta, map_radius, global_room_lookup, roominfo_lookup)
 
         finally:
             self._suspend_save = False
@@ -164,6 +165,7 @@ class MapRenderer:
         C = self.PREVIEW_SIZE // 2
         self.preview_canvas.delete("all")
         scale = C / map_radius_actual
+        self.map_radius_actual = map_radius_actual
 
         self.preview_canvas.create_oval(0, 0, self.PREVIEW_SIZE, self.PREVIEW_SIZE, outline="black", width=3)
         self.preview_canvas.create_text(C, self.PREVIEW_SIZE - 20, text=f"Map radius: {int(map_radius_actual)}", font=("Segoe UI", 12, "bold"))

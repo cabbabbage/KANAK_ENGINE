@@ -1,9 +1,15 @@
+// generate_map_light.cpp
+
 #include "generate_map_light.hpp"
 #include <cmath>
 #include <algorithm>
 #include <random>
 #include <vector>
 #include <iostream>
+#include <filesystem>
+#include <SDL_image.h>
+
+namespace fs = std::filesystem;
 
 Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
                                        int screen_center_x,
@@ -25,6 +31,23 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
       initialized_(false),
       pos_x_(0),
       pos_y_(0) {
+    
+    std::string cache_path = "cache/map_light.bmp";
+
+    if (fs::exists(cache_path)) {
+        SDL_Surface* surf = IMG_Load(cache_path.c_str());
+        if (surf) {
+            texture_ = SDL_CreateTextureFromSurface(renderer_, surf);
+            SDL_FreeSurface(surf);
+            if (texture_) {
+                SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
+                std::cout << "[MapLight] Loaded cached light texture.\n";
+                return;
+            }
+        }
+        std::cout << "[MapLight] Failed to load cached texture. Rebuilding...\n";
+    }
+
     build_texture();
 }
 
@@ -45,7 +68,7 @@ void Generate_Map_Light::update() {
     pos_x_ = center_x_ + static_cast<int>(orbit_radius * std::cos(angle_));
     pos_y_ = center_y_ + static_cast<int>(orbit_radius * std::sin(angle_));
 
-    float norm = std::fabs(std::cos(angle_));  // symmetric fade around 180°
+    float norm = std::fabs(std::cos(angle_));
     float fade = compute_opacity_from_horizon(norm);
     Uint8 alpha = static_cast<Uint8>(min_opacity_ + (max_opacity_ - min_opacity_) * fade);
 
@@ -90,16 +113,31 @@ void Generate_Map_Light::build_texture() {
     }
 
     SDL_SetRenderTarget(renderer_, nullptr);
+
+    // Save texture to BMP file
+    int w, h;
+    SDL_QueryTexture(texture_, nullptr, nullptr, &w, &h);
+    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA8888);
+    if (surf) {
+        SDL_SetRenderTarget(renderer_, texture_);
+        SDL_RenderReadPixels(renderer_, nullptr, SDL_PIXELFORMAT_RGBA8888, surf->pixels, surf->pitch);
+        SDL_SetRenderTarget(renderer_, nullptr);
+
+        fs::create_directories("cache");
+        if (SDL_SaveBMP(surf, "cache/map_light.bmp") == 0) {
+            std::cout << "[MapLight] Cached light texture to disk.\n";
+        } else {
+            std::cerr << "[MapLight] Failed to save cache: " << SDL_GetError() << "\n";
+        }
+
+        SDL_FreeSurface(surf);
+    }
 }
 
 float Generate_Map_Light::compute_opacity_from_horizon(float norm) const {
-    // Brightest when norm = 1 (sun directly overhead / top of orbit),
-    // Dimmest when norm = 0 (sun at horizon/bottom)
     float fade = std::pow(norm, 2.0f);
-    float result = std::clamp(fade, 0.0f, 1.0f);
-    return result;
+    return std::clamp(fade, 0.0f, 1.0f);
 }
-
 
 SDL_Color Generate_Map_Light::compute_color_from_horizon(float /*norm*/) const {
     float degrees = angle_ * (180.0f / M_PI);
@@ -114,25 +152,19 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon(float /*norm*/) const {
     double mult = 0.4;
 
     std::vector<KeyColor> keys = {
-        {  0.0f,   { 255,   255,   255,   static_cast<Uint8>(255) }},   // top - transparent
-        {  85.0f,  { 255,   255,   255,   static_cast<Uint8>(200) }},   // still transparent
-
-        {  95.0f,  { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},   // warm orange
-        { 105.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},   // dusk purple
-        { 120.0f,  { 60,  70,  150, static_cast<Uint8>(20 * mult) }},   // cool blue
-        { 150.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},   // fade to transparent
-
-        { 210.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},   // transparent resume
-        { 240.0f,  { 60,  70,  150, static_cast<Uint8>(20 * mult) }},   // cool blue (mirror)
-        { 255.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},   // dusk purple (mirror)
-        { 265.0f,  { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},   // warm orange (mirror)
-
-        { 275.0f,  { 255,   255,   255,   static_cast<Uint8>(200) }},   // fade to transparent
-        { 360.0f,  { 255,   255,   255,   static_cast<Uint8>(255) }}    // top again - transparent
+        {  0.0f,   { 255, 255, 255, static_cast<Uint8>(255) }},
+        { 85.0f,   { 255, 255, 255, static_cast<Uint8>(200) }},
+        { 95.0f,   { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},
+        { 105.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},
+        { 120.0f,  { 60,  70, 150,  static_cast<Uint8>(20 * mult) }},
+        { 150.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},
+        { 210.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},
+        { 240.0f,  { 60,  70, 150,  static_cast<Uint8>(20 * mult) }},
+        { 255.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},
+        { 265.0f,  { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},
+        { 275.0f,  { 255, 255, 255, static_cast<Uint8>(200) }},
+        { 360.0f,  { 255, 255, 255, static_cast<Uint8>(255) }}
     };
-
-
-
 
     auto lerp = [](Uint8 a, Uint8 b, float t) -> Uint8 {
         return static_cast<Uint8>(a + t * (b - a));

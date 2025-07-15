@@ -1,41 +1,33 @@
-// === File: generate_trails.hpp ===
-#ifndef GENERATE_TRAILS_HPP
-#define GENERATE_TRAILS_HPP
+#pragma once
 
-#include "area.hpp"
-#include "generate_room.hpp"
-#include <string>
+#include "Area.hpp"
+#include "room.hpp"
+#include "Asset.hpp"
+#include "asset_loader.hpp"
+
 #include <vector>
+#include <string>
 #include <random>
-#include <utility>
+#include <memory>
 
 class GenerateTrails {
 public:
-    using Point = std::pair<int, int>;
+    using Point = std::pair<double, double>;
 
-    GenerateTrails(std::string map_path,
-                   const std::vector<GenerateRoom>& rooms,
-                   int map_width,
-                   int map_height);
+    GenerateTrails(const std::string& trail_dir);
 
-    const std::vector<Area>& getTrailAreas() const;
-    std::string pickAssetsPath();
+    std::vector<std::unique_ptr<Room>> generate_trails(
+        const std::vector<std::pair<Room*, Room*>>& room_pairs,
+        const std::vector<Area>& existing_areas,
+        const std::string& map_dir,
+        AssetLibrary* asset_lib);
 
 private:
-    std::string map_path;
     std::vector<std::string> available_assets_;
     std::vector<Area> trail_areas_;
-    int map_width_;
-    int map_height_;
     std::mt19937 rng_;
 
-    std::vector<Point> buildCenterline(const Point& start,
-                                       const Point& end,
-                                       int curvyness);
-    std::vector<Point> extrudeToWidth(const std::vector<Point>& centerline,
-                                      double width);
-    int countTrailIntersections(const Point& start, const Point& end);
-    void addTrail(const Point& start, const Point& end);
+    std::string pick_random_asset();
+    std::vector<Point> build_centerline(const Point& start, const Point& end, int curvyness);
+    std::vector<Point> extrude_centerline(const std::vector<Point>& centerline, double width);
 };
-
-#endif // GENERATE_TRAILS_HPP
