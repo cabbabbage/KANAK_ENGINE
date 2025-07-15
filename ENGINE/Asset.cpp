@@ -64,9 +64,9 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
     }
 }
 
-
 void Asset::finalize_setup(SDL_Renderer* renderer) {
     if (!info || !renderer) return;
+    spawn_children(renderer);
 
     namespace fs = std::filesystem;
     using json = nlohmann::json;
@@ -163,10 +163,8 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
             change_animation(it->first);
         }
     }
-    spawn_children(renderer);
+
 }
-
-
 
 void Asset::set_position(int x, int y) {
     pos_X = x;
@@ -264,24 +262,21 @@ void Asset::add_child(Asset child) {
 }
 
 void Asset::set_z_index() {
-    if (info->type == "Player") {
-        z_index = pos_Y + info->z_threshold;
-    } else if (parent) {
-        int base = pos_Y + info->z_threshold;
-        z_index = std::clamp(base + z_offset,
-                             parent->z_index - 1000,
-                             parent->z_index + 1000);
-    } else {
-        z_index = pos_Y + info->z_threshold;
+    try {
+        if (parent) {
+            z_index = parent->z_index + z_offset;
+        } else if (info) {
+            z_index = pos_Y + info->z_threshold;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[set_z_index] Exception: " << e.what() << "\n";
     }
 }
 
-
-
-
 void Asset::spawn_children(SDL_Renderer* renderer) {
+    std::cout << "[spawn_children] Beginning spawn...\n";
     if (!info || !renderer) {
-        std::cout << "[spawn_children] Missing asset info or renderer.\n";
+        std::cerr << "[spawn_children] Missing asset info or renderer.\n";
         return;
     }
 
@@ -290,49 +285,103 @@ void Asset::spawn_children(SDL_Renderer* renderer) {
     for (const auto& ca : info->child_assets) {
         std::cout << "[spawn_children] Attempting to spawn child asset: " << ca.asset << "\n";
 
-        std::shared_ptr<AssetInfo> child_info = std::make_shared<AssetInfo>(ca.asset);
-        if (!child_info) {
-            std::cout << "[spawn_children] Failed to construct AssetInfo for: " << ca.asset << "\n";
+        if (ca.asset.empty()) {
+            std::cerr << "[spawn_children] Empty asset name, skipping.\n";
             continue;
         }
 
-        std::uniform_int_distribution<int> dist(ca.min, ca.max);
-        int count = dist(rng);
-        std::cout << "[spawn_children] Will attempt to spawn " << count << " instances.\n";
+        if (ca.min > ca.max) {
+            std::cerr << "[spawn_children] Invalid range for '" << ca.asset << "' (min > max), skipping.\n";
+            continue;
+        }
+
+        int count = std::uniform_int_distribution<int>(ca.min, ca.max)(rng);
+        if (count < 1) {
+            std::cout << "[spawn_children] Count < 1, skipping.\n";
+            continue;
+        }
+
+        std::shared_ptr<AssetInfo> child_info;
+        try {
+            child_info = std::make_shared<AssetInfo>(ca.asset);
+        } catch (const std::exception& e) {
+            std::cerr << "[spawn_children] Failed to load child AssetInfo: " << e.what() << "\n";
+            continue;
+        }
+
+        std::cout << "[spawn_children] Spawning " << count << " instance(s) of '" << ca.asset << "'\n";
 
         Area aligned_area = ca.area;
-
-        // Align to bottom-center of parent sprite
-        int anchor_x = pos_X;
-        int anchor_y = pos_Y + static_cast<int>(info->original_canvas_height * info->scale_factor / 2.0f);
-        aligned_area.align(anchor_x, anchor_y);
-
-        const auto& valid_points = aligned_area.get_points();
-        std::cout << "[spawn_children] Aligned area has " << valid_points.size() << " candidate points.\n";
-
-        if (valid_points.empty()) {
-            std::cout << "[spawn_children] No valid points to spawn within area.\n";
+        try {
+            int anchor_x = pos_X;
+            int anchor_y = pos_Y + static_cast<int>(info->original_canvas_height * info->scale_factor / 2.0f);
+            aligned_area.align(anchor_x, anchor_y);
+        } catch (const std::exception& e) {
+            std::cerr << "[spawn_children] Failed to align spawn area: " << e.what() << "\n";
             continue;
         }
 
-        std::uniform_int_distribution<size_t> point_picker(0, valid_points.size() - 1);
+        const auto& points = aligned_area.get_points();
+        if (points.empty()) {
+            std::cerr << "[spawn_children] No points in aligned area.\n";
+            continue;
+        }
+
+        std::uniform_int_distribution<size_t> dist_point(0, points.size() - 1);
 
         for (int i = 0; i < count; ++i) {
-            Area::Point pt = valid_points[point_picker(rng)];
-            std::cout << "[spawn_children] Spawning at (" << pt.first << ", " << pt.second << ")\n";
+            const auto& pt = points[dist_point(rng)];
 
-            Asset child(child_info,
-                        ca.z_offset,
-                        aligned_area,
-                        pt.first,
-                        pt.second,
-                        this);
+            Area spacing_test;
+            try {  
+                if (child_info->has_spacing_area) {
+                    spacing_test = child_info->spacing_area;
+                    spacing_test.align(pt.first, pt.second);
+                } else {
+                    spacing_test = Area(pt.first, pt.second, 1, 1, "Square", 0,
+                                        std::numeric_limits<int>::max(),
+                                        std::numeric_limits<int>::max());
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[spawn_children] Error creating spacing test area: " << e.what() << "\n";
+                continue;
+            }
 
-            child_info->loadAnimations(renderer);
-            child.finalize_setup(renderer);
+            bool overlaps = false;
+            for (const auto& existing : children) {
+                try {
+                    Area other_area;
+                    if (existing.info && existing.info->has_spacing_area) {
+                        other_area = existing.get_global_spacing_area();
+                    } else {
+                        other_area = Area(existing.pos_X, existing.pos_Y, 1, 1, "Square", 0,
+                                          std::numeric_limits<int>::max(),
+                                          std::numeric_limits<int>::max());
+                    }
 
-            std::cout << "[spawn_children] Child asset created and finalized.\n";
-            children.push_back(std::move(child));
+                    if (spacing_test.intersects(other_area)) {
+                        std::cout << "[spawn_children] Overlap detected with '" << existing.info->name << "'\n";
+                        overlaps = true;
+                        break;
+                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "[spawn_children] Failed spacing check: " << e.what() << "\n";
+                }
+            }
+
+            if (overlaps) {
+                continue;
+            }
+
+            try {
+                Asset child(child_info, ca.z_offset, aligned_area, pt.first, pt.second, this);
+                child_info->loadAnimations(renderer);
+                child.finalize_setup(renderer);
+                children.push_back(std::move(child));
+                std::cout << "[spawn_children] Child '" << ca.asset << "' added.\n";
+            } catch (const std::exception& e) {
+                std::cerr << "[spawn_children] Exception while spawning child: " << e.what() << "\n";
+            }
         }
     }
 }

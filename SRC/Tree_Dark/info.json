@@ -1,64 +1,74 @@
 {
-    "asset_name": "Tree_Dark",
-    "asset_type": "Background",
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "impassable_area": "impassable_area.json",
-    "z_threshold": 4,
-    "size_settings": {
-        "scale_percentage": 40,
-        "variability_percentage": 0
-    },
-    "visited_tabs": [
-        "Passability",
-        "Spacing"
-    ],
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 39,
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 3,
-    "max_child_depth": 4,
-    "tags": [
-        "default",
-        "impassable",
-        "nature",
-        "Tree",
-        "boundary",
-        "rest",
-        "tree"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "shading_info": {
-        "has_shading": true,
-        "has_base_shadow": true,
-        "base_shadow_intensity": 100,
-        "has_gradient_shadow": false,
-        "number_of_gradient_shadows": 1,
-        "gradient_shadow_intensity": 100,
-        "has_casted_shadows": false,
-        "number_of_casted_shadows": 1,
-        "cast_shadow_intensity": 100
-    },
-    "lighting_info": {
-        "has_light_source": false,
-        "light_intensity": null,
-        "light_color": null,
-        "radius": null,
-        "fall_off": null,
-        "jitter_min": null,
-        "jitter_max": null,
-        "flicker": null
+  "asset_name": "Tree_Dark",
+  "asset_type": "Background",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
     }
+  },
+  "impassable_area": "impassable_area.json",
+  "z_threshold": 5,
+  "size_settings": {
+    "scale_percentage": 50,
+    "variability_percentage": 0
+  },
+  "visited_tabs": [
+    "Passability",
+    "Spacing"
+  ],
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 39,
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 3,
+  "max_child_depth": 4,
+  "tags": [
+    "rest",
+    "default",
+    "tree",
+    "impassable",
+    "boundary",
+    "nature",
+    "Tree"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "shading_info": {
+    "has_shading": true,
+    "has_base_shadow": true,
+    "base_shadow_intensity": 100,
+    "has_gradient_shadow": false,
+    "number_of_gradient_shadows": 1,
+    "gradient_shadow_intensity": 100,
+    "has_casted_shadows": false,
+    "number_of_casted_shadows": 1,
+    "cast_shadow_intensity": 100
+  },
+  "lighting_info": {
+    "has_light_source": false,
+    "light_intensity": null,
+    "light_color": null,
+    "radius": null,
+    "fall_off": null,
+    "jitter_min": null,
+    "jitter_max": null,
+    "flicker": null
+  },
+  "child_assets": [
+    {
+      "asset": "Grass_1_FPS_2",
+      "area_path": "child_area_1.json",
+      "z_offset": 0,
+      "min": -2,
+      "max": 3,
+      "terminate_with_parent": false
+    }
+  ]
 }

@@ -53,56 +53,49 @@ Area::Area(int center_x, int center_y, int w, int h,
 
 Area::Area(const std::string& json_path, float scale)
 {
-    if (scale <= 0.0f) {
+    if (scale <= 0.0f)
         throw std::invalid_argument("[Area] 'scale' must be positive");
-    }
 
     std::ifstream in(json_path);
-    if (!in.is_open()) {
+    if (!in.is_open())
         throw std::runtime_error("[Area] Failed to open JSON: " + json_path);
-    }
 
     nlohmann::json j;
     in >> j;
     in.close();
 
+    auto& pts_json = j.at("points");
+    auto& dim_json = j.at("original_dimensions");
+    if (!pts_json.is_array() || !dim_json.is_array() || dim_json.size() != 2)
+        throw std::runtime_error("[Area] Bad JSON in: " + json_path);
 
-    if (!j.contains("points") || !j["points"].is_array()) {
-        throw std::runtime_error("[Area] JSON missing 'points' array: " + json_path);
-    }
-    if (!j.contains("original_dimensions") ||
-        !j["original_dimensions"].is_array() ||
-        j["original_dimensions"].size() != 2)
-    {
-        throw std::runtime_error("[Area] JSON missing 'original_dimensions' in: " + json_path);
-    }
+    int orig_w = dim_json[0].get<int>();
+    int orig_h = dim_json[1].get<int>();
+    if (orig_w <= 0 || orig_h <= 0)
+        throw std::runtime_error("[Area] Invalid 'original_dimensions'");
 
-    int orig_w = j["original_dimensions"][0].get<int>();
-    int orig_h = j["original_dimensions"][1].get<int>();
-    if (orig_w <= 0 || orig_h <= 0) {
-        throw std::runtime_error("[Area] Invalid 'original_dimensions' in: " + json_path);
-    }
+    // pivot of trimmed image, bottom-center:
+    int pivot_x = static_cast<int>(std::round((orig_w / 2.0f) * scale));
+    int pivot_y = static_cast<int>(std::round(orig_h         * scale));
 
-    // Load points (relative to trimmed-image bottom-center), apply scale
     points.clear();
-    points.reserve(j["points"].size());
-    for (const auto& elem : j["points"]) {
+    points.reserve(pts_json.size());
+    for (auto& elem : pts_json) {
         if (!elem.is_array() || elem.size() < 2) continue;
         float rel_x = elem[0].get<float>();
         float rel_y = elem[1].get<float>();
 
-        int x = static_cast<int>(std::round(rel_x * scale));
-        int y = static_cast<int>(std::round(rel_y * scale));
+        // now offset *from* the pivot, not from (0,0)
+        int x = pivot_x + static_cast<int>(std::round(rel_x * scale));
+        int y = pivot_y + static_cast<int>(std::round(rel_y * scale));
         points.emplace_back(x, y);
     }
-    if (points.empty()) {
-        throw std::runtime_error("[Area] No valid points loaded from: " + json_path);
-    }
+    if (points.empty())
+        throw std::runtime_error("[Area] No valid points loaded");
 
-    // Compute bounds and set bottom-center anchor
-    auto [minx, miny, maxx, maxy] = get_bounds();
-    pos_X = static_cast<int>(std::lround((minx + maxx) / 2.0));
-    pos_Y = maxy;
+    // anchor is the pivot itself
+    pos_X = pivot_x;
+    pos_Y = pivot_y;
 }
 
 void Area::apply_offset(int dx, int dy) {

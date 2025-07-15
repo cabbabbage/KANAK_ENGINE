@@ -27,14 +27,20 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 84,
+        "percent": 82,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 16,
+        "percent": 15,
         "color": "#60d4f0"
+      },
+      {
+        "name": "flower_1",
+        "tag": false,
+        "percent": 3,
+        "color": "#c327e3"
       }
     ]
   }

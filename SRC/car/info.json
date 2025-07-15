@@ -1,0 +1,43 @@
+{
+  "impassable_area": "impassable_area.json",
+  "asset_name": "car",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "tags": [
+    "default",
+    "impassable"
+  ],
+  "z_threshold": 14,
+  "size_settings": {
+    "scale_percentage": 25,
+    "variability_percentage": 0
+  },
+  "has_spacing": true,
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 0,
+  "child_assets": [
+    {
+      "asset": "Grass_1_FPS_2",
+      "area_path": "child_area_1.json",
+      "z_offset": 0,
+      "min": -3,
+      "max": 4,
+      "terminate_with_parent": false
+    }
+  ]
+}

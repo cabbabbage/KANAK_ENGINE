@@ -33,10 +33,10 @@
       "sector_range_max": 360
     },
     {
-      "name": "Book",
-      "min_number": 1,
-      "max_number": 1,
-      "position": "Center",
+      "name": "car",
+      "min_number": 5,
+      "max_number": 5,
+      "position": "Random",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -61,14 +61,14 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 50,
+        "percent": 99,
         "color": "#CCCCCC"
       },
       {
-        "name": "Book",
+        "name": "Barrel",
         "tag": false,
-        "percent": 50,
-        "color": "#67370d"
+        "percent": 1,
+        "color": "#30913f"
       }
     ]
   }

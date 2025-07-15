@@ -17,9 +17,9 @@
             "volume": 50
         }
     },
-    "z_threshold": 4,
+    "z_threshold": 5,
     "size_settings": {
-        "scale_percentage": 40,
+        "scale_percentage": 50,
         "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",

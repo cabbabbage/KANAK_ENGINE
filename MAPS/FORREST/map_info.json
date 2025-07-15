@@ -51,40 +51,32 @@
       "level": 2,
       "name": "layer_2",
       "radius": 6819,
-      "min_rooms": 6,
-      "max_rooms": 6,
+      "min_rooms": 9,
+      "max_rooms": 9,
       "rooms": [
         {
-          "name": "fountain",
-          "min_instances": 0,
-          "max_instances": 9,
-          "required_children": []
-        },
-        {
           "name": "bar",
-          "min_instances": 0,
-          "max_instances": 8,
-          "required_children": [
-            "KEY"
-          ]
+          "min_instances": 9,
+          "max_instances": 11,
+          "required_children": []
         }
       ]
     },
     {
       "level": 3,
       "name": "layer_3",
-      "radius": 9999,
-      "min_rooms": 0,
-      "max_rooms": 1,
+      "radius": 9004,
+      "min_rooms": 10,
+      "max_rooms": 11,
       "rooms": [
         {
-          "name": "random",
-          "min_instances": 0,
-          "max_instances": 1,
+          "name": "fountain",
+          "min_instances": 10,
+          "max_instances": 13,
           "required_children": []
         }
       ]
     }
   ],
-  "map_radius": 13134.022616637962
+  "map_radius": 11308.920495637198
 }

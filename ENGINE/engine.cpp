@@ -335,22 +335,28 @@ void Engine::render_visible() {
     };
 
 
+    // Before your render_visible loop:
+    float halfW = SCREEN_WIDTH * 0.5f;
+    float halfH = SCREEN_HEIGHT * 0.5f;
+    constexpr float parallaxMaxX = 40.0f;
+    constexpr float parallaxMaxY = 20.0f;
+
     auto apply_parallax = [&](int ax, int ay) -> SDL_Point {
-        // normalized offsets from center
-        float dx = std::clamp((ax - px) / (SCREEN_WIDTH  * 0.5f), -1.0f, 1.0f);
-        float dy = std::clamp((ay - py) / (SCREEN_HEIGHT * 0.5f), -1.0f, 1.0f);
+        // world‐space offset from player
+        float world_dx = ax - px;
+        float world_dy = ay - py;
 
-        // horizontal shift scales with vertical position and left/right offset
-        float hx = dx * dy;  
-        float hy = dy;
+        // normalized relative to half‐screen (can exceed ±1 to extend beyond)
+        float ndx = world_dx / halfW;
+        float ndy = world_dy / halfH;
 
-        int maxX = 10;
-        int maxY = 5;
-        int offX = static_cast<int>(hx * maxX);
-        int offY = static_cast<int>(hy * maxY);
+        // linear parallax offset (monotonic, no oscillation)
+        float offX = ndx * parallaxMaxX;
+        float offY = ndy * parallaxMaxY;
 
-        int screen_x = ax - px + cx + offX;
-        int screen_y = ay - py + cy + offY;
+        // final screen coords: center plus world offset plus parallax
+        int screen_x = static_cast<int>(world_dx + cx + offX);
+        int screen_y = static_cast<int>(world_dy + cy + offY);
         return { screen_x, screen_y };
     };
 

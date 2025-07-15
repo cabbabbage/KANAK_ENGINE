@@ -37,30 +37,34 @@
         "volume"
     ],
     "tags": [
-        "wood",
-        "impassable",
+        "default",
         "collision",
-        "default"
+        "wood",
+        "impassable"
     ],
     "impassable_area": "impassable_area.json",
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 0,
-    "z_threshold": 11,
+    "z_threshold": 10,
     "size_settings": {
-        "scale_percentage": 9.487341772151899,
-        "variability_percentage": 0.0
+        "scale_percentage": 9,
+        "variability_percentage": 0
     },
     "child_assets": [
         {
-            "asset": "okkkkk_babyyy",
-            "point": {
-                "x": 990,
-                "y": 148,
-                "radius": 91
-            },
+            "asset": "Book",
+            "area_path": "child_area_8.json",
             "z_offset": 1,
-            "min": 3,
-            "max": 3,
+            "min": -10,
+            "max": 1,
+            "terminate_with_parent": false
+        },
+        {
+            "asset": "candle",
+            "area_path": "child_area_7.json",
+            "z_offset": 1,
+            "min": -10,
+            "max": 2,
             "terminate_with_parent": false
         }
     ],
