@@ -21,7 +21,7 @@ public:
         const std::vector<Area>& existing_areas,
         const std::string& map_dir,
         AssetLibrary* asset_lib);
-
+    bool testing = true;
 private:
     std::vector<std::string> available_assets_;
     std::vector<Area> trail_areas_;

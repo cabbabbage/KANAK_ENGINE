@@ -12,6 +12,7 @@
 #include "Assets.hpp"
 #include "fade_textures.hpp"
 #include "generate_map_light.hpp"
+#include "render_utils.hpp"
 
 class Engine {
 public:
@@ -34,7 +35,7 @@ private:
     SDL_Color background_color;
     SDL_Texture* overlay_texture;
     std::vector<Area> roomTrailAreas;
-
+    RenderUtils util;
     std::unordered_map<SDL_Texture*, SDL_Rect> static_faded_areas;
     Generate_Map_Light* map_light;  // now a pointer
 

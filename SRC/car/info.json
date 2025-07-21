@@ -30,14 +30,5 @@
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 0,
-  "child_assets": [
-    {
-      "asset": "Grass_1_FPS_2",
-      "area_path": "child_area_1.json",
-      "z_offset": 0,
-      "min": -3,
-      "max": 4,
-      "terminate_with_parent": false
-    }
-  ]
+  "child_assets": []
 }

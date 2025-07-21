@@ -72,7 +72,7 @@
         {
           "name": "fountain",
           "min_instances": 10,
-          "max_instances": 13,
+          "max_instances": 12,
           "required_children": []
         }
       ]

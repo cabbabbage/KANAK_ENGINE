@@ -1,42 +1,33 @@
 {
-  "asset_name": "Grass_1_FPS_2",
-  "asset_type": "MAP",
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "randomize": true,
-      "audio_path": "",
-      "volume": 50
+    "impassable_area": null,
+    "asset_name": "Grass_1_FPS_2",
+    "asset_type": "Object",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "tags": [
+        "passable",
+        "default"
+    ],
+    "has_spacing": true,
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 0,
+    "z_threshold": 25,
+    "size_settings": {
+        "scale_percentage": 3,
+        "variability_percentage": 0
     }
-  },
-  "impassable_area": null,
-  "z_threshold": 0,
-  "size_settings": {
-    "scale_percentage": 3,
-    "variability_percentage": 0
-  },
-  "spacing_area": null,
-  "min_same_type_distance": 15,
-  "visited_tabs": [
-    "Spacing"
-  ],
-  "tags": [
-    "nature",
-    "meadow",
-    "plant",
-    "green",
-    "clearing",
-    "passable",
-    "leafy",
-    "moving"
-  ],
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400,
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2
 }

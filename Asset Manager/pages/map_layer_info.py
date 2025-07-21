@@ -194,6 +194,7 @@ class MapLayerInfo(ttk.Frame):
             self.rooms.append(widget)
 
         self._on_room_value_change()
+        self.save() 
 
     def load(self, data):
         self.name_var.set(data.get("name", ""))

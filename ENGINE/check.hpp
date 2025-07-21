@@ -25,7 +25,7 @@ public:
                const std::vector<std::unique_ptr<Asset>>& assets) const;
 
 private:
-    bool debug_ = false;
+    bool debug_ = true;
 
     bool is_in_exclusion_zone(int x,
                               int y,

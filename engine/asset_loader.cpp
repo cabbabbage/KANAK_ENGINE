@@ -31,7 +31,6 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
 
     // Finalize every spawned Asset with lighting/textures
     for (Room* room : rooms_) {
-        // assume Room has a method to get its assets without moving them
         for (auto& asset_up : room->assets) {
             asset_up->finalize_setup(renderer_);
         }
@@ -42,27 +41,48 @@ void AssetLoader::load_map_json() {
     std::ifstream f(map_path_ + "/map_info.json");
     if (!f) throw std::runtime_error("Failed to open map_info.json");
 
-    json j; f >> j;
+    json j;
+    try {
+        f >> j;
+    } catch (const std::exception& e) {
+        throw std::runtime_error(std::string("JSON parse error: ") + e.what());
+    }
 
-    map_radius_        = j.at("map_radius").get<int>();
-    map_boundary_file_ = j.at("map_boundary").get<std::string>();
+    if (!j.contains("map_radius") || !j.contains("map_boundary") || !j.contains("map_layers")) {
+        throw std::runtime_error("map_info.json missing required fields");
+    }
+
+    map_radius_        = j.value("map_radius", 0);
+    map_boundary_file_ = j.value("map_boundary", "");
     map_center_x_      = map_center_y_ = map_radius_;
 
-    for (auto& L : j.at("map_layers")) {
+    for (const auto& L : j["map_layers"]) {
         LayerSpec spec;
-        spec.level     = L.at("level").get<int>();
-        spec.radius    = L.at("radius").get<int>();
-        spec.min_rooms = L.at("min_rooms").get<int>();
-        spec.max_rooms = L.at("max_rooms").get<int>();
-        for (auto& R : L.at("rooms")) {
+        spec.level     = L.value("level", 0);
+        spec.radius    = L.value("radius", 0);
+        spec.min_rooms = L.value("min_rooms", 0);
+        spec.max_rooms = L.value("max_rooms", 0);
+
+        if (!L.contains("rooms") || !L["rooms"].is_array()) {
+            std::cerr << "[AssetLoader] Warning: Layer missing valid 'rooms' array.\n";
+            continue;
+        }
+
+        for (const auto& R : L["rooms"]) {
             RoomSpec rs;
-            rs.name              = R.at("name").get<std::string>();
-            rs.min_instances     = R.at("min_instances").get<int>();
-            rs.max_instances     = R.at("max_instances").get<int>();
-            for (auto& c : R.at("required_children"))
-                rs.required_children.push_back(c.get<std::string>());
+            rs.name = R.value("name", "unnamed");
+            rs.min_instances = R.value("min_instances", 1);
+            rs.max_instances = R.value("max_instances", 1);
+
+            if (R.contains("required_children") && R["required_children"].is_array()) {
+                for (const auto& c : R["required_children"]) {
+                    if (c.is_string()) rs.required_children.push_back(c.get<std::string>());
+                }
+            }
+
             spec.rooms.push_back(std::move(rs));
         }
+
         map_layers_.push_back(std::move(spec));
     }
 }
@@ -72,13 +92,11 @@ std::vector<Asset> AssetLoader::extract_all_assets() {
     out.reserve(rooms_.size() * 4);
 
     for (Room* room : rooms_) {
-        // move each Asset into the output vector
         for (auto& aup : room->assets) {
             out.push_back(std::move(*aup));
         }
     }
 
-    // finalize_setup on each
     for (auto& a : out) {
         a.finalize_setup(renderer_);
     }
@@ -108,6 +126,9 @@ SDL_Texture* AssetLoader::createMinimap(int width, int height) {
         std::cerr << "[Minimap] SDL_CreateTexture failed: " << SDL_GetError() << "\n";
         return nullptr;
     }
+    else {
+        std::cout << "[Minimap] SDL_CreateTexture created\n";
+    }
     SDL_SetTextureBlendMode(minimap, SDL_BLENDMODE_BLEND);
 
     SDL_Texture* prev = SDL_GetRenderTarget(renderer_);
@@ -121,12 +142,16 @@ SDL_Texture* AssetLoader::createMinimap(int width, int height) {
     float scaleY = float(height) / float(map_radius_ * 2);
 
     for (Room* room : rooms_) {
-        auto [minx, miny, maxx, maxy] = room->room_area.get_bounds();
-        SDL_Rect r{ int(std::round(minx * scaleX)),
-                    int(std::round(miny * scaleY)),
-                    int(std::round((maxx - minx) * scaleX)),
-                    int(std::round((maxy - miny) * scaleY)) };
-        SDL_RenderFillRect(renderer_, &r);
+        try {
+            auto [minx, miny, maxx, maxy] = room->room_area.get_bounds();
+            SDL_Rect r{ int(std::round(minx * scaleX)),
+                        int(std::round(miny * scaleY)),
+                        int(std::round((maxx - minx) * scaleX)),
+                        int(std::round((maxy - miny) * scaleY)) };
+            SDL_RenderFillRect(renderer_, &r);
+        } catch (const std::exception& e) {
+            std::cerr << "[Minimap] Skipping room with invalid bounds: " << e.what() << "\n";
+        }
     }
 
     SDL_SetRenderTarget(renderer_, prev);

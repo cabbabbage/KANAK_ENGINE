@@ -38,7 +38,10 @@ public:
                                              int map_radius,
                                              const std::string& boundary_json);
 
+    bool testing = true;
+
 private:
+
     struct Sector {
         Room* room;
         float start_angle;

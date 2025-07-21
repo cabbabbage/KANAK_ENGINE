@@ -66,93 +66,9 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
 
 void Asset::finalize_setup(SDL_Renderer* renderer) {
     if (!info || !renderer) return;
-    spawn_children(renderer);
+    //spawn_children(renderer);
 
-    namespace fs = std::filesystem;
-    using json = nlohmann::json;
-
-    // -- always clear out any old light textures --
-    light_textures.clear();
-
-    // -- only generate lights if this asset actually has them --
-    if (info->has_light_source) {
-        // root cache: ./cache/<asset_name>/lights
-        std::string cache_root = "cache/" + info->name + "/lights";
-        fs::create_directories(cache_root);
-
-        for (size_t i = 0; i < info->lights.size(); ++i) {
-            const auto& ls = info->lights[i];
-            std::string folder    = cache_root + "/" + std::to_string(i);
-            std::string meta_file = folder + "/metadata.json";
-            std::string img_file  = folder + "/light.png";
-
-            bool use_cache = false;
-            if (fs::exists(meta_file) && fs::exists(img_file)) {
-                std::ifstream mfs(meta_file);
-                if (mfs) {
-                    json meta; mfs >> meta;
-                    if (meta.value("radius",-1)==ls.radius
-                     && meta.value("fall_off",-1)==ls.fall_off
-                     && meta.value("intensity",-1)==ls.intensity
-                     && meta["color"][0].get<int>()==ls.color.r
-                     && meta["color"][1].get<int>()==ls.color.g
-                     && meta["color"][2].get<int>()==ls.color.b)
-                    {
-                        use_cache = true;
-                    }
-                }
-            }
-
-            SDL_Texture* tex = nullptr;
-            // load from cache
-            if (use_cache) {
-                if (SDL_Surface* surf = IMG_Load(img_file.c_str())) {
-                    tex = SDL_CreateTextureFromSurface(renderer, surf);
-                    SDL_FreeSurface(surf);
-                }
-            }
-            // regenerate & cache if needed
-            if (!tex) {
-                fs::remove_all(folder);
-                fs::create_directories(folder);
-
-                GenerateLight gen(renderer);
-                tex = gen.generate(this, ls);
-                if (!tex) continue;
-
-                // write metadata
-                json meta;
-                meta["radius"]    = ls.radius;
-                meta["fall_off"]  = ls.fall_off;
-                meta["intensity"] = ls.intensity;
-                meta["color"]     = { ls.color.r, ls.color.g, ls.color.b };
-                std::ofstream(folder + "/metadata.json") << meta.dump(4);
-
-                // capture output into a PNG
-                int w, h;
-                SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
-                SDL_Texture* prev_rt = SDL_GetRenderTarget(renderer);
-                SDL_SetRenderTarget(renderer, tex);
-                SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(
-                    0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
-                SDL_RenderReadPixels(renderer,
-                                     nullptr,
-                                     SDL_PIXELFORMAT_RGBA32,
-                                     surf->pixels,
-                                     surf->pitch);
-                IMG_SavePNG(surf, img_file.c_str());
-                SDL_FreeSurface(surf);
-                SDL_SetRenderTarget(renderer, prev_rt);
-            }
-
-            if (tex) {
-                SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-                light_textures.push_back(tex);
-            }
-        }
-    }
-
-    // -- always ensure we have a valid animation now that all textures are loaded --
+    // ensure we have a valid animation now that all textures are loaded
     bool missing = current_animation.empty()
                 || info->animations[current_animation].frames.empty();
     if (missing) {
@@ -163,8 +79,8 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
             change_animation(it->first);
         }
     }
-
 }
+
 
 void Asset::set_position(int x, int y) {
     pos_X = x;

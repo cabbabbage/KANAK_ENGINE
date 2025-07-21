@@ -81,6 +81,7 @@ class MapInfoPage(ttk.Frame):
             self.map_data = {}
             self.layers_data = []
             self.layer_widgets.clear()
+        self.save()    
 
     def _render_layers(self):
         for w in self.layers_frame.winfo_children():

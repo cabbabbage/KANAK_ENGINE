@@ -110,6 +110,7 @@ void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
     SDL_Texture* base_sprite = nullptr;
     int scaled_sprite_w = 0;
     int scaled_sprite_h = 0;
+    generate_lights(renderer);
     load_animations(anims_json_, dir_path_, renderer, base_sprite, scaled_sprite_w, scaled_sprite_h);
 }
 
@@ -148,7 +149,6 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
 }
 
 
-
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
     lights.clear();
     has_light_source = false;
@@ -158,28 +158,25 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
 
     const auto& linfo = data["lighting_info"];
 
-    // Handle backward-compatible single light object
+    // backward-compatible single light object
     if (linfo.is_object()) {
         if (!linfo.value("has_light_source", false)) return;
         has_light_source = true;
 
         LightSource light;
-        light.intensity   = linfo.value("light_intensity", 0);
-        light.radius      = linfo.value("radius", 100);
-        light.fall_off    = linfo.value("fall_off", 0);
-        light.jitter_min  = linfo.value("jitter_min", 0);
-        light.jitter_max  = linfo.value("jitter_max", 0);
-        light.flicker     = linfo.value("flicker", false);
-        light.offset_x    = linfo.value("offset_x", 0);
-        light.offset_y    = linfo.value("offset_y", 0);
-
-        // Load light color
-        light.color = {0, 0, 0, 255};
-        if (linfo.contains("light_color") && linfo["light_color"].is_array() &&
-            linfo["light_color"].size() == 3 &&
-            linfo["light_color"][0].is_number_integer() &&
-            linfo["light_color"][1].is_number_integer() &&
-            linfo["light_color"][2].is_number_integer()) {
+        light.intensity  = linfo.value("light_intensity", 0);
+        light.radius     = linfo.value("radius", 100);
+        light.fall_off   = linfo.value("fall_off", 0);
+        light.jitter_min = linfo.value("jitter_min", 0);
+        light.jitter_max = linfo.value("jitter_max", 0);
+        light.flicker    = linfo.value("flicker", false);
+        light.offset_x   = linfo.value("offset_x", 0);
+        light.offset_y   = linfo.value("offset_y", 0);
+        light.color      = { 0, 0, 0, 255 };
+        if (linfo.contains("light_color") &&
+            linfo["light_color"].is_array() &&
+            linfo["light_color"].size() == 3)
+        {
             light.color.r = linfo["light_color"][0].get<int>();
             light.color.g = linfo["light_color"][1].get<int>();
             light.color.b = linfo["light_color"][2].get<int>();
@@ -187,31 +184,27 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
 
         lights.push_back(light);
     }
-
-    // Handle list of multiple lights
+    // array of lights
     else if (linfo.is_array()) {
         for (const auto& l : linfo) {
             if (!l.is_object() || !l.value("has_light_source", false))
                 continue;
-
             has_light_source = true;
 
             LightSource light;
-            light.intensity   = l.value("light_intensity", 0);
-            light.radius      = l.value("radius", 100);
-            light.fall_off    = l.value("fall_off", 0);
-            light.jitter_min  = l.value("jitter_min", 0);
-            light.jitter_max  = l.value("jitter_max", 0);
-            light.flicker     = l.value("flicker", false);
-            light.offset_x    = l.value("offset_x", 0);
-            light.offset_y    = l.value("offset_y", 0);
-
-            light.color = {0, 0, 0, 255};
-            if (l.contains("light_color") && l["light_color"].is_array() &&
-                l["light_color"].size() == 3 &&
-                l["light_color"][0].is_number_integer() &&
-                l["light_color"][1].is_number_integer() &&
-                l["light_color"][2].is_number_integer()) {
+            light.intensity  = l.value("light_intensity", 0);
+            light.radius     = l.value("radius", 100);
+            light.fall_off   = l.value("fall_off", 0);
+            light.jitter_min = l.value("jitter_min", 0);
+            light.jitter_max = l.value("jitter_max", 0);
+            light.flicker    = l.value("flicker", false);
+            light.offset_x   = l.value("offset_x", 0);
+            light.offset_y   = l.value("offset_y", 0);
+            light.color      = { 0, 0, 0, 255 };
+            if (l.contains("light_color") &&
+                l["light_color"].is_array() &&
+                l["light_color"].size() == 3)
+            {
                 light.color.r = l["light_color"][0].get<int>();
                 light.color.g = l["light_color"][1].get<int>();
                 light.color.b = l["light_color"][2].get<int>();
@@ -221,6 +214,21 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
         }
     }
 }
+
+void AssetInfo::generate_lights(SDL_Renderer* renderer) {
+    light_textures.clear();
+    if (!has_light_source) return;
+
+    GenerateLight gen(renderer);
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+        SDL_Texture* tex = gen.generate(this, lights[i], i);
+        if (tex) {
+            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+            light_textures.push_back(tex);
+        }
+    }
+}
+
 
 
 void AssetInfo::load_shading_info(const nlohmann::json& data) {

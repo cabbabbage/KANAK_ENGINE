@@ -9,7 +9,7 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 GenerateTrails::GenerateTrails(const std::string& trail_dir)
-    : rng_(std::random_device{}()) 
+    : rng_(std::random_device{}())
 {
     for (const auto& entry : fs::directory_iterator(trail_dir)) {
         if (entry.path().extension() == ".json") {
@@ -17,7 +17,9 @@ GenerateTrails::GenerateTrails(const std::string& trail_dir)
         }
     }
 
-    std::cout << "[GenerateTrails] Loaded " << available_assets_.size() << " trail assets\n";
+    if (testing) {
+        std::cout << "[GenerateTrails] Loaded " << available_assets_.size() << " trail assets\n";
+    }
 
     if (available_assets_.empty()) {
         throw std::runtime_error("[GenerateTrails] No JSON trail assets found");
@@ -28,26 +30,33 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
     const std::vector<std::pair<Room*, Room*>>& room_pairs,
     const std::vector<Area>& existing_areas,
     const std::string& map_dir,
-
     AssetLibrary* asset_lib)
 {
     trail_areas_.clear();
     std::vector<std::unique_ptr<Room>> trail_rooms;
 
     if (room_pairs.empty()) {
-        std::cout << "[GenerateTrails] Warning: No room pairs provided.\n";
+        if (testing) {
+            std::cout << "[GenerateTrails] Warning: No room pairs provided.\n";
+        }
         return trail_rooms;
     }
 
     for (const auto& [a, b] : room_pairs) {
-        std::cout << "[GenerateTrails] Connecting: " << a->room_name << " <--> " << b->room_name << "\n";
+        if (testing) {
+            std::cout << "[GenerateTrails] Connecting: " << a->room_name
+                      << " <--> " << b->room_name << "\n";
+        }
+
         bool success = false;
 
         for (int attempts = 0; attempts < 10 && !success; ++attempts) {
             std::string path = pick_random_asset();
             std::ifstream in(path);
             if (!in.is_open()) {
-                std::cout << "[TrailGen] Failed to open asset: " << path << "\n";
+                if (testing) {
+                    std::cout << "[TrailGen] Failed to open asset: " << path << "\n";
+                }
                 continue;
             }
 
@@ -61,6 +70,12 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
 
             std::uniform_int_distribution<int> width_dist(min_width, max_width);
             double width = static_cast<double>(width_dist(rng_));
+
+            if (testing) {
+                std::cout << "[TrailGen] Using asset: " << path
+                          << " width: " << width
+                          << " curvyness: " << curvyness << "\n";
+            }
 
             auto centerline = build_centerline(a->map_origin, b->map_origin, curvyness);
             auto polygon = extrude_centerline(centerline, width);
@@ -78,17 +93,27 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
 
             bool intersects = false;
             for (const auto& area : existing_areas) {
-                if (&area == &a->room_area || &area == &b->room_area) continue;
+                bool is_a_or_b =
+                    ((area.center_x == a->room_area.center_x && area.center_y == a->room_area.center_y &&
+                    area.area_size == a->room_area.area_size) ||
+                    (area.center_x == b->room_area.center_x && area.center_y == b->room_area.center_y &&
+                    area.area_size == b->room_area.area_size));
+                if (is_a_or_b) continue;
+
                 if (candidate.intersects(area)) {
                     intersects = true;
                     break;
                 }
             }
 
+
+
             if (!intersects) {
-                std::cout << "[TrailGen] Trail placed between " 
-                          << a->room_name << " and " << b->room_name 
-                          << " using asset: " << path << " (attempt " << attempts + 1 << ")\n";
+                if (testing) {
+                    std::cout << "[TrailGen] Trail placed between "
+                              << a->room_name << " and " << b->room_name
+                              << " using asset: " << path << " (attempt " << attempts + 1 << ")\n";
+                }
 
                 std::string room_dir = fs::path(path).parent_path().string();
 
@@ -106,17 +131,22 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
                 trail_areas_.push_back(std::move(candidate));
                 success = true;
             } else {
-                std::cout << "[TrailGen] Trail intersected existing geometry (attempt " << attempts + 1 << ")\n";
+                if (testing) {
+                    std::cout << "[TrailGen] Trail intersected existing geometry (attempt " << attempts + 1 << ")\n";
+                }
             }
         }
 
-        if (!success) {
+        if (!success && testing) {
             std::cout << "[TrailGen] Failed to place trail between "
                       << a->room_name << " and " << b->room_name << "\n";
         }
     }
 
-    std::cout << "[TrailGen] Total trail rooms created: " << trail_rooms.size() << "\n";
+    if (testing) {
+        std::cout << "[TrailGen] Total trail rooms created: " << trail_rooms.size() << "\n";
+    }
+
     return trail_rooms;
 }
 

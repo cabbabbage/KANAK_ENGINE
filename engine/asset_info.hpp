@@ -8,6 +8,7 @@
 #include <SDL.h>
 #include <nlohmann/json.hpp>
 #include "Area.hpp"
+#include "generate_light.hpp"
 
 struct Animation {
     std::vector<SDL_Texture*> frames;
@@ -91,6 +92,7 @@ public:
     bool                          has_casted_shadows;
     int                           number_of_casted_shadows;
     int                           cast_shadow_intensity;
+    std::vector<SDL_Texture*> light_textures; 
 
     // Collision/interaction areas
     Area                          passability_area;
@@ -111,6 +113,7 @@ public:
 private:
     void load_base_properties(const nlohmann::json& data);
     void load_lighting_info    (const nlohmann::json& data);
+    void generate_lights(SDL_Renderer* renderer);
     void load_shading_info     (const nlohmann::json& data);
     void load_collision_areas  (const nlohmann::json& data,
                                 const std::string& dir_path,

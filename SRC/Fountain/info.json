@@ -56,14 +56,5 @@
     "number_of_casted_shadows": null,
     "cast_shadow_intensity": null
   },
-  "child_assets": [
-    {
-      "asset": "Grass_1_FPS_2",
-      "area_path": "child_area_1.json",
-      "z_offset": 0,
-      "min": 3,
-      "max": 3,
-      "terminate_with_parent": false
-    }
-  ]
+  "child_assets": []
 }
