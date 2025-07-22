@@ -59,8 +59,8 @@ private:
     SDL_Point center_;
 
     // parallax max offsets
-    static constexpr float parallaxMaxX_ = 40.0f;
-    static constexpr float parallaxMaxY_ = 20.0f;
+    static constexpr float parallaxMaxX_ = 30.0f;
+    static constexpr float parallaxMaxY_ = 16.0f;
 
     // light distortion
     SDL_Rect lightRect_;

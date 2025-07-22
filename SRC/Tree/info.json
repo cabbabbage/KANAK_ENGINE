@@ -7,13 +7,13 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "spawn",
         "default",
+        "spawn",
         "impassable"
     ],
     "z_threshold": 5,
     "size_settings": {
-        "scale_percentage": 50,
+        "scale_percentage": 55,
         "variability_percentage": 0
     },
     "rnd_spawn_min": 300,

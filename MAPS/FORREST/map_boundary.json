@@ -3,21 +3,21 @@
   "inherits_map_assets": false,
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 98,
-    "grid_spacing_max": 98,
+    "grid_spacing_min": 125,
+    "grid_spacing_max": 125,
     "jitter_min": 37,
     "jitter_max": 37,
     "batch_assets": [
       {
         "name": "Tree",
         "tag": false,
-        "percent": 34,
+        "percent": 33,
         "color": "#16a0d5"
       },
       {
         "name": "Tree_Dark",
         "tag": false,
-        "percent": 33,
+        "percent": 32,
         "color": "#8a8bec"
       },
       {
@@ -29,7 +29,7 @@
       {
         "name": "Big_Rock",
         "tag": false,
-        "percent": 1,
+        "percent": 3,
         "color": "#e980db"
       }
     ]

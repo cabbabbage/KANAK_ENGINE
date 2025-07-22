@@ -1,6 +1,17 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: === Optional -f flag for running crop.py from cache ===
+if "%~1"=="-f" (
+    echo [FORCE] Copying crop.py to ./cache and executing there...
+    if not exist "cache" mkdir cache
+    copy /Y crop.py cache\ >nul
+    pushd cache
+    echo [RUN] Executing crop.py in ./cache...
+    python crop.py
+    popd
+)
+
 :: === Step 0: Ensure vcpkg exists and is bootstrapped ===
 echo Checking vcpkg setup...
 if not exist "vcpkg" (
@@ -30,16 +41,16 @@ if not exist "CMakeLists.txt" (
     echo [ERROR] Missing CMakeLists.txt in root directory.
     pause & exit /b 1
 )
-if not exist "ENGINE\main.cpp" (
-    echo [ERROR] Missing ENGINE\main.cpp
+if not exist "ENGINE\\main.cpp" (
+    echo [ERROR] Missing ENGINE\\main.cpp
     pause & exit /b 1
 )
-if not exist "ENGINE\engine.cpp" (
-    echo [ERROR] Missing ENGINE\engine.cpp
+if not exist "ENGINE\\engine.cpp" (
+    echo [ERROR] Missing ENGINE\\engine.cpp
     pause & exit /b 1
 )
-if not exist "vcpkg\scripts\buildsystems\vcpkg.cmake" (
-    echo [ERROR] Missing toolchain file at vcpkg\scripts\buildsystems\vcpkg.cmake
+if not exist "vcpkg\\scripts\\buildsystems\\vcpkg.cmake" (
+    echo [ERROR] Missing toolchain file at vcpkg\\scripts\\buildsystems\\vcpkg.cmake
     pause & exit /b 1
 )
 
@@ -50,10 +61,10 @@ set "DEPENDENCIES=sdl2 sdl2-image sdl2-mixer sdl2-ttf sdl2-gfx nlohmann-json gla
 echo Checking for missing vcpkg dependencies (triplet: !VCPKG_TRIPLET!)...
 
 for %%D in (!DEPENDENCIES!) do (
-    vcpkg\vcpkg list | findstr /i "%%D:x64-windows" >nul
+    vcpkg\\vcpkg list | findstr /i "%%D:x64-windows" >nul
     if errorlevel 1 (
         echo [INFO] Installing missing package: %%D
-        vcpkg\vcpkg install %%D --triplet !VCPKG_TRIPLET!
+        vcpkg\\vcpkg install %%D --triplet !VCPKG_TRIPLET!
         if errorlevel 1 (
             echo [ERROR] Failed to install %%D
             pause & exit /b 1
@@ -72,8 +83,8 @@ mkdir build
 :: === Step 4: Configure project with CMake ===
 echo Configuring project...
 cmake -G "Visual Studio 17 2022" -A x64 ^
-  -DCMAKE_TOOLCHAIN_FILE="%cd%\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
-  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="%cd%\ENGINE" ^
+  -DCMAKE_TOOLCHAIN_FILE="%cd%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake" ^
+  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="%cd%\\ENGINE" ^
   -B build -S .
 if errorlevel 1 (
     echo ❌ CMake configuration failed.
@@ -89,8 +100,8 @@ if errorlevel 1 (
 )
 
 :: After successful build, launch the executable
-set EXE1=%~dp0ENGINE\Release\engine.exe
-set EXE2=%~dp0build\Release\engine.exe
+set EXE1=%~dp0ENGINE\\Release\\engine.exe
+set EXE2=%~dp0build\\Release\\engine.exe
 
 echo Launching built game...
 if exist "%EXE1%" (

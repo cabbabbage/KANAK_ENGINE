@@ -21,10 +21,10 @@
         }
     },
     "impassable_area": null,
-    "z_threshold": 11,
+    "z_threshold": 12,
     "size_settings": {
-        "scale_percentage": 36.41290322580645,
-        "variability_percentage": 0.0
+        "scale_percentage": 40,
+        "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 1000,
@@ -32,7 +32,12 @@
         "Spacing"
     ],
     "tags": [
-        "passable"
+        "wood",
+        "man-made",
+        "valuable",
+        "center",
+        "passable",
+        "loot"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,

@@ -27,7 +27,8 @@
         "passable",
         "plant",
         "purple",
-        "mushroom"
+        "mushroom",
+        "any"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,

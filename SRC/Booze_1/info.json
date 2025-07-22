@@ -20,14 +20,15 @@
     },
     "tags": [
         "passable",
+        "default",
+        "any",
         "crime",
         "booze",
-        "drinking",
-        "default"
+        "drinking"
     ],
-    "z_threshold": 7,
+    "z_threshold": 8,
     "size_settings": {
-        "scale_percentage": 5,
+        "scale_percentage": 6,
         "variability_percentage": 0
     },
     "rnd_spawn_min": 300,

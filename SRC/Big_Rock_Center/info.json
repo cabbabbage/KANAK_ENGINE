@@ -1,6 +1,6 @@
 {
-  "asset_name": "Stump",
-  "asset_type": "Object",
+  "asset_name": "Big_Rock_Center",
+  "asset_type": "Background",
   "animations": {
     "default": {
       "frames_path": "default",
@@ -12,21 +12,26 @@
     }
   },
   "impassable_area": "impassable_area.json",
-  "z_threshold": 17,
+  "z_threshold": 9,
   "size_settings": {
-    "scale_percentage": 25,
-    "variability_percentage": 0
+    "scale_percentage": 60,
+    "variability_percentage": 20
   },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 194,
   "visited_tabs": [
     "Passability",
     "Spacing"
   ],
-  "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 427,
+  "duplicatable": false,
+  "duplication_interval_min": 2161,
+  "duplication_interval_max": 3766,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
   "tags": [
-    "any",
     "impassable",
-    "wood"
+    "rock",
+    "center"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

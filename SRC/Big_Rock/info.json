@@ -29,8 +29,9 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "rock",
         "impassable",
+        "any",
+        "rock",
         "boundary"
     ],
     "rnd_spawn_min": 300,

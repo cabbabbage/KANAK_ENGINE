@@ -84,6 +84,7 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
         remove_random_connection(trail_rooms);
         remove_and_connect(trail_rooms, illegal_connections, map_dir, asset_lib, all_areas);
     }
+    circular_connection(trail_rooms, map_dir, asset_lib, all_areas);
 
 
     if (testing) {
@@ -240,16 +241,22 @@ void GenerateTrails::find_and_connect_isolated(
 
 
 
-
-
 void GenerateTrails::remove_connection(Room* a, Room* b, std::vector<std::unique_ptr<Room>>& trail_rooms) {
     if (!a || !b) return;
+
+    std::cout << "[Debug][remove_connection] Removing connection between '"
+              << a->room_name << "' and '" << b->room_name << "'\n";
 
     // Remove bidirectional connections
     a->remove_connecting_room(b);
     b->remove_connecting_room(a);
+    std::cout << "[Debug][remove_connection] After removal, "
+              << a->room_name << " has " << a->connected_rooms.size()
+              << " connections; " << b->room_name << " has "
+              << b->connected_rooms.size() << " connections.\n";
 
     // Remove the connecting trail_room, if it exists
+    size_t before = trail_rooms.size();
     trail_rooms.erase(
         std::remove_if(trail_rooms.begin(), trail_rooms.end(),
             [&](const std::unique_ptr<Room>& trail) {
@@ -263,28 +270,47 @@ void GenerateTrails::remove_connection(Room* a, Room* b, std::vector<std::unique
             }),
         trail_rooms.end()
     );
+    std::cout << "[Debug][remove_connection] Removed "
+              << (before - trail_rooms.size())
+              << " trail room(s) connecting them.\n";
 }
 
-
 void GenerateTrails::remove_random_connection(std::vector<std::unique_ptr<Room>>& trail_rooms) {
-    if (trail_rooms.empty()) return;
+    if (trail_rooms.empty()) {
+        std::cout << "[Debug][remove_random_connection] No trail rooms to remove.\n";
+        return;
+    }
 
     std::uniform_int_distribution<size_t> dist(0, trail_rooms.size() - 1);
     size_t index = dist(rng_);
     Room* trail = trail_rooms[index].get();
-    if (!trail || trail->connected_rooms.size() < 2) return;
+
+    std::cout << "[Debug][remove_random_connection] Chosen trail index: "
+              << index << " (room: " << (trail ? trail->room_name : "<null>") << ")\n";
+
+    if (!trail || trail->connected_rooms.size() < 2) {
+        std::cout << "[Debug][remove_random_connection] Trail has fewer than 2 connections, skipping.\n";
+        return;
+    }
 
     Room* a = trail->connected_rooms[0];
     Room* b = trail->connected_rooms[1];
+    std::cout << "[Debug][remove_random_connection] Disconnecting '"
+              << a->room_name << "' and '" << b->room_name << "'\n";
 
     if (a && b) {
         a->remove_connecting_room(b);
         b->remove_connecting_room(a);
+        std::cout << "[Debug][remove_random_connection] After disconnect, "
+                  << a->room_name << " has " << a->connected_rooms.size()
+                  << " connections; " << b->room_name << " has "
+                  << b->connected_rooms.size() << " connections.\n";
     }
 
     trail_rooms.erase(trail_rooms.begin() + index);
+    std::cout << "[Debug][remove_random_connection] Erased trail room at index "
+              << index << ", remaining trail_rooms: " << trail_rooms.size() << "\n";
 }
-
 
 void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trail_rooms,
                                         std::vector<std::pair<Room*, Room*>>& illegal_connections,
@@ -303,7 +329,12 @@ void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trai
         }
     }
 
-    if (!target || target->connected_rooms.size() < 1) return;
+    if (!target) {
+        std::cout << "[Debug][remove_and_connect] No target room with layer>2 and >3 connections found.\n";
+        return;
+    }
+    std::cout << "[Debug][remove_and_connect] Selected target room '" << target->room_name
+              << "' with " << target->connected_rooms.size() << " connections.\n";
 
     Room* most_connected = nullptr;
 
@@ -315,25 +346,33 @@ void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trai
         }
     }
 
-    // If no eligible connection was found, skip
-    if (!most_connected) return;
+    if (!most_connected) {
+        std::cout << "[Debug][remove_and_connect] No neighbor with >3 connections found for target.\n";
+        return;
+    }
+    std::cout << "[Debug][remove_and_connect] Selected neighbor '" << most_connected->room_name
+              << "' with " << most_connected->connected_rooms.size() << " connections.\n";
 
     // Step 3: Remove the connection and mark it as illegal
     remove_connection(target, most_connected, trail_rooms);
     illegal_connections.emplace_back(target, most_connected);
+    std::cout << "[Debug][remove_and_connect] Marked connection illegal: ('"
+              << target->room_name << "', '" << most_connected->room_name << "')\n";
 
     // Step 4: Attempt to reconnect any isolated components
     find_and_connect_isolated(map_dir, asset_lib, existing_areas, trail_rooms);
+    std::cout << "[Debug][remove_and_connect] Completed reconnect attempt for isolated groups.\n";
 }
-
-
 
 void GenerateTrails::circular_connection(std::vector<std::unique_ptr<Room>>& trail_rooms,
                                          const std::string& map_dir,
                                          AssetLibrary* asset_lib,
                                          std::vector<Area>& existing_areas)
 {
-    if (all_rooms_reference.empty()) return;
+    if (all_rooms_reference.empty()) {
+        std::cout << "[Debug][circular_connection] No rooms available.\n";
+        return;
+    }
 
     // Step 1: Find a room on the outermost layer
     Room* outermost = nullptr;
@@ -345,62 +384,86 @@ void GenerateTrails::circular_connection(std::vector<std::unique_ptr<Room>>& tra
         }
     }
 
-    if (!outermost) return;
+    if (!outermost) {
+        std::cout << "[Debug][circular_connection] No outermost room found.\n";
+        return;
+    }
+    std::cout << "[Debug][circular_connection] Outermost room: '" << outermost->room_name
+              << "', layer " << outermost->layer << "\n";
 
     // Step 2: Build direct lineage (parent chain up to spawn)
-    std::vector<Room*> direct_lineage;
+    std::unordered_set<Room*> lineage_set;
     for (Room* r = outermost; r; r = r->parent) {
-        direct_lineage.push_back(r);
+        lineage_set.insert(r);
         if (r->layer == 0) break;
     }
 
-    if (direct_lineage.empty()) return;
-
-    // Step 3: Walk around the circle toward reconnecting to lineage
     Room* current = outermost;
+    int fail_counter = 0;
 
-    while (std::find(direct_lineage.begin(), direct_lineage.end(), current) == direct_lineage.end()) {
+    while (!lineage_set.count(current) && fail_counter < 10) {
         std::vector<Room*> candidates;
 
-        Room* right = current->right_sibling;
-        if (right && right->layer > 1) {
-            candidates.push_back(right);
-            if (right->parent && right->parent->layer > 1)
-                candidates.push_back(right->parent);
+        auto add_candidate = [&](Room* r) {
+            if (!r || r->layer <= 1) return;
+            if (std::find(current->connected_rooms.begin(), current->connected_rooms.end(), r) != current->connected_rooms.end())
+                return;
+            candidates.push_back(r);
+        };
 
-            for (Room* child : right->connected_rooms) {
-                if (child->parent == right && child->layer > 1) {
-                    candidates.push_back(child);
-                    break;
-                }
-            }
+        // Right sibling and related
+        add_candidate(current->right_sibling);
+        if (current->right_sibling) {
+            add_candidate(current->right_sibling->parent);
+            for (Room* child : current->right_sibling->children)
+                add_candidate(child);
         }
 
-        // Filter out already connected or invalid candidates
-        candidates.erase(
-            std::remove_if(candidates.begin(), candidates.end(),
-                [&](Room* c) {
-                    return !c || std::find(current->connected_rooms.begin(),
-                                           current->connected_rooms.end(), c) != current->connected_rooms.end();
-                }),
-            candidates.end()
-        );
+        // Left sibling and related
+        add_candidate(current->left_sibling);
+        if (current->left_sibling) {
+            add_candidate(current->left_sibling->parent);
+            for (Room* child : current->left_sibling->children)
+                add_candidate(child);
+        }
 
-        if (candidates.empty()) break;
+        // Shuffle to randomize selection
+        std::shuffle(candidates.begin(), candidates.end(), rng_);
 
-        // Pick a random candidate
-        Room* next = candidates[std::uniform_int_distribution<size_t>(0, candidates.size() - 1)(rng_)];
+        std::cout << "[Debug][circular_connection] Candidate count for '" << current->room_name
+                  << "': " << candidates.size() << "\n";
+        if (candidates.empty()) {
+            std::cout << "[Debug][circular_connection] No candidates, breaking loop.\n";
+            break;
+        }
 
-        // Pick a trail asset and attempt connection
-        for (int attempt = 0; attempt < 100; ++attempt) {
+        Room* next = candidates.front();
+        std::cout << "[Debug][circular_connection] Attempting to connect '"
+                  << current->room_name << "' -> '" << next->room_name << "'\n";
+
+        bool connected = false;
+        for (int attempt = 0; attempt < 1000; ++attempt) {
             std::string path = pick_random_asset();
             if (TrailGeometry::attempt_trail_connection(current, next, existing_areas, map_dir,
                                                         asset_lib, trail_rooms,
                                                         /*allowed_intersections=*/1,
                                                         path, testing, rng_)) {
+                std::cout << "[Debug][circular_connection] Connected on attempt "
+                          << attempt+1 << " using asset: " << path << "\n";
                 current = next;
+                connected = true;
                 break;
             }
         }
+
+        if (!connected) {
+            std::cout << "[Debug][circular_connection] Failed to connect '"
+                      << current->room_name << "' -> '" << next->room_name << "' after 1000 attempts.\n";
+            ++fail_counter;
+        } else {
+            fail_counter = 0;
+        }
     }
+
+    std::cout << "[Debug][circular_connection] Circular connection complete.\n";
 }

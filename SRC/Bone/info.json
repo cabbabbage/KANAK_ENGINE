@@ -30,7 +30,8 @@
         "bone",
         "passable",
         "scary",
-        "white"
+        "white",
+        "any"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400

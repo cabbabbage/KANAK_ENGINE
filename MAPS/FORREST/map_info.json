@@ -29,20 +29,14 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 3639,
-      "min_rooms": 3,
+      "radius": 3800,
+      "min_rooms": 2,
       "max_rooms": 4,
       "rooms": [
         {
-          "name": "basic_fight_room",
-          "min_instances": 1,
-          "max_instances": 4,
-          "required_children": []
-        },
-        {
           "name": "random",
-          "min_instances": 1,
-          "max_instances": 4,
+          "min_instances": 2,
+          "max_instances": 6,
           "required_children": []
         }
       ]
@@ -50,14 +44,20 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 6819,
-      "min_rooms": 9,
-      "max_rooms": 9,
+      "radius": 8042,
+      "min_rooms": 8,
+      "max_rooms": 13,
       "rooms": [
         {
           "name": "bar",
-          "min_instances": 9,
+          "min_instances": 4,
           "max_instances": 11,
+          "required_children": []
+        },
+        {
+          "name": "random",
+          "min_instances": 4,
+          "max_instances": 7,
           "required_children": []
         }
       ]
@@ -65,7 +65,7 @@
     {
       "level": 3,
       "name": "layer_3",
-      "radius": 9539,
+      "radius": 11664,
       "min_rooms": 5,
       "max_rooms": 11,
       "rooms": [
@@ -78,7 +78,7 @@
         {
           "name": "KEY",
           "min_instances": 1,
-          "max_instances": 0,
+          "max_instances": 2,
           "required_children": [
             "Grave_Yard"
           ]
@@ -88,11 +88,24 @@
     {
       "level": 4,
       "name": "layer_4",
-      "radius": 11039,
-      "min_rooms": 0,
-      "max_rooms": 0,
-      "rooms": []
+      "radius": 14664,
+      "min_rooms": 25,
+      "max_rooms": 25,
+      "rooms": [
+        {
+          "name": "Grave_Yard",
+          "min_instances": 14,
+          "max_instances": 18,
+          "required_children": []
+        },
+        {
+          "name": "Portal",
+          "min_instances": 11,
+          "max_instances": 14,
+          "required_children": []
+        }
+      ]
     }
   ],
-  "map_radius": 12539.020495637196
+  "map_radius": 17414.081374238573
 }

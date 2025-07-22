@@ -84,7 +84,6 @@ std::vector<Asset*> Check::get_closest_assets(int x, int y, int max_count,
     for (const auto& uptr : assets) {
         Asset* a = uptr.get();
         if (!a || !a->info) continue;
-        if (a->pos_Y >= y) continue;
 
         int dx = a->pos_X - x;
         int dy = a->pos_Y - y;
@@ -115,6 +114,7 @@ std::vector<Asset*> Check::get_closest_assets(int x, int y, int max_count,
     }
     return closest;
 }
+
 
 bool Check::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
                                   int test_pos_X,
@@ -163,13 +163,12 @@ bool Check::check_min_type_distance(const std::shared_ptr<AssetInfo>& info,
     for (const auto& uptr : assets) {
         Asset* existing = uptr.get();
         if (!existing || !existing->info) continue;
-        if (existing->info->name != info->name) continue;
 
         int dx = existing->pos_X - pos.first;
         int dy = existing->pos_Y - pos.second;
         if (dx * dx + dy * dy < min_dist_sq) {
             if (debug_) {
-                std::cout << "[Check] Type distance violated by asset: "
+                std::cout << "[Check] Minimum spacing violated by asset: "
                           << existing->info->name
                           << " at (" << existing->pos_X << ", "
                           << existing->pos_Y << ")\n";

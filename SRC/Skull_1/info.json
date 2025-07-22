@@ -12,9 +12,9 @@
         }
     },
     "impassable_area": null,
-    "z_threshold": 2,
+    "z_threshold": 3,
     "size_settings": {
-        "scale_percentage": 3,
+        "scale_percentage": 15,
         "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",
@@ -23,12 +23,13 @@
         "Spacing"
     ],
     "tags": [
-        "small",
-        "still",
         "bone",
         "passable",
+        "any",
         "scary",
-        "white"
+        "small",
+        "white",
+        "still"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400

@@ -20,7 +20,8 @@
     },
     "tags": [
         "passable",
-        "default"
+        "default",
+        "any"
     ],
     "z_threshold": 45,
     "size_settings": {

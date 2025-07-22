@@ -52,7 +52,7 @@ void AssetLoader::load_map_json() {
         throw std::runtime_error("map_info.json missing required fields");
     }
 
-    map_radius_        = j.value("map_radius", 0);
+    map_radius_        = (j.value("map_radius", 0));
     map_boundary_file_ = j.value("map_boundary", "");
     map_center_x_      = map_center_y_ = map_radius_;
 

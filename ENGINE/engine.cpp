@@ -102,9 +102,7 @@ void Engine::init() {
         std::vector<Asset> assets = loader.extract_all_assets();
         minimap_texture_ = loader.createMinimap(200, 200);
 
-        if (assets.size() > 100000) {
-            throw std::runtime_error("Asset vector too large, possible duplication or leak");
-        }
+
 
         std::unordered_map<std::string, int> type_counts;
         for (const auto& asset : assets) {

@@ -18,7 +18,6 @@ AssetSpawner::AssetSpawner(AssetLibrary* asset_library,
       logger_("", "") {}
 
 void AssetSpawner::spawn(Room& room) {
-    std::cout << "[AssetSpawner] Spawning assets for room: " << room.room_name << "\n";
 
     const Area& spawn_area = *room.room_area;
     const std::string& map_dir = room.map_path;
@@ -45,43 +44,33 @@ void AssetSpawner::spawn(Room& room) {
     for (auto& queue_item : spawn_queue_) {
         logger_.start_timer();
         if (!queue_item.info) {
-            std::cout << "[AssetSpawner] Skipping item with missing asset info.\n";
             continue;
         }
 
-        //std::cout << "[AssetSpawner] Spawning: " << queue_item.info->name
                  // << " at position type: " << queue_item.position << "\n";
 
         const std::string& pos = queue_item.position;
         if (pos == "Exact Position") {
-            //std::cout << "[AssetSpawner] -> Using Exact Position\n";
             spawn_item_exact(queue_item, &spawn_area);
         }
         else if (pos == "Center") {
-            //std::cout << "[AssetSpawner] -> Using Center\n";
             spawn_item_center(queue_item, &spawn_area);
         }
         else if (pos == "Perimeter") {
-            //std::cout << "[AssetSpawner] -> Using Perimeter\n";
             spawn_item_perimeter(queue_item, &spawn_area);
         }
         else if (pos == "Distributed") {
-            //std::cout << "[AssetSpawner] -> Using Distributed\n";
             spawn_item_distributed(queue_item, &spawn_area);
         }
         else {
-            //std::cout << "[AssetSpawner] -> Using Fallback (Random)\n";
             spawn_item_random(queue_item, &spawn_area);
         }
     }
 
     if (!batch_assets.empty()) {
-        std::cout << "[AssetSpawner] Spawning batch assets (count: " << batch_assets.size()
-                  << ", spacing: " << batch_spacing << ", jitter: " << batch_jitter << ")\n";
         spawn_distributed_batch(batch_assets, &spawn_area, batch_spacing, batch_jitter);
     }
 
-    std::cout << "[AssetSpawner] Finished spawning for room: " << room.room_name << "\n";
 
     // Transfer created assets to the room
     room.add_room_assets(std::move(all_));
@@ -91,7 +80,6 @@ void AssetSpawner::spawn(Room& room) {
 
 
 std::vector<std::unique_ptr<Asset>> AssetSpawner::spawn_boundary_from_file(const std::string& json_path, const Area& spawn_area) {
-    std::cout << "[BoundarySpawner] Loading boundary JSON from: " << json_path << "\n";
 
     std::ifstream file(json_path);
     if (!file.is_open()) {
@@ -108,11 +96,9 @@ std::vector<std::unique_ptr<Asset>> AssetSpawner::spawn_boundary_from_file(const
     int spacing = planner.get_batch_grid_spacing();
     int jitter = planner.get_batch_jitter();
 
-    std::cout << "[BoundarySpawner] Planner ready. Spawning batch with " << batch_items.size()
-              << " items (spacing: " << spacing << ", jitter: " << jitter << ")\n";
+             
     asset_info_library_ = asset_library_->all();
     spawn_distributed_batch(batch_items, &spawn_area, spacing, jitter);
-    std::cout << "[BoundarySpawner] Done. Extracting assets...\n";
     return extract_all_assets();
 }
 
@@ -155,7 +141,6 @@ void AssetSpawner::spawn_item_distributed(const SpawnInfo& item, const Area* are
 
 void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& items, const Area* area, int spacing, int jitter) {
     if (!area || items.empty()) {
-        std::cout << "[Spawner] Aborted: area is null or no batch items provided.\n";
         return;
     }
 
@@ -163,7 +148,6 @@ void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
     int w = maxx - minx;
     int h = maxy - miny;
     if (w <= 0 || h <= 0) {
-        std::cout << "[Spawner] Invalid area bounds: (" << minx << "," << miny << ") to (" << maxx << "," << maxy << ")\n";
         return;
     }
 
@@ -171,17 +155,14 @@ void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
     for (const auto& item : items) placed_quantities[item.name] = 0;
 
     std::uniform_int_distribution<int> jitter_dist(-jitter, jitter);
-    //std::cout << "[Spawner] Starting distributed batch spawn over area (" << w << "x" << h << ")...\n";
 
     for (int x = minx; x <= maxx; x += spacing) {
         for (int y = miny; y <= maxy; y += spacing) {
             int cx = x + jitter_dist(rng_);
             int cy = y + jitter_dist(rng_);
 
-            //std::cout << "[Spawner] Testing candidate (" << cx << "," << cy << ")\n";
 
             if (!area->contains_point({cx, cy})) {
-                //std::cout << "  [Skip] Outside area.\n";
                 continue;
             }
 
@@ -190,28 +171,23 @@ void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
 
             std::discrete_distribution<int> picker(weights.begin(), weights.end());
             const auto& selected = items[picker(rng_)];
-            //std::cout << "  [Selected] '" << selected.name << "'\n";
 
             if (selected.name == "null") {
-                //std::cout << "  [Skip] Selected null asset.\n";
                 continue;
             }
 
             auto it = asset_info_library_.find(selected.name);
             if (it == asset_info_library_.end()) {
-                //std::cout << "  [Skip] Asset info not found for: " << selected.name << "\n";
                 continue;
             }
 
             auto& info = it->second;
 
             bool rejected = checker_.check(info, cx, cy, exclusion_zones, all_, 0, 0, 0);
-            //std::cout << "  [Checker] Result for (" << cx << "," << cy << "): " << (rejected ? "REJECTED" : "ACCEPTED") << "\n";
             if (rejected) continue;
 
             spawn_(selected.name, info, *area, cx, cy, 0, nullptr);
             ++placed_quantities[selected.name];
-            //std::cout << "  [Spawned] " << selected.name << " at (" << cx << "," << cy << ")\n";
         }
     }
 
@@ -221,7 +197,6 @@ void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
         logger_.output_and_log(item.name, placed, placed, placed, placed, "distributed_batch");
     }
 
-    std::cout << "[Spawner] Finished distributed batch spawn.\n";
 }
 
 
@@ -239,7 +214,7 @@ void AssetSpawner::spawn_item_random(const SpawnInfo& item, const Area* area) {
 
         if (!area->contains_point(pos)) continue;
 
-        if (checker_.check(item.info, pos.first, pos.second, exclusion_zones, all_, 1,1,10)) continue;
+        if (checker_.check(item.info, pos.first, pos.second, exclusion_zones, all_, 1,1,100)) continue;
 
         spawn_(item.name, item.info, *area, pos.first, pos.second, 0, nullptr);
         ++spawned;
@@ -263,7 +238,7 @@ void AssetSpawner::spawn_item_exact(const SpawnInfo& item, const Area* area) {
     int final_x = center.first + static_cast<int>(normalized_x * actual_width);
     int final_y = center.second + static_cast<int>(normalized_y * actual_height);
 
-    if (checker_.check(item.info, final_x, final_y, exclusion_zones, all_, 1,1,10)) {
+    if (checker_.check(item.info, final_x, final_y, exclusion_zones, all_, 1,1,20)) {
         logger_.output_and_log(item.name, item.quantity, 0, 1, 1, "exact");
         return;
     }
@@ -294,7 +269,6 @@ void AssetSpawner::spawn_item_center(const SpawnInfo& item, const Area* area) {
 
     if (item.info->type == "Player") {
         if (result) {
-            std::cout << "[AssetSpawner] Player asset '" << item.name << "' successfully spawned at center\n";
         } else {
             std::cerr << "[AssetSpawner] Failed to spawn Player asset '" << item.name << "'\n";
         }
@@ -303,6 +277,14 @@ void AssetSpawner::spawn_item_center(const SpawnInfo& item, const Area* area) {
 
 void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area) {
     if (!item.info || item.quantity <= 0 || !area) return;
+
+    // how much to shift every spawn upward (in pixels)
+    const int up_shift = 40;
+
+    // clamp border_shift into [0, 200]
+    int bs_clamped = std::clamp(item.border_shift, 0, 200);
+    // 100 → on original perimeter; <100 inward; >100 outward
+    double shift_ratio = static_cast<double>(bs_clamped) / 100.0;
 
     const auto& boundary = area->get_points();
     if (boundary.size() < 2) return;
@@ -316,8 +298,7 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
     cx /= boundary.size();
     cy /= boundary.size();
 
-    // Contract boundary inward based on border_shift
-    double shift_ratio = 1.0 - (item.border_shift / 100.0);
+    // Contract or expand boundary by shift_ratio
     std::vector<Point> contracted;
     contracted.reserve(boundary.size());
     for (const auto& pt : boundary) {
@@ -328,6 +309,7 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
         contracted.emplace_back(new_x, new_y);
     }
 
+    // Measure segment lengths around the loop
     std::vector<double> segment_lengths;
     double total_length = 0.0;
     for (size_t i = 0; i < contracted.size(); ++i) {
@@ -344,9 +326,9 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
     size_t seg_index = 0;
 
     int angle_center = item.sector_center;
-    int angle_range = item.sector_range;
+    int angle_range  = item.sector_range;
 
-    int placed = 0;
+    int placed   = 0;
     int attempts = 0;
 
     for (int i = 0; i < item.quantity; ++i) {
@@ -363,32 +345,39 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
         int x = static_cast<int>(std::round(p1.first + t * (p2.first - p1.first)));
         int y = static_cast<int>(std::round(p1.second + t * (p2.second - p1.second)));
 
+        // sector check
         double angle = std::atan2(y - cy, x - cx) * 180.0 / M_PI;
         if (angle < 0) angle += 360;
-
         int angle_start = angle_center - angle_range / 2;
-        int angle_end = angle_center + angle_range / 2;
+        int angle_end   = angle_center + angle_range / 2;
         bool within_sector = false;
         if (angle_start < 0 || angle_end >= 360) {
-            within_sector = (angle >= (angle_start + 360) % 360 || angle <= angle_end % 360);
+            within_sector = (angle >= (angle_start + 360) % 360 ||
+                             angle <= angle_end % 360);
         } else {
             within_sector = (angle >= angle_start && angle <= angle_end);
         }
-
         if (!within_sector) continue;
 
+        // apply perimeter offsets
         x += item.perimeter_x_offset;
         y += item.perimeter_y_offset;
 
+        // shift everything upward
+        y -= up_shift;
+
         ++attempts;
-        if (checker_.check(item.info, x, y, exclusion_zones, all_, 1, 0, 5)) continue;
+        if (checker_.check(item.info, x, y, exclusion_zones, all_, 1, 0, 5))
+            continue;
 
         spawn_(item.name, item.info, *area, x, y, 0, nullptr);
         ++placed;
         logger_.progress(item.info, placed, item.quantity);
     }
 
-    logger_.output_and_log(item.name, item.quantity, placed, attempts, item.quantity, "perimeter");
+    logger_.output_and_log(
+        item.name, item.quantity, placed, attempts, item.quantity, "perimeter"
+    );
 }
 
 

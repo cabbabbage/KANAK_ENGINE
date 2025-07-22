@@ -13,14 +13,15 @@
             "speed": 1.0,
             "on_end": "default",
             "event_data": [],
-            "randomize": false,
+            "randomize": true,
             "audio_path": "",
             "volume": 50
         }
     },
     "tags": [
-        "passable",
-        "default"
+        "default",
+        "any",
+        "passable"
     ],
     "has_spacing": true,
     "spacing_area": "spacing_area.json",

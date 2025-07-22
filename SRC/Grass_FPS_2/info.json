@@ -6,6 +6,7 @@
             "frames_path": "default",
             "speed": 1.0,
             "on_end": "default",
+            "event_data": [],
             "randomize": true,
             "audio_path": "",
             "volume": 50
@@ -23,14 +24,16 @@
         "Spacing"
     ],
     "tags": [
-        "meadow",
-        "passable",
         "nature",
-        "plant",
+        "moving",
         "leafy",
+        "meadow",
         "bluff",
-        "green",
-        "moving"
+        "any",
+        "plant",
+        "default",
+        "passable",
+        "green"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,

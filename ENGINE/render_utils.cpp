@@ -121,9 +121,9 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset,
     trapSettings_.screen_y = p.y;
 
     struct EdgeScales { float L,R,T,B; };
-    const EdgeScales bot{0.98f,0.98f,0.82f,0.98f},
-                     top{0.88f,0.88f,1.05f,0.92f},
-                     mid{0.94f,0.94f,0.96f,0.97f};
+    const EdgeScales bot{0.98f,0.98f,0.82f,0.92f},
+                     top{1.0f,1.0f,1.05f,0.92f},
+                     mid{0.99f,0.99f,0.99f,0.92f};
     auto lerp = [](float a,float b,float t){return a+(b-a)*t;};
     auto lerpE = [&](auto A, auto B, float t){
         return EdgeScales{
@@ -182,12 +182,17 @@ Generate_Map_Light* RenderUtils::createMapLight() {
 }
 
 void RenderUtils::renderMinimap() const {
-    if(!minimapTexture_) return;
-    int mw,mh; SDL_QueryTexture(minimapTexture_,nullptr,nullptr,&mw,&mh);
-    SDL_Rect d={screenWidth_-mw-10,screenHeight_-mh-10,mw,mh};
-    SDL_SetTextureBlendMode(minimapTexture_,SDL_BLENDMODE_BLEND);
-    SDL_RenderCopy(renderer_,minimapTexture_,nullptr,&d);
+    if (!minimapTexture_) return;
+    int mw, mh;
+    SDL_QueryTexture(minimapTexture_, nullptr, nullptr, &mw, &mh);
+    // double the size
+    int w = mw * 2;
+    int h = mh * 2;
+    SDL_Rect d = { screenWidth_ - w - 10, screenHeight_ - h - 10, w, h };
+    SDL_SetTextureBlendMode(minimapTexture_, SDL_BLENDMODE_BLEND);
+    SDL_RenderCopy(renderer_, minimapTexture_, nullptr, &d);
 }
+
 
 
 Generate_Map_Light* RenderUtils::getMapLight() const {

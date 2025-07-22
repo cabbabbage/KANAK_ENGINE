@@ -1,30 +1,35 @@
 {
-    "impassable_area": "impassable_area.json",
-    "asset_name": "Grave_2",
-    "asset_type": "Object",
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 0,
-    "max_child_depth": 2,
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "tags": [
-        "default",
-        "impassable"
-    ],
-    "z_threshold": 5,
-    "size_settings": {
-        "scale_percentage": 15,
-        "variability_percentage": 0
+  "impassable_area": "impassable_area.json",
+  "asset_name": "Grave_2",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
     }
+  },
+  "tags": [
+    "default",
+    "any",
+    "impassable",
+    "scary",
+    "graveyard"
+  ],
+  "z_threshold": 5,
+  "size_settings": {
+    "scale_percentage": 15,
+    "variability_percentage": 0
+  },
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400
 }

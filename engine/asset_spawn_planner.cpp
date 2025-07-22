@@ -58,7 +58,6 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
         nlohmann::json asset = entry;
 
         if (!asset.contains("name") || !asset["name"].is_string()) {
-            std::cerr << "[AssetSpawnPlanner] WARNING: Missing 'name' field.\n";
             continue;
         }
 
@@ -72,13 +71,11 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
                 name = asset["name"];
                 info = asset_library_->get(name);
             } catch (const std::exception& e) {
-                std::cerr << "[AssetSpawnPlanner] WARNING: Failed to resolve tag from name '" << name << "': " << e.what() << "\n";
                 continue;
             }
         }
 
         if (!info) {
-            std::cerr << "[AssetSpawnPlanner] WARNING: Asset '" << name << "' not found in library.\n";
             continue;
         }
 
@@ -142,7 +139,6 @@ void AssetSpawnPlanner::parse_batch_assets() {
         }
 
         if (!asset.contains("name") || !asset["name"].is_string()) {
-            std::cerr << "[AssetSpawnPlanner] WARNING: Invalid or missing 'name' in batch asset.\n";
             continue;
         }
 
