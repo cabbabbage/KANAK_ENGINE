@@ -23,7 +23,7 @@ public:
 
 private:
     void render_asset_with_trapezoid(SDL_Renderer* renderer, SDL_Texture* tex, int screen_x, int screen_y, int w, int h, float top_scale_x, float top_scale_y, SDL_Color color);
-    float dusk_thresh = 80.0f;
+    float dusk_thresh = 30.0f;
     int brightness_level;
     std::string map_path;
     SDL_Window* window;

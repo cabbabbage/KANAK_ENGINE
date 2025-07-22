@@ -3,7 +3,7 @@
 
 #include "Room.hpp"
 #include "Area.hpp"
-#include "asset_library.hpp"
+#include "Asset_library.hpp"
 #include <string>
 #include <vector>
 #include <memory>
