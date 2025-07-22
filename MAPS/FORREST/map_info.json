@@ -65,18 +65,34 @@
     {
       "level": 3,
       "name": "layer_3",
-      "radius": 9004,
-      "min_rooms": 10,
+      "radius": 9539,
+      "min_rooms": 5,
       "max_rooms": 11,
       "rooms": [
         {
           "name": "fountain",
-          "min_instances": 10,
+          "min_instances": 4,
           "max_instances": 12,
           "required_children": []
+        },
+        {
+          "name": "KEY",
+          "min_instances": 1,
+          "max_instances": 0,
+          "required_children": [
+            "Grave_Yard"
+          ]
         }
       ]
+    },
+    {
+      "level": 4,
+      "name": "layer_4",
+      "radius": 11039,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
     }
   ],
-  "map_radius": 11308.920495637198
+  "map_radius": 12539.020495637196
 }

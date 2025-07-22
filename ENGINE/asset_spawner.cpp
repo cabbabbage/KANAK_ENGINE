@@ -14,13 +14,13 @@ AssetSpawner::AssetSpawner(AssetLibrary* asset_library,
     : asset_library_(asset_library),
       exclusion_zones(std::move(exclusion_zones)),
       rng_(std::random_device{}()),
-      checker_(),
+      checker_(false),
       logger_("", "") {}
 
 void AssetSpawner::spawn(Room& room) {
     std::cout << "[AssetSpawner] Spawning assets for room: " << room.room_name << "\n";
 
-    const Area& spawn_area = room.room_area;
+    const Area& spawn_area = *room.room_area;
     const std::string& map_dir = room.map_path;
     const std::string& room_dir = room.room_directory;
 
@@ -101,24 +101,18 @@ std::vector<std::unique_ptr<Asset>> AssetSpawner::spawn_boundary_from_file(const
 
     nlohmann::json boundary_json;
     file >> boundary_json;
-
-    // Create spawn planner
-    AssetSpawnPlanner planner(boundary_json, spawn_area.get_area(), *asset_library_);
+    std::vector<nlohmann::json> json_sources;
+    json_sources.push_back(boundary_json);
+    AssetSpawnPlanner planner(json_sources, spawn_area.get_area(), *asset_library_);
     const auto& batch_items = planner.get_batch_spawn_assets();
     int spacing = planner.get_batch_grid_spacing();
     int jitter = planner.get_batch_jitter();
 
     std::cout << "[BoundarySpawner] Planner ready. Spawning batch with " << batch_items.size()
               << " items (spacing: " << spacing << ", jitter: " << jitter << ")\n";
-
-    // Populate asset info
     asset_info_library_ = asset_library_->all();
-
-    // Perform spawn
     spawn_distributed_batch(batch_items, &spawn_area, spacing, jitter);
-
     std::cout << "[BoundarySpawner] Done. Extracting assets...\n";
-
     return extract_all_assets();
 }
 
@@ -148,7 +142,7 @@ void AssetSpawner::spawn_item_distributed(const SpawnInfo& item, const Area* are
             if (std::uniform_int_distribution<int>(0, 99)(rng_) < item.empty_grid_spaces) continue;
             if (!area->contains_point({cx, cy})) continue;
 
-            if (checker_.check(item.info, cx, cy, exclusion_zones, all_)) continue;
+            if (checker_.check(item.info, cx, cy, exclusion_zones, all_, 1, 0, 5)) continue;
 
             spawn_(item.name, item.info, *area, cx, cy, 0, nullptr);
             ++placed;
@@ -211,7 +205,7 @@ void AssetSpawner::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
 
             auto& info = it->second;
 
-            bool rejected = checker_.check(info, cx, cy, exclusion_zones, all_);
+            bool rejected = checker_.check(info, cx, cy, exclusion_zones, all_, 0, 0, 0);
             //std::cout << "  [Checker] Result for (" << cx << "," << cy << "): " << (rejected ? "REJECTED" : "ACCEPTED") << "\n";
             if (rejected) continue;
 
@@ -240,12 +234,12 @@ void AssetSpawner::spawn_item_random(const SpawnInfo& item, const Area* area) {
     int max_attempts = item.quantity * 10;
 
     while (spawned < item.quantity && attempts < max_attempts) {
-        Point pos = get_point_within_area(*area);
+        Point pos = area->random_point_within();
         ++attempts;
 
         if (!area->contains_point(pos)) continue;
 
-        if (checker_.check(item.info, pos.first, pos.second, exclusion_zones, all_)) continue;
+        if (checker_.check(item.info, pos.first, pos.second, exclusion_zones, all_, 1,1,10)) continue;
 
         spawn_(item.name, item.info, *area, pos.first, pos.second, 0, nullptr);
         ++spawned;
@@ -269,7 +263,7 @@ void AssetSpawner::spawn_item_exact(const SpawnInfo& item, const Area* area) {
     int final_x = center.first + static_cast<int>(normalized_x * actual_width);
     int final_y = center.second + static_cast<int>(normalized_y * actual_height);
 
-    if (checker_.check(item.info, final_x, final_y, exclusion_zones, all_)) {
+    if (checker_.check(item.info, final_x, final_y, exclusion_zones, all_, 1,1,10)) {
         logger_.output_and_log(item.name, item.quantity, 0, 1, 1, "exact");
         return;
     }
@@ -287,7 +281,7 @@ void AssetSpawner::spawn_item_center(const SpawnInfo& item, const Area* area) {
     }
 
     Point center = get_area_center(*area);
-    if (checker_.check(item.info, center.first, center.second, exclusion_zones, all_)) {
+    if (checker_.check(item.info, center.first, center.second, exclusion_zones, all_, 0,0,0)) {
         logger_.output_and_log(item.name, item.quantity, 0, 1, 1, "center");
         return;
     }
@@ -387,7 +381,7 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
         y += item.perimeter_y_offset;
 
         ++attempts;
-        if (checker_.check(item.info, x, y, exclusion_zones, all_)) continue;
+        if (checker_.check(item.info, x, y, exclusion_zones, all_, 1, 0, 5)) continue;
 
         spawn_(item.name, item.info, *area, x, y, 0, nullptr);
         ++placed;
@@ -399,13 +393,9 @@ void AssetSpawner::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
 
 
 AssetSpawner::Point AssetSpawner::get_area_center(const Area& area) const {
-    auto [minx, miny, maxx, maxy] = area.get_bounds();
-    int cx = (minx + maxx) / 2;
-    int cy = (miny + maxy) / 2;
-    return {cx, cy};
+    return area.get_center();
 }
 
-// In asset_spawner.cpp
 
 Asset* AssetSpawner::spawn_(const std::string& /*type*/,
                             const std::shared_ptr<AssetInfo>& info,
@@ -415,7 +405,6 @@ Asset* AssetSpawner::spawn_(const std::string& /*type*/,
                             int /*depth*/,
                             Asset* parent)
 {
-    // construct with initial animation, position, z-index, etc.
     auto asset = std::make_unique<Asset>(
         info,
         info->z_threshold,
@@ -430,15 +419,7 @@ Asset* AssetSpawner::spawn_(const std::string& /*type*/,
     return raw;
 }
 
-AssetSpawner::Point AssetSpawner::get_point_within_area(const Area& area) {
-    auto [minx, miny, maxx, maxy] = area.get_bounds();
-    for (int i = 0; i < 100; ++i) {
-        int x = std::uniform_int_distribution<int>(minx, maxx)(rng_);
-        int y = std::uniform_int_distribution<int>(miny, maxy)(rng_);
-        if (area.contains_point({x, y})) return {x, y};
-    }
-    return {0, 0};
-}
+
 
 
 

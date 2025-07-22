@@ -5,7 +5,6 @@
 #include <cmath>
 #include <iostream>
 
-// Constructor: optionally enable debug output
 Check::Check(bool debug)
     : debug_(debug)
 {}
@@ -18,7 +17,10 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
                   int test_x,
                   int test_y,
                   const std::vector<Area>& exclusion_areas,
-                  const std::vector<std::unique_ptr<Asset>>& assets) const
+                  const std::vector<std::unique_ptr<Asset>>& assets,
+                  bool check_spacing,
+                  bool check_min_distance,
+                  int num_neighbors) const
 {
     if (!info) {
         if (debug_) std::cout << "[Check] AssetInfo is null\n";
@@ -31,32 +33,27 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
                   << ") for asset: " << info->name << "\n";
     }
 
-    // exclusion zones always apply
     if (is_in_exclusion_zone(test_x, test_y, exclusion_areas)) {
         if (debug_) std::cout << "[Check] Point is inside exclusion zone.\n";
-        return true;  // placement invalid
+        return true;
     }
 
-    // background assets skip spacing & min‐distance checks
     if (info->type == "Background") {
         if (debug_) std::cout << "[Check] Background asset; skipping spacing and type distance checks.\n";
-        return false;  // placement valid
+        return false;
     }
 
-    // gather nearest neighbors for spacing checks
-    auto nearest = get_closest_assets(test_x, test_y, 3, assets);
+    auto nearest = get_closest_assets(test_x, test_y, num_neighbors, assets);
     if (debug_) std::cout << "[Check] Found " << nearest.size() << " nearest assets.\n";
 
-    // spacing area overlap
-    if (info->has_spacing_area) {
+    if (check_spacing) {
         if (check_spacing_overlap(info, test_x, test_y, nearest)) {
             if (debug_) std::cout << "[Check] Spacing overlap detected.\n";
             return true;
         }
     }
 
-    // minimum same‐type distance
-    if (info->min_same_type_distance > 0) {
+    if (check_min_distance && info->min_same_type_distance > 0) {
         if (check_min_type_distance(info, { test_x, test_y }, assets)) {
             if (debug_) std::cout << "[Check] Minimum type distance violated.\n";
             return true;
@@ -64,8 +61,9 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
     }
 
     if (debug_) std::cout << "[Check] All checks passed.\n";
-    return false;  // placement valid
+    return false;
 }
+
 
 bool Check::is_in_exclusion_zone(int x, int y, const std::vector<Area>& zones) const {
     for (const auto& area : zones) {
@@ -125,38 +123,32 @@ bool Check::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
 {
     if (!info) return false;
 
-    const std::string& type = info->type;
-
-    Area test_area = info->has_spacing_area
-        ? info->spacing_area
-        : Area(test_pos_X, test_pos_Y,
-               1, 1,
-               "Square", 0,
-               std::numeric_limits<int>::max(),
-               std::numeric_limits<int>::max());
-
-    test_area.align(test_pos_X, test_pos_Y);
+    std::unique_ptr<Area> test_area_ptr = std::make_unique<Area>(*info->spacing_area);
+    test_area_ptr->align(test_pos_X, test_pos_Y);
 
     for (Asset* other : closest_assets) {
         if (!other || !other->info) continue;
-        if (type == "Background" &&
+        if (info->type == "Background" &&
             (other->info->type == "Background" || other->info->type == "MAP"))
             continue;
 
-        Area other_area = other->info->has_spacing_area
-            ? other->get_global_spacing_area()
-            : Area(other->pos_X, other->pos_Y,
-                   1, 1,
-                   "Square", 0,
-                   std::numeric_limits<int>::max(),
-                   std::numeric_limits<int>::max());
+        std::unique_ptr<Area> other_area_ptr;
+        if (other->info->has_spacing_area && other->info->spacing_area) {
+            other_area_ptr = std::make_unique<Area>(other->get_global_spacing_area());
+        } else {
+            other_area_ptr = std::make_unique<Area>("fallback", other->pos_X, other->pos_Y,
+                                                    1, 1, "Square", 0,
+                                                    std::numeric_limits<int>::max(),
+                                                    std::numeric_limits<int>::max());
+        }
 
-        if (test_area.intersects(other_area)) {
+        if (test_area_ptr->intersects(*other_area_ptr)) {
             if (debug_) std::cout << "[Check] Overlap found between test area and asset: "
                                   << other->info->name << "\n";
             return true;
         }
     }
+
     return false;
 }
 

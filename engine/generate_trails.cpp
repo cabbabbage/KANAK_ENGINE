@@ -1,9 +1,13 @@
+// === File: generate_trails.cpp ===
 #include "generate_trails.hpp"
+#include "trail_geometry.hpp"
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <cmath>
 #include <iostream>
+#include <unordered_set>
+#include <algorithm>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -26,6 +30,10 @@ GenerateTrails::GenerateTrails(const std::string& trail_dir)
     }
 }
 
+void GenerateTrails::set_all_rooms_reference(const std::vector<Room*>& rooms) {
+    all_rooms_reference = rooms;
+}
+
 std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
     const std::vector<std::pair<Room*, Room*>>& room_pairs,
     const std::vector<Area>& existing_areas,
@@ -34,13 +42,7 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
 {
     trail_areas_.clear();
     std::vector<std::unique_ptr<Room>> trail_rooms;
-
-    if (room_pairs.empty()) {
-        if (testing) {
-            std::cout << "[GenerateTrails] Warning: No room pairs provided.\n";
-        }
-        return trail_rooms;
-    }
+    std::vector<Area> all_areas = existing_areas;
 
     for (const auto& [a, b] : room_pairs) {
         if (testing) {
@@ -49,92 +51,13 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
         }
 
         bool success = false;
-
-        for (int attempts = 0; attempts < 10 && !success; ++attempts) {
+        for (int attempts = 0; attempts < 1000 && !success; ++attempts) {
             std::string path = pick_random_asset();
-            std::ifstream in(path);
-            if (!in.is_open()) {
-                if (testing) {
-                    std::cout << "[TrailGen] Failed to open asset: " << path << "\n";
-                }
-                continue;
-            }
-
-            json config;
-            in >> config;
-
-            int min_width = config.value("min_width", 40);
-            int max_width = config.value("max_width", 80);
-            int curvyness = config.value("curvyness", 2);
-            std::string name = config.value("name", "trail_segment");
-
-            std::uniform_int_distribution<int> width_dist(min_width, max_width);
-            double width = static_cast<double>(width_dist(rng_));
-
-            if (testing) {
-                std::cout << "[TrailGen] Using asset: " << path
-                          << " width: " << width
-                          << " curvyness: " << curvyness << "\n";
-            }
-
-            auto centerline = build_centerline(a->map_origin, b->map_origin, curvyness);
-            auto polygon = extrude_centerline(centerline, width);
-
-            std::vector<Area::Point> polygon_area_points;
-            polygon_area_points.reserve(polygon.size());
-            for (const auto& p : polygon) {
-                polygon_area_points.emplace_back(
-                    static_cast<int>(std::round(p.first)),
-                    static_cast<int>(std::round(p.second))
-                );
-            }
-
-            Area candidate(polygon_area_points);
-
-            bool intersects = false;
-            for (const auto& area : existing_areas) {
-                bool is_a_or_b =
-                    ((area.center_x == a->room_area.center_x && area.center_y == a->room_area.center_y &&
-                    area.area_size == a->room_area.area_size) ||
-                    (area.center_x == b->room_area.center_x && area.center_y == b->room_area.center_y &&
-                    area.area_size == b->room_area.area_size));
-                if (is_a_or_b) continue;
-
-                if (candidate.intersects(area)) {
-                    intersects = true;
-                    break;
-                }
-            }
-
-
-
-            if (!intersects) {
-                if (testing) {
-                    std::cout << "[TrailGen] Trail placed between "
-                              << a->room_name << " and " << b->room_name
-                              << " using asset: " << path << " (attempt " << attempts + 1 << ")\n";
-                }
-
-                std::string room_dir = fs::path(path).parent_path().string();
-
-                auto trail_room = std::make_unique<Room>(
-                    a->map_origin,
-                    name,
-                    nullptr,
-                    room_dir,
-                    map_dir,
-                    asset_lib,
-                    &candidate
-                );
-
-                trail_rooms.push_back(std::move(trail_room));
-                trail_areas_.push_back(std::move(candidate));
-                success = true;
-            } else {
-                if (testing) {
-                    std::cout << "[TrailGen] Trail intersected existing geometry (attempt " << attempts + 1 << ")\n";
-                }
-            }
+            success = TrailGeometry::attempt_trail_connection(
+                a, b, all_areas, map_dir, asset_lib, trail_rooms,
+                /*allowed_intersections=*/1,
+                path, testing, rng_
+            );
         }
 
         if (!success && testing) {
@@ -142,6 +65,26 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
                       << a->room_name << " and " << b->room_name << "\n";
         }
     }
+
+    find_and_connect_isolated(map_dir, asset_lib, all_areas, trail_rooms);
+
+    // Add circular connection pass
+    circular_connection(trail_rooms, map_dir, asset_lib, all_areas);
+
+    // Get max layer for heuristic
+    int max_layer = 0;
+    for (Room* room : all_rooms_reference) {
+        if (room && room->layer > max_layer) {
+            max_layer = room->layer;
+        }
+    }
+
+    int passes = static_cast<int>(max_layer / 3);
+    for (int i = 0; i < passes; ++i) {
+        remove_random_connection(trail_rooms);
+        remove_and_connect(trail_rooms, illegal_connections, map_dir, asset_lib, all_areas);
+    }
+
 
     if (testing) {
         std::cout << "[TrailGen] Total trail rooms created: " << trail_rooms.size() << "\n";
@@ -155,75 +98,309 @@ std::string GenerateTrails::pick_random_asset() {
     return available_assets_[dist(rng_)];
 }
 
-std::vector<GenerateTrails::Point> GenerateTrails::build_centerline(
-    const Point& start, const Point& end, int curvyness)
+void GenerateTrails::find_and_connect_isolated(
+    const std::string& map_dir,
+    AssetLibrary* asset_lib,
+    std::vector<Area>& existing_areas,
+    std::vector<std::unique_ptr<Room>>& trail_rooms)
 {
-    std::vector<Point> line = { start };
+    const int max_passes = 1000000;
+    int allowed_intersections = 0;
 
-    if (curvyness <= 0) {
-        line.push_back(end);
-        return line;
-    }
+    for (int pass = 0; pass < max_passes; ++pass) {
+        std::unordered_set<Room*> visited;
+        std::unordered_set<Room*> connected_to_spawn;
+        std::vector<std::vector<Room*>> isolated_groups;
 
-    double dx = end.first - start.first;
-    double dy = end.second - start.second;
-    double len = std::hypot(dx, dy);
-    double max_offset = len * 0.25 * (static_cast<double>(curvyness) / 8.0);
-    std::uniform_real_distribution<double> offset_dist(-max_offset, max_offset);
+        auto mark_connected = [&](Room* room, auto&& self) -> void {
+            if (!room || connected_to_spawn.count(room)) return;
+            connected_to_spawn.insert(room);
+            for (Room* neighbor : room->connected_rooms) {
+                self(neighbor, self);
+            }
+        };
 
-    for (int i = 1; i <= curvyness; ++i) {
-        double t = static_cast<double>(i) / (curvyness + 1);
-        double px = start.first + t * dx;
-        double py = start.second + t * dy;
-        double nx = -dy / len;
-        double ny = dx / len;
-        double offset = offset_dist(rng_);
-        line.emplace_back(px + nx * offset, py + ny * offset);
-    }
+        auto collect_group = [&](Room* room, std::vector<Room*>& group, auto&& self) -> void {
+            if (!room || visited.count(room) || connected_to_spawn.count(room)) return;
+            visited.insert(room);
+            group.push_back(room);
+            for (Room* neighbor : room->connected_rooms) {
+                self(neighbor, group, self);
+            }
+        };
 
-    line.push_back(end);
-    return line;
-}
-
-std::vector<GenerateTrails::Point> GenerateTrails::extrude_centerline(
-    const std::vector<Point>& centerline, double width)
-{
-    double half_w = width * 0.5;
-    std::vector<Point> left, right;
-
-    for (size_t i = 0; i < centerline.size(); ++i) {
-        double cx = centerline[i].first;
-        double cy = centerline[i].second;
-        double dx, dy;
-
-        if (i == 0) {
-            dx = centerline[i + 1].first - cx;
-            dy = centerline[i + 1].second - cy;
-        } else if (i == centerline.size() - 1) {
-            dx = cx - centerline[i - 1].first;
-            dy = cy - centerline[i - 1].second;
-        } else {
-            dx = centerline[i + 1].first - centerline[i - 1].first;
-            dy = centerline[i + 1].second - centerline[i - 1].second;
+        for (Room* room : all_rooms_reference) {
+            if (room && room->layer == 0) {
+                mark_connected(room, mark_connected);
+                break;
+            }
         }
 
-        double len = std::hypot(dx, dy);
-        if (len == 0) len = 1.0;
-        double nx = -dy / len;
-        double ny = dx / len;
+        for (Room* room : all_rooms_reference) {
+            if (!visited.count(room) && !connected_to_spawn.count(room)) {
+                std::vector<Room*> group;
+                collect_group(room, group, collect_group);
+                if (!group.empty()) {
+                    isolated_groups.push_back(std::move(group));
+                }
+            }
+        }
 
-        left.emplace_back(
-            static_cast<int>(std::round(cx + nx * half_w)),
-            static_cast<int>(std::round(cy + ny * half_w))
-        );
-        right.emplace_back(
-            static_cast<int>(std::round(cx - nx * half_w)),
-            static_cast<int>(std::round(cy - ny * half_w))
-        );
+        if (isolated_groups.empty()) {
+            if (testing) {
+                std::cout << "[ConnectIsolated] All rooms connected after " << pass << " passes.\n";
+            }
+            break;
+        }
+
+        if (testing) {
+            std::cout << "[ConnectIsolated] Pass " << pass + 1 << " - " << isolated_groups.size()
+                      << " disconnected groups found | allowed intersections: "
+                      << allowed_intersections << "\n";
+        }
+
+        bool any_connection_made = false;
+
+        for (const auto& group : isolated_groups) {
+            if (group.empty()) continue;
+
+            std::vector<Room*> sorted_group = group;
+            std::sort(sorted_group.begin(), sorted_group.end(), [](Room* a, Room* b) {
+                return a->connected_rooms.size() < b->connected_rooms.size();
+            });
+
+            for (Room* roomA : sorted_group) {
+                std::vector<Room*> candidates;
+
+                for (Room* candidate : all_rooms_reference) {
+                    if (candidate == roomA || connected_to_spawn.count(candidate)) continue;
+
+                    // Check if (roomA, candidate) is an illegal pair
+                    bool illegal = std::any_of(illegal_connections.begin(), illegal_connections.end(),
+                        [&](const std::pair<Room*, Room*>& p) {
+                            return (p.first == roomA && p.second == candidate) ||
+                                (p.first == candidate && p.second == roomA);
+                        });
+                    if (illegal) continue;
+
+                    std::unordered_set<Room*> check_visited;
+                    std::function<bool(Room*)> dfs = [&](Room* current) -> bool {
+                        if (!current || check_visited.count(current)) return false;
+                        if (current->layer == 0) return true;
+                        check_visited.insert(current);
+                        for (Room* neighbor : current->connected_rooms) {
+                            if (dfs(neighbor)) return true;
+                        }
+                        return false;
+                    };
+
+                    if (dfs(candidate)) {
+                        candidates.push_back(candidate);
+                    }
+                }
+
+
+                if (candidates.empty()) continue;
+
+                std::sort(candidates.begin(), candidates.end(), [](Room* a, Room* b) {
+                    return a->connected_rooms.size() < b->connected_rooms.size();
+                });
+
+                if (candidates.size() > 5) candidates.resize(5);
+
+                for (Room* roomB : candidates) {
+                    for (int attempt = 0; attempt < 100; ++attempt) {
+                        std::string path = pick_random_asset();
+                        if (TrailGeometry::attempt_trail_connection(
+                                roomA, roomB, existing_areas, map_dir,
+                                asset_lib, trail_rooms,
+                                allowed_intersections,
+                                path, testing, rng_)) {
+                            any_connection_made = true;
+                            goto next_group;
+                        }
+                    }
+                }
+            }
+        next_group:;
+        }
+
+        if (!any_connection_made && testing) {
+            std::cout << "[ConnectIsolated] No connections made on pass " << pass + 1 << "\n";
+        }
+
+        if ((pass + 1) % 5 == 0) {
+            ++allowed_intersections;
+            if (testing) {
+                std::cout << "[ConnectIsolated] Increasing allowed intersections to " << allowed_intersections << "\n";
+            }
+        }
+    }
+}
+
+
+
+
+
+void GenerateTrails::remove_connection(Room* a, Room* b, std::vector<std::unique_ptr<Room>>& trail_rooms) {
+    if (!a || !b) return;
+
+    // Remove bidirectional connections
+    a->remove_connecting_room(b);
+    b->remove_connecting_room(a);
+
+    // Remove the connecting trail_room, if it exists
+    trail_rooms.erase(
+        std::remove_if(trail_rooms.begin(), trail_rooms.end(),
+            [&](const std::unique_ptr<Room>& trail) {
+                if (!trail) return false;
+                bool connects_a = false, connects_b = false;
+                for (Room* r : trail->connected_rooms) {
+                    if (r == a) connects_a = true;
+                    if (r == b) connects_b = true;
+                }
+                return connects_a && connects_b;
+            }),
+        trail_rooms.end()
+    );
+}
+
+
+void GenerateTrails::remove_random_connection(std::vector<std::unique_ptr<Room>>& trail_rooms) {
+    if (trail_rooms.empty()) return;
+
+    std::uniform_int_distribution<size_t> dist(0, trail_rooms.size() - 1);
+    size_t index = dist(rng_);
+    Room* trail = trail_rooms[index].get();
+    if (!trail || trail->connected_rooms.size() < 2) return;
+
+    Room* a = trail->connected_rooms[0];
+    Room* b = trail->connected_rooms[1];
+
+    if (a && b) {
+        a->remove_connecting_room(b);
+        b->remove_connecting_room(a);
     }
 
-    std::vector<Point> polygon;
-    polygon.insert(polygon.end(), left.begin(), left.end());
-    polygon.insert(polygon.end(), right.rbegin(), right.rend());
-    return polygon;
+    trail_rooms.erase(trail_rooms.begin() + index);
+}
+
+
+void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trail_rooms,
+                                        std::vector<std::pair<Room*, Room*>>& illegal_connections,
+                                        const std::string& map_dir,
+                                        AssetLibrary* asset_lib,
+                                        std::vector<Area>& existing_areas) 
+{
+    Room* target = nullptr;
+
+    // Step 1: Find the room with layer > 2 and the most connections
+    for (Room* room : all_rooms_reference) {
+        if (room && room->layer > 2 && room->connected_rooms.size() > 3) {
+            if (!target || room->connected_rooms.size() > target->connected_rooms.size()) {
+                target = room;
+            }
+        }
+    }
+
+    if (!target || target->connected_rooms.size() < 1) return;
+
+    Room* most_connected = nullptr;
+
+    // Step 2: Among target's connections, find the one with the most connections
+    for (Room* neighbor : target->connected_rooms) {
+        if (neighbor->connected_rooms.size() <= 3) continue;
+        if (!most_connected || neighbor->connected_rooms.size() > most_connected->connected_rooms.size()) {
+            most_connected = neighbor;
+        }
+    }
+
+    // If no eligible connection was found, skip
+    if (!most_connected) return;
+
+    // Step 3: Remove the connection and mark it as illegal
+    remove_connection(target, most_connected, trail_rooms);
+    illegal_connections.emplace_back(target, most_connected);
+
+    // Step 4: Attempt to reconnect any isolated components
+    find_and_connect_isolated(map_dir, asset_lib, existing_areas, trail_rooms);
+}
+
+
+
+void GenerateTrails::circular_connection(std::vector<std::unique_ptr<Room>>& trail_rooms,
+                                         const std::string& map_dir,
+                                         AssetLibrary* asset_lib,
+                                         std::vector<Area>& existing_areas)
+{
+    if (all_rooms_reference.empty()) return;
+
+    // Step 1: Find a room on the outermost layer
+    Room* outermost = nullptr;
+    int max_layer = -1;
+    for (Room* room : all_rooms_reference) {
+        if (room && room->layer > max_layer) {
+            max_layer = room->layer;
+            outermost = room;
+        }
+    }
+
+    if (!outermost) return;
+
+    // Step 2: Build direct lineage (parent chain up to spawn)
+    std::vector<Room*> direct_lineage;
+    for (Room* r = outermost; r; r = r->parent) {
+        direct_lineage.push_back(r);
+        if (r->layer == 0) break;
+    }
+
+    if (direct_lineage.empty()) return;
+
+    // Step 3: Walk around the circle toward reconnecting to lineage
+    Room* current = outermost;
+
+    while (std::find(direct_lineage.begin(), direct_lineage.end(), current) == direct_lineage.end()) {
+        std::vector<Room*> candidates;
+
+        Room* right = current->right_sibling;
+        if (right && right->layer > 1) {
+            candidates.push_back(right);
+            if (right->parent && right->parent->layer > 1)
+                candidates.push_back(right->parent);
+
+            for (Room* child : right->connected_rooms) {
+                if (child->parent == right && child->layer > 1) {
+                    candidates.push_back(child);
+                    break;
+                }
+            }
+        }
+
+        // Filter out already connected or invalid candidates
+        candidates.erase(
+            std::remove_if(candidates.begin(), candidates.end(),
+                [&](Room* c) {
+                    return !c || std::find(current->connected_rooms.begin(),
+                                           current->connected_rooms.end(), c) != current->connected_rooms.end();
+                }),
+            candidates.end()
+        );
+
+        if (candidates.empty()) break;
+
+        // Pick a random candidate
+        Room* next = candidates[std::uniform_int_distribution<size_t>(0, candidates.size() - 1)(rng_)];
+
+        // Pick a trail asset and attempt connection
+        for (int attempt = 0; attempt < 100; ++attempt) {
+            std::string path = pick_random_asset();
+            if (TrailGeometry::attempt_trail_connection(current, next, existing_areas, map_dir,
+                                                        asset_lib, trail_rooms,
+                                                        /*allowed_intersections=*/1,
+                                                        path, testing, rng_)) {
+                current = next;
+                break;
+            }
+        }
+    }
 }

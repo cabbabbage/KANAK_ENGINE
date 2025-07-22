@@ -72,6 +72,7 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
 
     auto root = std::make_unique<Room>(
         Point{ map_center_x_, map_center_y_ },
+        "room",
         root_spec.name,
         nullptr,
         map_path_ + "/rooms",
@@ -115,6 +116,7 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
 
                 auto child = std::make_unique<Room>(
                     pos,
+                    "room",
                     children_specs[i].name,
                     current_parents[0],
                     map_path_ + "/rooms",
@@ -183,6 +185,7 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
 
                     auto child = std::make_unique<Room>(
                         pos,
+                        "room",
                         kids[i].name,
                         parent,
                         map_path_ + "/rooms",
@@ -212,15 +215,14 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
     std::vector<std::pair<Room*,Room*>> connections;
     for (auto& rp : all_rooms) {
         for (Room* c : rp->children) {
-            rp->add_connecting_room(c);
-            c->add_connecting_room(rp.get());
             connections.emplace_back(rp.get(), c);
         }
     }
 
     std::vector<Area> existing_areas;
     for (const auto& r : all_rooms) {
-        existing_areas.push_back(r->room_area);
+        existing_areas.push_back(*r->room_area);
+
     }
 
     if (testing) {
@@ -243,17 +245,18 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
 
         std::vector<Area> exclusion_zones;
         for (const auto& r : all_rooms) {
-            exclusion_zones.push_back(r->room_area);
+            exclusion_zones.push_back(*r->room_area);
         }
         std::cout << "[Boundary] Collected " << exclusion_zones.size() << " exclusion zones from existing rooms.\n";
 
         int cx = map_radius;
         int cy = map_radius;
         int diameter = map_radius * 2;
-        Area area(cx, cy, diameter, diameter, "Circle", 1, diameter, diameter);
+        Area area("Map", cx, cy, diameter, diameter, "Circle", 1, diameter, diameter);
         std::cout << "[Boundary] Created circular boundary area with diameter " << diameter << "\n";
 
         AssetSpawner spawner(asset_lib, exclusion_zones);
+        
         std::vector<std::unique_ptr<Asset>> boundary_assets = spawner.spawn_boundary_from_file(map_path_ + "/" + boundary_json, area);
         std::cout << "[Boundary] Extracted " << boundary_assets.size() << " spawned boundary assets\n";
 
@@ -266,7 +269,8 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
             double closest_dist_sq = std::numeric_limits<double>::max();
 
             for (const auto& room_ptr : all_rooms) {
-                auto [minx, miny, maxx, maxy] = room_ptr->room_area.get_bounds();
+                auto [minx, miny, maxx, maxy] = room_ptr->room_area->get_bounds();
+
                 int center_x = (minx + maxx) / 2;
                 int center_y = (miny + maxy) / 2;
                 double dx = static_cast<double>(asset->pos_X - center_x);

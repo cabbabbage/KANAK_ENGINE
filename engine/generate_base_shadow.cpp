@@ -1,5 +1,3 @@
-// File: generate_base_shadow.cpp
-
 #include "generate_base_shadow.hpp"
 #include <cmath>
 #include <iostream>
@@ -8,8 +6,8 @@
 #include <iomanip>
 #include <sstream>
 
-static constexpr int max_fade_distance = 500;
-static constexpr int max_fade_intensity = 100;
+static constexpr int fade_start_distance = 0;
+static constexpr int fade_end_distance = 1200; // 50 + 1200
 
 GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                                        const std::vector<Area>& zones,
@@ -56,8 +54,8 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                     double vy = y2 - y1;
                     double wx = x - x1;
                     double wy = y - y1;
-                    double len2 = vx*vx + vy*vy;
-                    double t = len2 > 0.0 ? (vx*wx + vy*wy) / len2 : 0.0;
+                    double len2 = vx * vx + vy * vy;
+                    double t = len2 > 0.0 ? (vx * wx + vy * wy) / len2 : 0.0;
                     t = std::clamp(t, 0.0, 1.0);
                     double projx = x1 + t * vx;
                     double projy = y1 + t * vy;
@@ -68,13 +66,19 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                 }
             }
 
-            int raw = (minDist >= max_fade_distance)
-                ? max_fade_intensity
-                : static_cast<int>(std::round(max_fade_intensity * (minDist / max_fade_distance)));
+            double opacity = 0.0;
 
-            double reversed = 1.0 - (std::clamp(raw, 0, max_fade_intensity) / 100.0);
-            asset.gradient_opacity = reversed;
-            asset.has_base_shadow = (reversed < 1.0);
+            if (minDist <= fade_start_distance) {
+                opacity = 1.0;
+            } else if (minDist >= fade_end_distance) {
+                opacity = 0.0;
+            } else {
+                double t = (minDist - fade_start_distance) / (fade_end_distance - fade_start_distance);
+                opacity = std::pow(1.0 - t, 2.0); // quadratic falloff
+            }
+
+            asset.gradient_opacity = opacity;
+            asset.has_base_shadow = (opacity < 1.0);
         }
 
         ++count;

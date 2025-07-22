@@ -108,7 +108,7 @@ std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
     areas.reserve(rooms_.size());
 
     for (Room* r : rooms_) {
-        areas.push_back(r->room_area);
+        areas.push_back(*r->room_area);
     }
     return areas;
 }
@@ -116,21 +116,23 @@ std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
 SDL_Texture* AssetLoader::createMinimap(int width, int height) {
     if (!renderer_ || width <= 0 || height <= 0) return nullptr;
 
+    const int final_w = width * 2;
+    const int final_h = height * 2;
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");  // Linear interpolation
+
     SDL_Texture* minimap = SDL_CreateTexture(
         renderer_,
         SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_TARGET,
-        width, height
+        final_w, final_h
     );
     if (!minimap) {
         std::cerr << "[Minimap] SDL_CreateTexture failed: " << SDL_GetError() << "\n";
         return nullptr;
     }
-    else {
-        std::cout << "[Minimap] SDL_CreateTexture created\n";
-    }
-    SDL_SetTextureBlendMode(minimap, SDL_BLENDMODE_BLEND);
 
+    SDL_SetTextureBlendMode(minimap, SDL_BLENDMODE_BLEND);
     SDL_Texture* prev = SDL_GetRenderTarget(renderer_);
     SDL_SetRenderTarget(renderer_, minimap);
 
@@ -138,16 +140,18 @@ SDL_Texture* AssetLoader::createMinimap(int width, int height) {
     SDL_RenderClear(renderer_);
 
     SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 255);
-    float scaleX = float(width)  / float(map_radius_ * 2);
-    float scaleY = float(height) / float(map_radius_ * 2);
+    float scaleX = float(final_w) / float(map_radius_ * 2);
+    float scaleY = float(final_h) / float(map_radius_ * 2);
 
     for (Room* room : rooms_) {
         try {
-            auto [minx, miny, maxx, maxy] = room->room_area.get_bounds();
-            SDL_Rect r{ int(std::round(minx * scaleX)),
-                        int(std::round(miny * scaleY)),
-                        int(std::round((maxx - minx) * scaleX)),
-                        int(std::round((maxy - miny) * scaleY)) };
+            auto [minx, miny, maxx, maxy] = room->room_area->get_bounds();
+            SDL_Rect r{
+                int(std::round(minx * scaleX)),
+                int(std::round(miny * scaleY)),
+                int(std::round((maxx - minx) * scaleX)),
+                int(std::round((maxy - miny) * scaleY))
+            };
             SDL_RenderFillRect(renderer_, &r);
         } catch (const std::exception& e) {
             std::cerr << "[Minimap] Skipping room with invalid bounds: " << e.what() << "\n";

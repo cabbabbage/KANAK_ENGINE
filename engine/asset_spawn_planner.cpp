@@ -3,16 +3,42 @@
 #include <sstream>
 #include <fstream>
 #include <random>
+#include <algorithm>
 
 namespace fs = std::filesystem;
 
-AssetSpawnPlanner::AssetSpawnPlanner(const nlohmann::json& json_data,
+AssetSpawnPlanner::AssetSpawnPlanner(const std::vector<nlohmann::json>& json_sources,
                                      double area,
                                      AssetLibrary& asset_library)
     : asset_library_(&asset_library) {
-    root_json_ = json_data;
+
+    nlohmann::json merged;
+    merged["assets"] = nlohmann::json::array();
+    merged["batch_assets"]["batch_assets"] = nlohmann::json::array();
+
+    for (const auto& json : json_sources) {
+        if (json.contains("assets") && json["assets"].is_array()) {
+            for (const auto& asset : json["assets"]) {
+                merged["assets"].push_back(asset);
+            }
+        }
+        if (json.contains("batch_assets") && json["batch_assets"].contains("batch_assets")) {
+            const auto& b = json["batch_assets"];
+            merged["batch_assets"]["has_batch_assets"] = true;
+            merged["batch_assets"]["grid_spacing_min"] = b.value("grid_spacing_min", 100);
+            merged["batch_assets"]["grid_spacing_max"] = b.value("grid_spacing_max", 100);
+            merged["batch_assets"]["jitter_min"] = b.value("jitter_min", 0);
+            merged["batch_assets"]["jitter_max"] = b.value("jitter_max", 0);
+            for (const auto& ba : b["batch_assets"]) {
+                merged["batch_assets"]["batch_assets"].push_back(ba);
+            }
+        }
+    }
+
+    root_json_ = merged;
     parse_asset_spawns(area);
     parse_batch_assets();
+    sort_spawn_queue();
 }
 
 const std::vector<SpawnInfo>& AssetSpawnPlanner::get_spawn_queue() const {
@@ -39,7 +65,6 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
         std::string name = asset["name"];
         auto info = asset_library_->get(name);
 
-        // If not found by name, try treating 'name' as a tag
         if (!info) {
             try {
                 asset["tag"] = name;
@@ -62,7 +87,6 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
         int quantity = std::uniform_int_distribution<int>(min_num, max_num)(rng);
 
         std::string position = asset.value("position", "Random");
-        // skip scaling when it's a single-center spawn or a perimeter spawn
         bool isSingleCenter = (min_num == 1 && max_num == 1 &&
                             (position == "Center" || position == "center"));
         bool isPerimeter    = (position == "Perimeter" || position == "perimeter");
@@ -71,7 +95,6 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
             quantity = static_cast<int>(std::round(quantity * (area / REPRESENTATIVE_SPAWN_AREA)));
             if (quantity < 1) quantity = 1;
         }
-
 
         SpawnInfo s;
         s.name = name;
@@ -102,7 +125,6 @@ void AssetSpawnPlanner::parse_asset_spawns(double area) {
     }
 }
 
-
 void AssetSpawnPlanner::parse_batch_assets() {
     if (!root_json_.contains("batch_assets")) return;
 
@@ -131,6 +153,32 @@ void AssetSpawnPlanner::parse_batch_assets() {
     }
 }
 
+void AssetSpawnPlanner::sort_spawn_queue() {
+    const std::vector<std::string> priority_order = {
+        "Center", "Entrance", "Exit", "Exact Position", "Perimeter", "Distributed", "DistributedBatch"
+    };
+
+    auto to_lower = [](const std::string& s) {
+        std::string result = s;
+        std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+        return result;
+    };
+
+    auto priority_index = [&](const std::string& pos) -> int {
+        std::string lower_pos = to_lower(pos);
+        for (size_t i = 0; i < priority_order.size(); ++i) {
+            if (to_lower(priority_order[i]) == lower_pos) {
+                return static_cast<int>(i);
+            }
+        }
+        return static_cast<int>(priority_order.size());
+    };
+
+    std::sort(spawn_queue_.begin(), spawn_queue_.end(), [&](const SpawnInfo& a, const SpawnInfo& b) {
+        return priority_index(a.position) < priority_index(b.position);
+    });
+}
+
 nlohmann::json AssetSpawnPlanner::resolve_asset_from_tag(const nlohmann::json& tag_entry) {
     static std::mt19937 rng(std::random_device{}());
     std::string tag = tag_entry.value("tag", "");
@@ -155,3 +203,10 @@ nlohmann::json AssetSpawnPlanner::resolve_asset_from_tag(const nlohmann::json& t
     return result;
 }
 
+int AssetSpawnPlanner::get_batch_grid_spacing() const {
+    return batch_grid_spacing_;
+}
+
+int AssetSpawnPlanner::get_batch_jitter() const {
+    return batch_jitter_;
+}

@@ -1,4 +1,3 @@
-// === File: asset_info.hpp ===
 #pragma once
 
 #include <string>
@@ -38,7 +37,8 @@ struct ChildAsset {
     int min;
     int max;
     bool terminate_with_parent;
-    Area area;
+    std::unique_ptr<Area> area;
+
 };
 
 class AssetInfo {
@@ -95,20 +95,26 @@ public:
     std::vector<SDL_Texture*> light_textures; 
 
     // Collision/interaction areas
-    Area                          passability_area;
-    bool                          has_passability_area;
-    Area                          spacing_area;
-    bool                          has_spacing_area;
-    Area                          collision_area;
-    bool                          has_collision_area;
-    Area                          interaction_area;
-    bool                          has_interaction_area;
-    Area                          attack_area;
-    bool                          has_attack_area;
+    std::unique_ptr<Area> passability_area;
+    bool has_passability_area = false;
+
+    std::unique_ptr<Area> spacing_area;
+    bool has_spacing_area = false;
+
+    std::unique_ptr<Area> collision_area;
+    bool has_collision_area = false;
+
+    std::unique_ptr<Area> interaction_area;
+    bool has_interaction_area = false;
+
+    std::unique_ptr<Area> attack_area;
+    bool has_attack_area = false;
+
 
     // Animations and child assets
     std::map<std::string, Animation> animations;
-    std::vector<ChildAsset>          child_assets;
+    std::vector<std::unique_ptr<ChildAsset>> child_assets;
+
 
 private:
     void load_base_properties(const nlohmann::json& data);
@@ -130,14 +136,15 @@ private:
                                 SDL_Texture*& base_sprite,
                                 int& scaled_sprite_w,
                                 int& scaled_sprite_h);
-    void try_load_area         (const nlohmann::json& data,
-                                const std::string& key,
-                                const std::string& dir,
-                                Area& area_ref,
-                                bool& flag_ref,
-                                float scale,
-                                int offset_x,
-                                int offset_y);
+    void try_load_area(const nlohmann::json& data,
+                    const std::string& key,
+                    const std::string& dir,
+                    std::unique_ptr<Area>& area_ref,
+                    bool& flag_ref,
+                    float scale,
+                    int offset_x = 0,
+                    int offset_y = 0);
+
 
     // Stored so we can defer loading textures until we have a renderer
     nlohmann::json anims_json_;

@@ -77,6 +77,14 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
         if (it == info->animations.end()) it = info->animations.begin();
         if (it != info->animations.end() && !it->second.frames.empty()) {
             change_animation(it->first);
+
+            if (info->animations[current_animation].randomize &&
+                info->animations[current_animation].frames.size() > 1)
+            {
+                std::mt19937 rng{std::random_device{}()};
+                std::uniform_int_distribution<int> dist(0, int(info->animations[current_animation].frames.size()) - 1);
+                current_frame_index = dist(rng);
+            }
         }
     }
 }
@@ -138,40 +146,50 @@ std::string Asset::get_type() const {
     return info ? info->type : "";
 }
 
+
+
+
+
 Area Asset::get_global_collision_area() const {
-    if (!info || !info->has_collision_area) return {};
-    Area a = info->collision_area;
+    if (!info || !info->has_collision_area || !info->collision_area) return nullptr;
+    Area a = *info->collision_area;
     a.align(pos_X, pos_Y);
     return a;
 }
 
 Area Asset::get_global_interaction_area() const {
-    if (!info || !info->has_interaction_area) return {};
-    Area a = info->interaction_area;
+    if (!info || !info->has_interaction_area || !info->interaction_area) return nullptr;
+    Area a = *info->interaction_area;
     a.align(pos_X, pos_Y);
     return a;
 }
 
 Area Asset::get_global_attack_area() const {
-    if (!info || !info->has_attack_area) return {};
-    Area a = info->attack_area;
+    if (!info || !info->has_attack_area || !info->attack_area) return nullptr;
+    Area a = *info->attack_area;
     a.align(pos_X, pos_Y);
     return a;
 }
 
 Area Asset::get_global_spacing_area() const {
-    if (!info || !info->has_spacing_area) return {};
-    Area a = info->spacing_area;
+    if (!info || !info->has_spacing_area || !info->spacing_area) return nullptr;
+    Area a = *info->spacing_area;
     a.align(pos_X, pos_Y);
     return a;
 }
 
 Area Asset::get_global_passability_area() const {
-    if (!info || !info->has_passability_area) return {};
-    Area a = info->passability_area;
+    if (!info || !info->has_passability_area || !info->passability_area) return nullptr;
+    Area a = *info->passability_area;
     a.align(pos_X, pos_Y);
     return a;
 }
+
+
+
+
+
+
 
 void Asset::add_child(Asset child) {
     children.push_back(std::move(child));
@@ -189,6 +207,10 @@ void Asset::set_z_index() {
     }
 }
 
+
+
+
+
 void Asset::spawn_children(SDL_Renderer* renderer) {
     std::cout << "[spawn_children] Beginning spawn...\n";
     if (!info || !renderer) {
@@ -199,19 +221,19 @@ void Asset::spawn_children(SDL_Renderer* renderer) {
     std::mt19937 rng(std::random_device{}());
 
     for (const auto& ca : info->child_assets) {
-        std::cout << "[spawn_children] Attempting to spawn child asset: " << ca.asset << "\n";
+        std::cout << "[spawn_children] Attempting to spawn child asset: " << ca->asset << "\n";
 
-        if (ca.asset.empty()) {
+        if (ca->asset.empty()) {
             std::cerr << "[spawn_children] Empty asset name, skipping.\n";
             continue;
         }
 
-        if (ca.min > ca.max) {
-            std::cerr << "[spawn_children] Invalid range for '" << ca.asset << "' (min > max), skipping.\n";
+        if (ca->min > ca->max) {
+            std::cerr << "[spawn_children] Invalid range for '" << ca->asset << "' (min > max), skipping.\n";
             continue;
         }
 
-        int count = std::uniform_int_distribution<int>(ca.min, ca.max)(rng);
+        int count = std::uniform_int_distribution<int>(ca->min, ca->max)(rng);
         if (count < 1) {
             std::cout << "[spawn_children] Count < 1, skipping.\n";
             continue;
@@ -219,15 +241,15 @@ void Asset::spawn_children(SDL_Renderer* renderer) {
 
         std::shared_ptr<AssetInfo> child_info;
         try {
-            child_info = std::make_shared<AssetInfo>(ca.asset);
+            child_info = std::make_shared<AssetInfo>(ca->asset);
         } catch (const std::exception& e) {
             std::cerr << "[spawn_children] Failed to load child AssetInfo: " << e.what() << "\n";
             continue;
         }
 
-        std::cout << "[spawn_children] Spawning " << count << " instance(s) of '" << ca.asset << "'\n";
+        std::cout << "[spawn_children] Spawning " << count << " instance(s) of '" << ca->asset << "'\n";
 
-        Area aligned_area = ca.area;
+        Area aligned_area = *ca->area;
         try {
             int anchor_x = pos_X;
             int anchor_y = pos_Y + static_cast<int>(info->original_canvas_height * info->scale_factor / 2.0f);
@@ -248,15 +270,15 @@ void Asset::spawn_children(SDL_Renderer* renderer) {
         for (int i = 0; i < count; ++i) {
             const auto& pt = points[dist_point(rng)];
 
-            Area spacing_test;
-            try {  
+            Area spacing_test("spacing_test");
+            try {
                 if (child_info->has_spacing_area) {
-                    spacing_test = child_info->spacing_area;
+                    spacing_test = *child_info->spacing_area;
                     spacing_test.align(pt.first, pt.second);
                 } else {
-                    spacing_test = Area(pt.first, pt.second, 1, 1, "Square", 0,
-                                        std::numeric_limits<int>::max(),
-                                        std::numeric_limits<int>::max());
+                    spacing_test = Area("dummy", pt.first, pt.second, 1, 1, "Square", 0,
+                                         std::numeric_limits<int>::max(),
+                                         std::numeric_limits<int>::max());
                 }
             } catch (const std::exception& e) {
                 std::cerr << "[spawn_children] Error creating spacing test area: " << e.what() << "\n";
@@ -266,11 +288,11 @@ void Asset::spawn_children(SDL_Renderer* renderer) {
             bool overlaps = false;
             for (const auto& existing : children) {
                 try {
-                    Area other_area;
+                    Area other_area("other");
                     if (existing.info && existing.info->has_spacing_area) {
                         other_area = existing.get_global_spacing_area();
                     } else {
-                        other_area = Area(existing.pos_X, existing.pos_Y, 1, 1, "Square", 0,
+                        other_area = Area("dummy", existing.pos_X, existing.pos_Y, 1, 1, "Square", 0,
                                           std::numeric_limits<int>::max(),
                                           std::numeric_limits<int>::max());
                     }
@@ -290,11 +312,11 @@ void Asset::spawn_children(SDL_Renderer* renderer) {
             }
 
             try {
-                Asset child(child_info, ca.z_offset, aligned_area, pt.first, pt.second, this);
+                Asset child(child_info, ca->z_offset, aligned_area, pt.first, pt.second, this);
                 child_info->loadAnimations(renderer);
                 child.finalize_setup(renderer);
                 children.push_back(std::move(child));
-                std::cout << "[spawn_children] Child '" << ca.asset << "' added.\n";
+                std::cout << "[spawn_children] Child '" << ca->asset << "' added.\n";
             } catch (const std::exception& e) {
                 std::cerr << "[spawn_children] Exception while spawning child: " << e.what() << "\n";
             }

@@ -298,6 +298,7 @@ void AssetInfo::load_collision_areas(const nlohmann::json& data,
 
 
 
+
 void AssetInfo::load_child_assets(const nlohmann::json& data,
                                   const std::string& dir_path,
                                   float scale_factor,
@@ -309,25 +310,25 @@ void AssetInfo::load_child_assets(const nlohmann::json& data,
     for (const auto& c : data["child_assets"]) {
         if (!c.contains("asset") || !c["area_path"].is_string()) continue;
 
-        ChildAsset ca;
-        ca.asset                 = c["asset"].get<std::string>();
-        ca.z_offset              = c.value("z_offset", 0);
-        ca.min                   = c.value("min", 0);
-        ca.max                   = c.value("max", 0);
-        ca.terminate_with_parent = c.value("terminate_with_parent", false);
+        auto ca = std::make_unique<ChildAsset>();
+        ca->asset                 = c["asset"].get<std::string>();
+        ca->z_offset              = c.value("z_offset", 0);
+        ca->min                   = c.value("min", 0);
+        ca->max                   = c.value("max", 0);
+        ca->terminate_with_parent = c.value("terminate_with_parent", false);
 
-        // Use try_load_area to load the child area
         bool area_loaded = false;
-        try_load_area(c, "area_path", dir_path, ca.area, area_loaded, scale_factor, offset_x, offset_y);
+        try_load_area(c, "area_path", dir_path, ca->area, area_loaded, scale_factor, offset_x, offset_y);
 
         if (!area_loaded) {
-            std::cerr << "[AssetInfo] Failed to load child area for asset '" << ca.asset << "'\n";
+            std::cerr << "[AssetInfo] Failed to load child area for asset '" << ca->asset << "'\n";
             continue;
         }
 
         child_assets.push_back(std::move(ca));
     }
 }
+
 
 
 
@@ -493,23 +494,55 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
 void AssetInfo::try_load_area(const nlohmann::json& data,
                               const std::string& key,
                               const std::string& dir,
-                              Area& area_ref,
+                              std::unique_ptr<Area>& area_ref,
                               bool& flag_ref,
                               float scale,
                               int offset_x,
                               int offset_y)
 {
+    bool area_loaded = false;
+
     if (data.contains(key) && data[key].is_string()) {
         try {
-            std::string path = dir + "/" + data[key].get<std::string>();
-            area_ref = Area(path, scale);
+            std::string filename = data[key].get<std::string>();
+            std::string path = dir + "/" + filename;
+            std::string name = fs::path(filename).stem().string();
+
+            area_ref = std::make_unique<Area>(name, path, scale);
+            area_ref->apply_offset(offset_x, offset_y);
             flag_ref = true;
+            area_loaded = true;
         } catch (const std::exception& e) {
             std::cerr << "[AssetInfo] warning: failed to load area '"
                       << key << "': " << e.what() << std::endl;
         }
     }
+
+    if (!area_loaded && key == "spacing_area") {
+        std::string fallback_name = name + "_circle_spacing";
+        int radius = static_cast<int>(std::ceil(std::max(original_canvas_width, original_canvas_height) * scale / 2.0f));
+        int center_x = offset_x;
+        int center_y = offset_y;
+        int size = radius * 2;
+
+        area_ref = std::make_unique<Area>(
+            fallback_name,
+            center_x,
+            center_y,
+            size,
+            size,
+            "Circle",
+            1,
+            std::numeric_limits<int>::max(),
+            std::numeric_limits<int>::max()
+        );
+        flag_ref = true;
+        std::cerr << "[AssetInfo] fallback: created circular spacing area for '" << name << "'\n";
+    }
 }
+
+
+
 
 bool AssetInfo::has_tag(const std::string& tag) const {
     return std::find(tags.begin(), tags.end(), tag) != tags.end();

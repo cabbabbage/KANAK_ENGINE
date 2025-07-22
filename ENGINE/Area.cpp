@@ -6,14 +6,16 @@
 #include <algorithm>
 #include <array>
 #include <stdexcept>
+
 #define M_PI 3.14159265358979323846
 
 static std::mt19937 rng{std::random_device{}()};
 
-Area::Area() : pos_X(0), pos_Y(0) {}
+Area::Area(const std::string& name)
+    : pos_X(0), pos_Y(0), area_name_(name) {}
 
-Area::Area(const std::vector<Point>& pts)
-    : points(pts)
+Area::Area(const std::string& name, const std::vector<Point>& pts)
+    : points(pts), area_name_(name)
 {
     if (!points.empty()) {
         auto [minx, miny, maxx, maxy] = get_bounds();
@@ -23,20 +25,21 @@ Area::Area(const std::vector<Point>& pts)
     }
 }
 
-Area::Area(int cx, int cy, int w, int h,
+Area::Area(const std::string& name, int cx, int cy, int w, int h,
            const std::string& geometry,
            int edge_smoothness,
            int map_width, int map_height)
+    : area_name_(name)
 {
     if (w <= 0 || h <= 0 || map_width <= 0 || map_height <= 0) {
-        throw std::runtime_error("[Area] Invalid dimensions");
+        throw std::runtime_error("[Area: " + area_name_ + "] Invalid dimensions");
     }
     if (geometry == "Circle") {
-        generate_circle(cx, cy, w/2, edge_smoothness, map_width, map_height);
+        generate_circle(cx, cy, w / 2, edge_smoothness, map_width, map_height);
     } else if (geometry == "Square") {
         generate_square(cx, cy, w, h, edge_smoothness, map_width, map_height);
     } else {
-        throw std::runtime_error("[Area] Unknown geometry: " + geometry);
+        throw std::runtime_error("[Area: " + area_name_ + "] Unknown geometry: " + geometry);
     }
     auto [minx, miny, maxx, maxy] = get_bounds();
     pos_X = (minx + maxx) / 2;
@@ -44,25 +47,27 @@ Area::Area(int cx, int cy, int w, int h,
     update_geometry_data();
 }
 
-Area::Area(const std::string& json_path, float scale) {
+Area::Area(const std::string& name, const std::string& json_path, float scale)
+    : area_name_(name)
+{
     if (scale <= 0.0f)
-        throw std::invalid_argument("[Area] Scale must be positive");
+        throw std::invalid_argument("[Area: " + area_name_ + "] Scale must be positive");
 
     std::ifstream in(json_path);
     if (!in.is_open())
-        throw std::runtime_error("[Area] Failed to open JSON: " + json_path);
+        throw std::runtime_error("[Area: " + area_name_ + "] Failed to open JSON: " + json_path);
 
     nlohmann::json j;
     in >> j;
     auto& pts_json = j.at("points");
     auto& dim_json = j.at("original_dimensions");
     if (!pts_json.is_array() || !dim_json.is_array() || dim_json.size() != 2)
-        throw std::runtime_error("[Area] Bad JSON: " + json_path);
+        throw std::runtime_error("[Area: " + area_name_ + "] Bad JSON: " + json_path);
 
     int orig_w = dim_json[0].get<int>();
     int orig_h = dim_json[1].get<int>();
     if (orig_w <= 0 || orig_h <= 0)
-        throw std::runtime_error("[Area] Invalid dimensions in JSON");
+        throw std::runtime_error("[Area: " + area_name_ + "] Invalid dimensions in JSON");
 
     int pivot_x = static_cast<int>(std::round((orig_w / 2.0f) * scale));
     int pivot_y = static_cast<int>(std::round(orig_h * scale));
@@ -80,7 +85,7 @@ Area::Area(const std::string& json_path, float scale) {
     }
 
     if (points.empty())
-        throw std::runtime_error("[Area] No points loaded");
+        throw std::runtime_error("[Area: " + area_name_ + "] No points loaded");
 
     pos_X = pivot_x;
     pos_Y = pivot_y;
@@ -105,7 +110,7 @@ void Area::align(int target_x, int target_y) {
 
 std::tuple<int, int, int, int> Area::get_bounds() const {
     if (points.empty())
-        throw std::runtime_error("[Area] get_bounds() on empty point set");
+        throw std::runtime_error("[Area: " + area_name_ + "] get_bounds() on empty point set");
 
     int minx = points[0].first, maxx = minx;
     int miny = points[0].second, maxy = miny;
@@ -118,7 +123,7 @@ std::tuple<int, int, int, int> Area::get_bounds() const {
     return {minx, miny, maxx, maxy};
 }
 
-void Area::generate_circle(int center_x, int center_y, int radius, int edge_smoothness, int map_width, int map_height) {
+void Area::generate_circle(int cx, int cy, int radius, int edge_smoothness, int map_width, int map_height) {
     int s = std::clamp(edge_smoothness, 0, 100);
     int count = std::max(12, 6 + s * 2);
     double max_dev = 0.20 * (100 - s) / 100.0;
@@ -129,15 +134,15 @@ void Area::generate_circle(int center_x, int center_y, int radius, int edge_smoo
     for (int i = 0; i < count; ++i) {
         double theta = 2 * M_PI * i / count;
         double rx = radius * dist(rng), ry = radius * dist(rng);
-        double x = center_x + rx * std::cos(theta);
-        double y = center_y + ry * std::sin(theta);
+        double x = cx + rx * std::cos(theta);
+        double y = cy + ry * std::sin(theta);
         int xi = static_cast<int>(std::round(std::clamp(x, 0.0, static_cast<double>(map_width))));
         int yi = static_cast<int>(std::round(std::clamp(y, 0.0, static_cast<double>(map_height))));
         points.emplace_back(xi, yi);
     }
 }
 
-void Area::generate_square(int center_x, int center_y, int w, int h, int edge_smoothness, int map_width, int map_height) {
+void Area::generate_square(int cx, int cy, int w, int h, int edge_smoothness, int map_width, int map_height) {
     int s = std::clamp(edge_smoothness, 0, 100);
     double max_dev = 0.25 * (100 - s) / 100.0;
     std::uniform_real_distribution<double> xoff(-max_dev * w, max_dev * w);
@@ -147,10 +152,10 @@ void Area::generate_square(int center_x, int center_y, int w, int h, int edge_sm
     points.clear();
     points.reserve(4);
     for (auto [x0, y0] : std::array<Point, 4>{
-             Point{center_x - half_w, center_y - half_h},
-             Point{center_x + half_w, center_y - half_h},
-             Point{center_x + half_w, center_y + half_h},
-             Point{center_x - half_w, center_y + half_h}}) {
+             Point{cx - half_w, cy - half_h},
+             Point{cx + half_w, cy - half_h},
+             Point{cx + half_w, cy + half_h},
+             Point{cx - half_w, cy + half_h}}) {
         int x = static_cast<int>(std::round(x0 + xoff(rng)));
         int y = static_cast<int>(std::round(y0 + yoff(rng)));
         points.emplace_back(std::clamp(x, 0, map_width), std::clamp(y, 0, map_height));
@@ -219,4 +224,22 @@ void Area::update_geometry_data() {
     center_x = (minx + maxx) / 2;
     center_y = (miny + maxy) / 2;
     area_size = get_area();
+}
+
+Area::Point Area::random_point_within() const {
+    auto [minx, miny, maxx, maxy] = get_bounds();
+    for (int i = 0; i < 100; ++i) {
+        int x = std::uniform_int_distribution<int>(minx, maxx)(rng);
+        int y = std::uniform_int_distribution<int>(miny, maxy)(rng);
+        if (contains_point({x, y})) return {x, y};
+    }
+    return {0, 0};
+}
+
+Area::Point Area::get_center() const{
+    return {center_x, center_y};
+}
+
+double Area::get_size() const {
+    return area_size;
 }

@@ -43,8 +43,9 @@ Assets::Assets(std::vector<Asset>&& loaded,
     }
 
     if (player && player->info && player->info->has_passability_area) {
-        Area player_base = player->info->passability_area;
+        const Area& player_base = *player->info->passability_area;
     }
+
 
     sort_assets_by_distance_to_screen_center(screen_center_x, screen_center_y);
 
