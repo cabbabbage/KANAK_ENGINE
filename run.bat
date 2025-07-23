@@ -1,13 +1,30 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: === Optional -f flag for running crop.py from cache ===
+:: === Optional flags -f and -r ===
+:: -r : remove cache folder first
+:: -f : run crop.py from inside ./cache
+
+:: Handle -r: Remove entire cache folder if requested
+if "%~1"=="-r" (
+    echo [RESET] Removing entire cache folder...
+    rmdir /s /q cache >nul 2>&1
+)
+
+:: Handle -f: Copy and run crop.py inside ./cache
 if "%~1"=="-f" (
-    echo [FORCE] Copying crop.py to ./cache and executing there...
+    echo [FORCE] Preparing cache directory...
     if not exist "cache" mkdir cache
-    copy /Y crop.py cache\ >nul
+
+    if exist "cache\\crop.py" (
+        del /q "cache\\crop.py"
+    )
+
+    echo [COPY] Copying crop.py to cache...
+    copy /Y crop.py cache\\ >nul
+
     pushd cache
-    echo [RUN] Executing crop.py in ./cache...
+    echo [RUN] Executing crop.py from cache...
     python crop.py
     popd
 )

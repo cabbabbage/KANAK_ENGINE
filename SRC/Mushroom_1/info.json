@@ -12,10 +12,10 @@
         }
     },
     "impassable_area": null,
-    "z_threshold": 10,
+    "z_threshold": 7,
     "size_settings": {
-        "scale_percentage": 15.611612903225806,
-        "variability_percentage": 0.0
+        "scale_percentage": 22,
+        "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 400,
@@ -23,12 +23,12 @@
         "Spacing"
     ],
     "tags": [
-        "nature",
-        "plant",
-        "passable",
         "mushroom",
-        "small",
         "red",
+        "plant",
+        "nature",
+        "passable",
+        "small",
         "any"
     ],
     "rnd_spawn_min": 300,

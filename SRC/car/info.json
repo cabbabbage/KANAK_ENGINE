@@ -19,15 +19,15 @@
     }
   },
   "tags": [
-    "car",
-    "default",
-    "impassable",
-    "man-made",
     "any",
     "black",
     "center",
     "metal",
-    "grey"
+    "impassable",
+    "man-made",
+    "car",
+    "grey",
+    "default"
   ],
   "z_threshold": 15,
   "size_settings": {
@@ -36,7 +36,7 @@
   },
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 440,
+  "min_same_type_distance": 1562,
   "child_assets": [],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400

@@ -11,26 +11,20 @@
       {
         "name": "Tree",
         "tag": false,
-        "percent": 33,
+        "percent": 34,
         "color": "#16a0d5"
       },
       {
         "name": "Tree_Dark",
         "tag": false,
-        "percent": 32,
+        "percent": 33,
         "color": "#8a8bec"
       },
       {
         "name": "Tree_Darker",
         "tag": false,
-        "percent": 32,
+        "percent": 33,
         "color": "#5bad2e"
-      },
-      {
-        "name": "Big_Rock",
-        "tag": false,
-        "percent": 3,
-        "color": "#e980db"
       }
     ]
   }

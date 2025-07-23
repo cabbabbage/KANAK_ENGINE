@@ -123,7 +123,7 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset,
     struct EdgeScales { float L,R,T,B; };
     const EdgeScales bot{0.98f,0.98f,0.82f,0.92f},
                      top{1.0f,1.0f,1.05f,0.92f},
-                     mid{0.99f,0.99f,0.99f,0.92f};
+                     mid{0.89f,0.89f,0.89f,0.92f};
     auto lerp = [](float a,float b,float t){return a+(b-a)*t;};
     auto lerpE = [&](auto A, auto B, float t){
         return EdgeScales{

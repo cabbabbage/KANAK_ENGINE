@@ -30,7 +30,7 @@
     "rnd_spawn_max": 400,
     "z_threshold": 7,
     "size_settings": {
-        "scale_percentage": 4.300632911392405,
+        "scale_percentage": 6.0,
         "variability_percentage": 0.0
     },
     "spacing_area": "spacing_area.json",

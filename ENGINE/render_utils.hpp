@@ -59,8 +59,8 @@ private:
     SDL_Point center_;
 
     // parallax max offsets
-    static constexpr float parallaxMaxX_ = 30.0f;
-    static constexpr float parallaxMaxY_ = 16.0f;
+    static constexpr float parallaxMaxX_ = 15.0f;
+    static constexpr float parallaxMaxY_ = 10.0f;
 
     // light distortion
     SDL_Rect lightRect_;
@@ -86,5 +86,6 @@ private:
     // minimap texture
     SDL_Texture* minimapTexture_;
 };
+
 
 #endif // RENDER_UTILS_HPP

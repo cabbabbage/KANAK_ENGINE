@@ -65,26 +65,11 @@ std::vector<std::unique_ptr<Room>> GenerateTrails::generate_trails(
                       << a->room_name << " and " << b->room_name << "\n";
         }
     }
-
+    circular_connection(trail_rooms, map_dir, asset_lib, all_areas);
     find_and_connect_isolated(map_dir, asset_lib, all_areas, trail_rooms);
 
-    // Add circular connection pass
-    circular_connection(trail_rooms, map_dir, asset_lib, all_areas);
 
-    // Get max layer for heuristic
-    int max_layer = 0;
-    for (Room* room : all_rooms_reference) {
-        if (room && room->layer > max_layer) {
-            max_layer = room->layer;
-        }
-    }
 
-    int passes = static_cast<int>(max_layer / 3);
-    for (int i = 0; i < passes; ++i) {
-        remove_random_connection(trail_rooms);
-        remove_and_connect(trail_rooms, illegal_connections, map_dir, asset_lib, all_areas);
-    }
-    circular_connection(trail_rooms, map_dir, asset_lib, all_areas);
 
 
     if (testing) {

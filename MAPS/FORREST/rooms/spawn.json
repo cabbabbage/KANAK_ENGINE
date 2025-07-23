@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 1548,
-  "max_width": 1548,
+  "min_width": 1350,
+  "max_width": 1350,
   "curvyness": 1,
   "assets": [
     {
@@ -52,7 +52,7 @@
   "is_boss": false,
   "inherits_map_assets": true,
   "batch_assets": {
-    "has_batch_assets": true,
+    "has_batch_assets": false,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
@@ -61,14 +61,8 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 99,
+        "percent": 100,
         "color": "#CCCCCC"
-      },
-      {
-        "name": "Barrel",
-        "tag": false,
-        "percent": 1,
-        "color": "#30913f"
       }
     ]
   }

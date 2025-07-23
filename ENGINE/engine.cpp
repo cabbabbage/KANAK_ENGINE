@@ -32,7 +32,7 @@ Engine::Engine(const std::string& map_path)
       game_assets(nullptr),
       SCREEN_WIDTH(0),
       SCREEN_HEIGHT(0),
-      background_color({30, 50, 32, 150}),
+      background_color({25, 43, 29, 150}),
       overlay_texture(nullptr),
       util(nullptr, 0, 0, nullptr)    // <-- initialize RenderUtils here
 {}
@@ -229,7 +229,7 @@ void Engine::render_visible() {
     );
     SDL_SetTextureBlendMode(lightmap, SDL_BLENDMODE_ADD);
     SDL_SetRenderTarget(renderer, lightmap);
-    SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255);
+    SDL_SetRenderDrawColor(renderer, 10, 10, 10, 255);
     SDL_RenderClear(renderer);
 
     for (const auto* asset : game_assets->active_assets) {
@@ -253,7 +253,8 @@ void Engine::render_visible() {
             SDL_Rect dst{ lp.x - lw / 2, lp.y - lh / 2, lw, lh };
 
             SDL_SetTextureBlendMode(light, SDL_BLENDMODE_ADD);
-            int flick = ld.flicker ? 200 + (rand() % 56) : 255;
+            int flick = ld.flicker ? 235 + (rand() % 16) : 255;
+
             SDL_SetTextureAlphaMod(light, flick);
 
             if (asset->info->type == "Player" || asset->info->type == "player") {
