@@ -3,17 +3,19 @@
 #define RENDER_UTILS_HPP
 
 #include <SDL.h>
+#include <string>
 #include "generate_map_light.hpp"
 
 class Asset;  // forward declaration
 
 class RenderUtils {
 public:
-    // ctor: renderer, viewport size, and minimap texture
+    // ctor: renderer, viewport size, minimap texture, and map path
     RenderUtils(SDL_Renderer* renderer,
                 int screenWidth,
                 int screenHeight,
-                SDL_Texture* minimapTexture);
+                SDL_Texture* minimapTexture,
+                const std::string& map_path);
 
     // camera shake
     void updateCameraShake(int px, int py);
@@ -29,7 +31,6 @@ public:
     void renderLightDistorted(SDL_Texture* tex) const;
 
     // trapezoid‐projected asset
-    // moves all previous inline math into utils
     void setAssetTrapezoid(const Asset* asset,
                            int playerX,
                            int playerY);
@@ -37,11 +38,10 @@ public:
 
     // map‐wide light generator
     Generate_Map_Light* createMapLight();
+    Generate_Map_Light* getMapLight() const;
 
     // draw minimap in bottom‐right
     void renderMinimap() const;
-
-    Generate_Map_Light* getMapLight() const;
 
 private:
     SDL_Renderer* renderer_;
@@ -49,6 +49,7 @@ private:
     int           screenHeight_;
     float         halfWidth_;
     float         halfHeight_;
+    SDL_Point     center_;
 
     // camera shake state
     float   shakeIntensity_;
@@ -56,11 +57,10 @@ private:
     float   shakeTimer_;
     int     lastPx_;
     int     lastPy_;
-    SDL_Point center_;
 
     // parallax max offsets
-    static constexpr float parallaxMaxX_ = 40.0f;
-    static constexpr float parallaxMaxY_ = 20.0f;
+    static constexpr float parallaxMaxX_ = 0.0f;
+    static constexpr float parallaxMaxY_ = 0.0f;
 
     // light distortion
     SDL_Rect lightRect_;
@@ -80,11 +80,14 @@ private:
         SDL_Color  color;
     } trapSettings_;
 
-    // stored Generate_Map_Light
-    Generate_Map_Light* map_light_;
-
     // minimap texture
     SDL_Texture* minimapTexture_;
+
+    // path to map directory
+    std::string map_path_;
+
+    // stored Generate_Map_Light instance
+    Generate_Map_Light* map_light_;
 };
 
 #endif // RENDER_UTILS_HPP

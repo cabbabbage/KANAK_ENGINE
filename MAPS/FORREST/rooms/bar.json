@@ -1,14 +1,14 @@
 {
   "name": "bar",
-  "min_width": 1711,
-  "max_width": 2032,
-  "min_height": 700,
-  "max_height": 700,
+  "min_width": 1942,
+  "max_width": 2500,
+  "min_height": 1945,
+  "max_height": 2500,
   "edge_smoothness": 0,
-  "geometry": "Circle",
+  "geometry": "Square",
   "is_spawn": false,
   "is_boss": false,
-  "inherits_map_assets": false,
+  "inherits_map_assets": true,
   "assets": [
     {
       "name": "Booze_1",
@@ -45,8 +45,19 @@
     },
     {
       "name": "Barrel",
-      "min_number": 5,
+      "min_number": -36,
       "max_number": 15,
+      "position": "Random",
+      "exact_position": null,
+      "tag": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    },
+    {
+      "name": "Box",
+      "min_number": -45,
+      "max_number": 23,
       "position": "Random",
       "exact_position": null,
       "tag": false,

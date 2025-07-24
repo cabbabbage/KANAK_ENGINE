@@ -12,9 +12,9 @@
         }
     },
     "impassable_area": null,
-    "z_threshold": 2,
+    "z_threshold": 4,
     "size_settings": {
-        "scale_percentage": 3,
+        "scale_percentage": 25,
         "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",
@@ -23,13 +23,28 @@
         "Spacing"
     ],
     "tags": [
-        "small",
+        "skull",
         "still",
-        "bone",
-        "passable",
+        "white",
+        "graveyard",
+        "ground",
+        "default",
         "scary",
-        "white"
+        "bone",
+        "death",
+        "passable",
+        "small",
+        "nature"
     ],
     "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400
+    "rnd_spawn_max": 400,
+    "anti_tags": [
+        "book",
+        "center",
+        "impassable",
+        "light",
+        "man-made",
+        "plant",
+        "wood"
+    ]
 }

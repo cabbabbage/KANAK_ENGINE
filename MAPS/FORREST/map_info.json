@@ -14,7 +14,7 @@
     {
       "level": 0,
       "name": "layer_0",
-      "radius": 750,
+      "radius": 0,
       "min_rooms": 1,
       "max_rooms": 1,
       "rooms": [
@@ -29,20 +29,32 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 3639,
-      "min_rooms": 3,
+      "radius": 4322,
+      "min_rooms": 2,
       "max_rooms": 4,
       "rooms": [
         {
-          "name": "basic_fight_room",
+          "name": "random",
           "min_instances": 1,
-          "max_instances": 4,
+          "max_instances": 3,
           "required_children": []
         },
         {
-          "name": "random",
+          "name": "bar",
+          "min_instances": 0,
+          "max_instances": 2,
+          "required_children": []
+        },
+        {
+          "name": "manmade",
+          "min_instances": 0,
+          "max_instances": 2,
+          "required_children": []
+        },
+        {
+          "name": "Grave_Yard",
           "min_instances": 1,
-          "max_instances": 4,
+          "max_instances": 2,
           "required_children": []
         }
       ]
@@ -50,14 +62,20 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 6819,
-      "min_rooms": 9,
-      "max_rooms": 9,
+      "radius": 11133,
+      "min_rooms": 2,
+      "max_rooms": 7,
       "rooms": [
         {
           "name": "bar",
-          "min_instances": 9,
-          "max_instances": 11,
+          "min_instances": 2,
+          "max_instances": 7,
+          "required_children": []
+        },
+        {
+          "name": "Grave_Yard",
+          "min_instances": 0,
+          "max_instances": 4,
           "required_children": []
         }
       ]
@@ -65,7 +83,7 @@
     {
       "level": 3,
       "name": "layer_3",
-      "radius": 9004,
+      "radius": 17124,
       "min_rooms": 10,
       "max_rooms": 11,
       "rooms": [
@@ -78,5 +96,5 @@
       ]
     }
   ],
-  "map_radius": 11308.920495637198
+  "map_radius": 19874.845217575945
 }

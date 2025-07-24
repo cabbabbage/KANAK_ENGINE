@@ -43,8 +43,9 @@ Assets::Assets(std::vector<Asset>&& loaded,
     }
 
     if (player && player->info && player->info->has_passability_area) {
-        Area player_base = player->info->passability_area;
+        const Area& player_base = *player->info->passability_area;
     }
+
 
     sort_assets_by_distance_to_screen_center(screen_center_x, screen_center_y);
 
@@ -57,7 +58,6 @@ Assets::Assets(std::vector<Asset>&& loaded,
 }
 
 
-
 void Assets::update(const std::unordered_set<SDL_Keycode>& keys, int screen_center_x, int screen_center_y) {
     std::unordered_set<SDL_Keycode> adjusted_keys = keys;
     update_closest();
@@ -67,49 +67,60 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys, int screen_cent
     std::string new_animation = "";
     std::string current_animation = player->get_current_animation();
 
-    if (!keys.empty()) {
-        if (keys.count(SDLK_w)) {
-            if (current_animation != "backward" &&  !(keys.count(SDLK_a) ^ keys.count(SDLK_d))) new_animation = ("backward");
-            update_direction_movement(0, -player->player_speed_mult);
-        }
-        if (keys.count(SDLK_s)) {
-            if (current_animation != "forward" &&  !(keys.count(SDLK_a) ^ keys.count(SDLK_d)))  new_animation =("forward");
-            update_direction_movement(0, player->player_speed_mult);
-        }
-        if (keys.count(SDLK_a)) {
-            if (current_animation != "left" && !(keys.count(SDLK_d)))     new_animation = ("left");
-            update_direction_movement(-player->player_speed_mult, 0);
-        }
-        if (keys.count(SDLK_d)) {
-            if (current_animation != "right" && !(keys.count(SDLK_a))) new_animation = ("right");
-            update_direction_movement(player->player_speed_mult, 0);
-        }
+    // determine movement intent
+    int move_x = 0;
+    int move_y = 0;
+    bool up    = keys.count(SDLK_w);
+    bool down  = keys.count(SDLK_s);
+    bool left  = keys.count(SDLK_a);
+    bool right = keys.count(SDLK_d);
 
-        if(new_animation != ""){
+    if (up)    move_y -= 1;
+    if (down)  move_y += 1;
+    if (left)  move_x -= 1;
+    if (right) move_x += 1;
+
+    if (move_x != 0 || move_y != 0) {
+        // normalize diagonal speed
+        float len = std::sqrt(static_cast<float>(move_x * move_x + move_y * move_y));
+        float speed = player->player_speed_mult / len;
+        update_direction_movement(
+            static_cast<int>(std::round(move_x * speed)),
+            static_cast<int>(std::round(move_y * speed))
+        );
+
+        // animation selection
+        if (move_y < 0 && !(left ^ right) && current_animation != "backward")
+            new_animation = "backward";
+        else if (move_y > 0 && !(left ^ right) && current_animation != "forward")
+            new_animation = "forward";
+        else if (move_x < 0 && !right && current_animation != "left")
+            new_animation = "left";
+        else if (move_x > 0 && !left && current_animation != "right")
+            new_animation = "right";
+
+        if (!new_animation.empty())
             player->change_animation(new_animation);
 
-        }
-
-
-        if (dx != 0 || dy != 0) {
+        if (dx != 0 || dy != 0)
             player->set_position(player->pos_X + dx, player->pos_Y + dy);
-        }
-         } else {
-        if (current_animation != "default") player->change_animation("default");
-        }
-    
+    } else {
+        if (current_animation != "default")
+            player->change_animation("default");
+    }
+
     Area area1 = player->get_global_passability_area();
-    if(keys.count(SDLK_e)){
+    if (keys.count(SDLK_e)) {
         std::cout << "Checking interaction \n";
         for (Asset* asset : closest_assets) {
-            if (!asset || !asset->info->has_interaction_area) continue; 
+            if (!asset || !asset->info->has_interaction_area) continue;
             Area area2 = asset->get_global_interaction_area();
-            if (check_collision(area1, area2)){
+            if (check_collision(area1, area2)) {
                 asset->change_animation("interaction");
-                std::cout << "interaction init for asset: " + asset->info->name + "\n";
+                std::cout << "interaction init for asset: " + asset->info->name << "\n";
+            }
         }
-    }       
-    } 
+    }
 
     adjusted_keys.erase(SDLK_w);
     adjusted_keys.erase(SDLK_a);
@@ -118,21 +129,21 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys, int screen_cent
 
     //player->update(adjusted_keys);
     for (auto* asset : active_assets) {
-
         if (!asset) continue;
         asset->update();
     }
 
     if (!(dx == 0 && dy == 0)) {
-        resort_active_asset(player);        
-
-        if (last_activat_update >= update_interval){
+        resort_active_asset(player);
+        if (last_activat_update >= update_interval) {
             last_activat_update = 0;
             sort_assets_by_distance_to_screen_center(screen_center_x, screen_center_y);
         }
         last_activat_update++;
     }
 }
+
+
 
 void Assets::update_closest() {
     closest_assets.clear();
@@ -191,8 +202,8 @@ void Assets::activate(Asset* asset) {
 }
 
 void Assets::sort_assets_by_distance_to_screen_center(int cx, int cy) {
-    const float active_width = 1.0f * static_cast<float>(screen_width);
-    const float active_height = 1.2f * static_cast<float>(screen_height);
+    const float active_width = 2.0f * static_cast<float>(screen_width);
+    const float active_height = 2.0f * static_cast<float>(screen_height);
 
     for (auto& asset : all) {
         float dx = static_cast<float>(asset.pos_X - cx);

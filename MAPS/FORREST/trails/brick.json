@@ -1,7 +1,7 @@
 {
   "name": "brick",
-  "min_width": 600,
-  "max_width": 600,
+  "min_width": 700,
+  "max_width": 700,
   "curvyness": 3,
   "inherits_map_assets": true,
   "assets": [],
@@ -15,19 +15,19 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 85,
+        "percent": 66,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 10,
+        "percent": 30,
         "color": "#2911cb"
       },
       {
         "name": "flower",
         "tag": false,
-        "percent": 5,
+        "percent": 4,
         "color": "#8c7735"
       }
     ]

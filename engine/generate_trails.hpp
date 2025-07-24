@@ -1,33 +1,57 @@
+// === File: generate_trails.hpp ===
 #pragma once
 
+#include "Room.hpp"
 #include "Area.hpp"
-#include "room.hpp"
-#include "Asset.hpp"
-#include "asset_loader.hpp"
-
-#include <vector>
+#include "Asset_library.hpp"
 #include <string>
-#include <random>
+#include <vector>
 #include <memory>
+#include <random>
 
 class GenerateTrails {
 public:
-    using Point = std::pair<double, double>;
+    explicit GenerateTrails(const std::string& trail_dir);
 
-    GenerateTrails(const std::string& trail_dir);
+    void set_all_rooms_reference(const std::vector<Room*>& rooms);
 
     std::vector<std::unique_ptr<Room>> generate_trails(
         const std::vector<std::pair<Room*, Room*>>& room_pairs,
         const std::vector<Area>& existing_areas,
         const std::string& map_dir,
-        AssetLibrary* asset_lib);
-    bool testing = true;
+        AssetLibrary* asset_lib
+    );
+
+    void find_and_connect_isolated(
+        const std::string& map_dir,
+        AssetLibrary* asset_lib,
+        std::vector<Area>& existing_areas,
+        std::vector<std::unique_ptr<Room>>& trail_rooms
+    );
+
+    void remove_connection(Room* a, Room* b, std::vector<std::unique_ptr<Room>>& trail_rooms);
+
+    void remove_random_connection(std::vector<std::unique_ptr<Room>>& trail_rooms);
+
+    void remove_and_connect(std::vector<std::unique_ptr<Room>>& trail_rooms,
+                            std::vector<std::pair<Room*, Room*>>& illegal_connections,
+                            const std::string& map_dir,
+                            AssetLibrary* asset_lib,
+                            std::vector<Area>& existing_areas);
+
+    void circular_connection(std::vector<std::unique_ptr<Room>>& trail_rooms,
+                             const std::string& map_dir,
+                             AssetLibrary* asset_lib,
+                             std::vector<Area>& existing_areas);
+
 private:
+    std::string pick_random_asset();
+
     std::vector<std::string> available_assets_;
+    std::vector<Room*> all_rooms_reference;
     std::vector<Area> trail_areas_;
     std::mt19937 rng_;
+    bool testing = false;
 
-    std::string pick_random_asset();
-    std::vector<Point> build_centerline(const Point& start, const Point& end, int curvyness);
-    std::vector<Point> extrude_centerline(const std::vector<Point>& centerline, double width);
+    std::vector<std::pair<Room*, Room*>> illegal_connections;
 };

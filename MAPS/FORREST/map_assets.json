@@ -2,34 +2,58 @@
   "assets": [],
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 100,
-    "grid_spacing_max": 100,
-    "jitter_min": 4,
-    "jitter_max": 4,
+    "grid_spacing_min": 87,
+    "grid_spacing_max": 87,
+    "jitter_min": 5,
+    "jitter_max": 5,
     "batch_assets": [
       {
         "name": "Grass_FPS_2",
         "tag": false,
-        "percent": 17,
+        "percent": 31,
         "color": "#da2582"
       },
       {
         "name": "null",
         "tag": false,
-        "percent": 66,
+        "percent": 14,
         "color": "#a49367"
       },
       {
         "name": "Grass_1_FPS_2",
         "tag": false,
-        "percent": 16,
+        "percent": 31,
         "color": "#6193a3"
       },
       {
-        "name": "bush",
-        "tag": true,
+        "name": "Bush_1_FPS_2",
+        "tag": false,
         "percent": 1,
-        "color": "#414b24"
+        "color": "#9cb00f"
+      },
+      {
+        "name": "Bush_FPS_2",
+        "tag": false,
+        "percent": 1,
+        "color": "#8b0928"
+      },
+      {
+        "name": "Small_Rock",
+        "tag": false,
+        "percent": 2,
+        "color": "#f0431a"
+      },
+      {
+        "name": "pretty",
+        "tag": true,
+        "percent": 2,
+        "color": "#6ce51b"
+      },
+      {
+        "name": "fog",
+        "tag": false,
+        "percent": 18,
+        "color": "#439315"
       }
     ]
   }

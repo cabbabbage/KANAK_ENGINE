@@ -1,20 +1,32 @@
-#!/usr/bin/env python3
 import os
-import shutil
+import json
 
-def delete_cache_dirs(root_dir='.'):
-    """
-    Recursively walk through root_dir and delete any directory named 'cache'.
-    """
-    for dirpath, dirnames, filenames in os.walk(root_dir, topdown=True):
-        # Make a copy of dirnames to iterate so we can modify dirnames in-place
-        for d in list(dirnames):
-            if d == 'cache':
-                full_path = os.path.join(dirpath, d)
-                print(f"Deleting cache directory: {full_path}")
-                shutil.rmtree(full_path)
-                # Remove from dirnames so os.walk won't recurse into it
-                dirnames.remove(d)
+def boost_scale_percentage(root_dir):
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        if "info.json" in filenames:
+            info_path = os.path.join(dirpath, "info.json")
+            try:
+                with open(info_path, 'r') as f:
+                    data = json.load(f)
+
+                updated = False
+                if "size_settings" in data and isinstance(data["size_settings"], dict):
+                    size_settings = data["size_settings"]
+                    if "scale_percentage" in size_settings and isinstance(size_settings["scale_percentage"], (int, float)):
+                        original = size_settings["scale_percentage"]
+                        boosted = round(original * 1.05)
+                        if boosted != original:
+                            data["size_settings"]["scale_percentage"] = boosted
+                            updated = True
+
+                if updated:
+                    with open(info_path, 'w') as f:
+                        json.dump(data, f, indent=2)
+                    print(f"[Updated] Boosted scale to {boosted} in {info_path}")
+
+            except Exception as e:
+                print(f"[Error] Failed to process {info_path}: {e}")
 
 if __name__ == "__main__":
-    delete_cache_dirs()
+    start_path = r"C:\Users\cal_m\OneDrive\Documents\GitHub\tarot_game\SRC"
+    boost_scale_percentage(start_path)

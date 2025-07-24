@@ -1,5 +1,6 @@
 // RenderUtils.cpp
 #include "render_utils.hpp"
+#include "generate_map_light.hpp"
 #include "Asset.hpp"
 #include <cmath>
 #include <algorithm>
@@ -7,7 +8,8 @@
 RenderUtils::RenderUtils(SDL_Renderer* renderer,
                          int screenWidth,
                          int screenHeight,
-                         SDL_Texture* minimapTexture)
+                         SDL_Texture* minimapTexture,
+                         const std::string& map_path)
     : renderer_(renderer),
       screenWidth_(screenWidth),
       screenHeight_(screenHeight),
@@ -23,9 +25,21 @@ RenderUtils::RenderUtils(SDL_Renderer* renderer,
       lightRotationFactor_(15.0f),
       lightSpeed_(0.002f),
       map_light_(nullptr),
-      minimapTexture_(minimapTexture)
+      minimapTexture_(minimapTexture),
+      map_path_(map_path)
 {
     trapSettings_ = {false, 0, 0, 0, 0, 1.0f, 1.0f, {255,255,255,255}};
+}
+
+Generate_Map_Light* RenderUtils::createMapLight() {
+    SDL_Color fallback = {255, 255, 255, 255};
+    map_light_ = new Generate_Map_Light(renderer_,
+                                        screenWidth_ / 2,
+                                        screenHeight_ / 2,
+                                        screenWidth_,
+                                        fallback,
+                                        map_path_);
+    return map_light_;
 }
 
 void RenderUtils::updateCameraShake(int px, int py) {
@@ -101,10 +115,7 @@ void RenderUtils::renderLightDistorted(SDL_Texture* tex) const {
     SDL_RenderCopyEx(renderer_, tex, nullptr, &scaled, rot, nullptr, SDL_FLIP_NONE);
 }
 
-void RenderUtils::setAssetTrapezoid(const Asset* asset,
-                                    int playerX,
-                                    int playerY)
-{
+void RenderUtils::setAssetTrapezoid(const Asset* asset, int playerX, int playerY) {
     trapSettings_.enabled = false;
     if (!asset) return;
 
@@ -112,18 +123,17 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset,
     if (!tex) return;
 
     trapSettings_.enabled = true;
-    SDL_QueryTexture(tex, nullptr, nullptr,
-                     &trapSettings_.w,
-                     &trapSettings_.h);
+    SDL_QueryTexture(tex, nullptr, nullptr, &trapSettings_.w, &trapSettings_.h);
 
     SDL_Point p = applyParallax(asset->pos_X, asset->pos_Y);
     trapSettings_.screen_x = p.x;
     trapSettings_.screen_y = p.y;
 
     struct EdgeScales { float L,R,T,B; };
-    const EdgeScales bot{0.98f,0.98f,0.82f,0.98f},
-                     top{0.88f,0.88f,1.05f,0.92f},
-                     mid{0.94f,0.94f,0.96f,0.97f};
+    const EdgeScales top{0.96f, 0.96f, 0.96f, 0.91f},
+                    mid{0.93f, 0.93f, 0.93f, 0.91f},
+                    bot{0.88f, 0.88f, 0.88f, 0.91f};
+
     auto lerp = [](float a,float b,float t){return a+(b-a)*t;};
     auto lerpE = [&](auto A, auto B, float t){
         return EdgeScales{
@@ -173,22 +183,16 @@ void RenderUtils::renderAssetTrapezoid(SDL_Texture* tex) const {
     SDL_RenderGeometry(renderer_,tex,V,4,idx,6);
 }
 
-Generate_Map_Light* RenderUtils::createMapLight() {
-    SDL_Color bc={255,255,255,255};
-    map_light_ = new Generate_Map_Light(
-        renderer_,screenWidth_/2,screenHeight_/2,
-        screenWidth_,bc,50,255);
-    return map_light_;
-}
-
 void RenderUtils::renderMinimap() const {
-    if(!minimapTexture_) return;
-    int mw,mh; SDL_QueryTexture(minimapTexture_,nullptr,nullptr,&mw,&mh);
-    SDL_Rect d={screenWidth_-mw-10,screenHeight_-mh-10,mw,mh};
-    SDL_SetTextureBlendMode(minimapTexture_,SDL_BLENDMODE_BLEND);
-    SDL_RenderCopy(renderer_,minimapTexture_,nullptr,&d);
+    if (!minimapTexture_) return;
+    int mw, mh;
+    SDL_QueryTexture(minimapTexture_, nullptr, nullptr, &mw, &mh);
+    int w = mw * 2;
+    int h = mh * 2;
+    SDL_Rect d = { screenWidth_ - w - 10, screenHeight_ - h - 10, w, h };
+    SDL_SetTextureBlendMode(minimapTexture_, SDL_BLENDMODE_BLEND);
+    SDL_RenderCopy(renderer_, minimapTexture_, nullptr, &d);
 }
-
 
 Generate_Map_Light* RenderUtils::getMapLight() const {
     return map_light_;

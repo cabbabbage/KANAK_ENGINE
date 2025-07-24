@@ -26,6 +26,9 @@ def get_crop_bounds(image_paths):
     left_crop = 0
     right_crop = 0
 
+    # initialize crop counters
+    top_crop = bottom_crop = left_crop = right_crop = 0
+
     # === TOP ===
     for y in range(height):
         if all(all(img.getpixel((x, y))[3] == 0 for x in range(width)) for img in images):
@@ -34,7 +37,7 @@ def get_crop_bounds(image_paths):
             break
 
     # === BOTTOM ===
-    for y in reversed(range(height)):
+    for y in range(height - 1, -1, -1):
         if all(all(img.getpixel((x, y))[3] == 0 for x in range(width)) for img in images):
             bottom_crop += 1
         else:
@@ -48,11 +51,12 @@ def get_crop_bounds(image_paths):
             break
 
     # === RIGHT ===
-    for x in reversed(range(width)):
+    for x in range(width - 1, -1, -1):
         if all(all(img.getpixel((x, y))[3] == 0 for y in range(height)) for img in images):
             right_crop += 1
         else:
             break
+
 
     for img in images:
         img.close()

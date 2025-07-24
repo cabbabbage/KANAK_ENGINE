@@ -48,7 +48,7 @@ class SpacingThresholdPage(ttk.Frame):
         ttk.Label(self, text="Min Distance From Same Type:", style='Large.TLabel')\
             .grid(row=4, column=0, sticky='e', padx=12, pady=6)
 
-        self.min_dist_range = Range(self, min_bound=0, max_bound=200,
+        self.min_dist_range = Range(self, min_bound=0, max_bound=2000,
                                     set_min=0, set_max=0, force_fixed=True)
         self.min_dist_range.grid(row=4, column=1, columnspan=2,
                                  sticky='we', padx=12, pady=6)

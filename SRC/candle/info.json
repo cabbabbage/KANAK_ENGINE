@@ -19,18 +19,19 @@
         }
     },
     "tags": [
+        "light",
+        "barrel_child",
         "orange",
         "passable",
-        "man-made",
-        "light",
-        "default"
+        "default",
+        "man-made"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "z_threshold": 7,
+    "z_threshold": 5,
     "size_settings": {
-        "scale_percentage": 4.300632911392405,
-        "variability_percentage": 0.0
+        "scale_percentage": 6,
+        "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 200,
@@ -38,16 +39,16 @@
     "lighting_info": [
         {
             "has_light_source": true,
-            "light_intensity": 95,
+            "light_intensity": 70,
             "light_color": [
                 255,
-                167,
-                79
+                140,
+                85
             ],
-            "radius": 270,
+            "radius": 483,
             "fall_off": 100,
             "jitter_min": 16,
-            "jitter_max": 20,
+            "jitter_max": 18,
             "offset_x": 0,
             "offset_y": -30,
             "flicker": true
@@ -63,5 +64,6 @@
         "has_casted_shadows": null,
         "number_of_casted_shadows": null,
         "cast_shadow_intensity": null
-    }
+    },
+    "anti_tags": []
 }

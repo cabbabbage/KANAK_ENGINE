@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 1548,
-  "max_width": 1548,
+  "min_width": 1300,
+  "max_width": 1300,
   "curvyness": 1,
   "assets": [
     {
@@ -25,17 +25,17 @@
       "check_overlap": false,
       "check_min_spacing": false,
       "inherited": false,
-      "border_shift_min": 160,
-      "border_shift_max": 160,
+      "border_shift_min": 163,
+      "border_shift_max": 163,
       "sector_center_min": 0,
       "sector_center_max": 0,
       "sector_range_min": 360,
       "sector_range_max": 360
     },
     {
-      "name": "car",
-      "min_number": 5,
-      "max_number": 5,
+      "name": "Stump",
+      "min_number": -54,
+      "max_number": 20,
       "position": "Random",
       "exact_position": null,
       "tag": false,
@@ -50,9 +50,9 @@
   "geometry": "Circle",
   "is_spawn": true,
   "is_boss": false,
-  "inherits_map_assets": false,
+  "inherits_map_assets": true,
   "batch_assets": {
-    "has_batch_assets": true,
+    "has_batch_assets": false,
     "grid_spacing_min": 100,
     "grid_spacing_max": 100,
     "jitter_min": 0,
@@ -61,14 +61,8 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 99,
+        "percent": 100,
         "color": "#CCCCCC"
-      },
-      {
-        "name": "Barrel",
-        "tag": false,
-        "percent": 1,
-        "color": "#30913f"
       }
     ]
   }

@@ -9,52 +9,43 @@
 #include <SDL.h>
 #include "area.hpp"
 #include "asset_info.hpp"
+#include "asset_library.hpp"
+
+#include "asset_spawn_planner.hpp"
+
+
 
 class Asset {
 public:
-    // Textures generated for lighting
     std::vector<SDL_Texture*> light_textures;
 
-    // Constructor does everything except rendering-dependent lighting
     Asset(std::shared_ptr<AssetInfo> info,
-          int z_offset,
           const Area& spawn_area,
           int start_pos_X,
           int start_pos_Y,
+          int depth,
           Asset* parent = nullptr);
 
-    // Call this when you have an SDL_Renderer to generate lighting textures
     void finalize_setup(SDL_Renderer* renderer);
 
-
-
-    // Move the asset and recompute its z-index
     void set_position(int x, int y);
-
-    // Advance its animation and update children
     void update();
-
-    // Switch to a named animation
     void change_animation(const std::string& name);
 
-    // Get the current frame texture
     SDL_Texture* get_current_frame() const;
     SDL_Texture* get_image() const;
 
     std::string get_current_animation() const;
     std::string get_type() const;
 
-    // Query aligned collision/interaction/etc areas
     Area get_global_collision_area() const;
     Area get_global_interaction_area() const;
     Area get_global_attack_area() const;
     Area get_global_spacing_area() const;
     Area get_global_passability_area() const;
 
-    // Add a child asset
     void add_child(Asset child);
 
-    // Public state
     Asset* parent = nullptr;
     std::shared_ptr<AssetInfo> info;
     std::string current_animation;
@@ -72,10 +63,12 @@ public:
     std::vector<Area> base_areas;
     std::vector<Area> areas;
     std::vector<Asset> children;
-
+    int depth = 0;
+    void set_z_offset(int z);
 private:
-    void spawn_children(SDL_Renderer* renderer);
+
     void set_z_index();
+
     int current_frame_index = 0;
     bool static_frame = true;
     std::unordered_map<std::string, std::vector<SDL_Texture*>> custom_frames;

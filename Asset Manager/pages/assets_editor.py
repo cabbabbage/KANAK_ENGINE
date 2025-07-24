@@ -6,6 +6,8 @@ from PIL import Image, ImageTk
 from pages.range import Range
 from pages.search import AssetSearchWindow
 from pages.random_asset_generator import RandomAssetGenerator
+from pages.load_existing import LoadExistingChildren
+
 
 SRC_DIR = "SRC"
 
@@ -42,11 +44,19 @@ class AssetEditor(ttk.Frame):
         add_btn.pack(side=tk.LEFT, padx=10)
 
         generate_btn = tk.Button(
-            top_bar, text="Generate Random Asset Set", bg="#007BFF", fg="white",
+            top_bar, text="Generate Set", bg="#007BFF", fg="white",
             font=("Segoe UI", 11, "bold"), command=self._open_random_generator,
             width=26
         )
         generate_btn.pack(side=tk.LEFT, padx=10)
+
+        add_existing_btn = tk.Button(
+            top_bar, text="Add Existing", bg="#007BFF", fg="white",
+            font=("Segoe UI", 11, "bold"), command=self._add_existing_asset,
+            width=15
+        )
+        add_existing_btn.pack(side=tk.LEFT, padx=10)
+
 
         # ─── Scrolling container (vertical only) ─────────────────────────────
         container = ttk.Frame(self)
@@ -57,7 +67,12 @@ class AssetEditor(ttk.Frame):
         self.asset_canvas.configure(yscrollcommand=self.asset_scrollbar_y.set)
 
         self.asset_frame = ttk.Frame(self.asset_canvas)
-        self.asset_canvas.create_window((0, 0), window=self.asset_frame, anchor="nw")
+        self.asset_canvas_window = self.asset_canvas.create_window((0, 0), window=self.asset_frame, anchor="nw")
+        self.asset_canvas.bind(
+            "<Configure>",
+            lambda e: self.asset_canvas.itemconfig(self.asset_canvas_window, width=e.width)
+        )
+
         self.asset_frame.bind(
             "<Configure>",
             lambda e: self.asset_canvas.configure(scrollregion=self.asset_canvas.bbox("all"))
@@ -85,10 +100,29 @@ class AssetEditor(ttk.Frame):
         # Immediately save the loaded state to synchronize with UI
         self.save_assets()
 
+    def _add_existing_asset(self):
+        from pages.load_existing import open_window_and_return_data
+
+        new_assets = open_window_and_return_data("assets")
+        if not new_assets or not isinstance(new_assets, list):
+            return  # No data or user canceled
+
+        current_assets = self.get_asset_list()
+
+        for asset in new_assets:
+            current_assets.append(asset)
+            self._create_asset_widget(asset)
+
+        self.set_asset_list(current_assets)
+        self.save_assets()
+
+
 
 
     def _create_asset_widget(self, asset):
         frame = ttk.Frame(self.asset_frame, relief="ridge", borderwidth=2, padding=5)
+        frame.pack(fill=tk.X, expand=True, padx=20, pady=6)  # ← wider padding
+
         # Make each asset frame stretch to the full width
         frame.pack(fill=tk.X, expand=True, padx=10, pady=4)
 
@@ -133,11 +167,12 @@ class AssetEditor(ttk.Frame):
         # Quantity Range
         range_widget = Range(
             content,
-            min_bound=0, max_bound=2000,
+            min_bound=-100, max_bound=2000,
             set_min=asset.get("min_number", 0),
             set_max=asset.get("max_number", 0)
         )
-        range_widget.pack(fill=tk.X, pady=2)
+        range_widget.pack(fill=tk.X, expand=True, padx=10, pady=2)
+
         frame.range = range_widget  # ← ensure get_assets can always find it
 
         # Bind quantity sliders to save
@@ -181,7 +216,8 @@ class AssetEditor(ttk.Frame):
                         set_min=asset.get("border_shift_min", 100),
                         set_max=asset.get("border_shift_max", 100)
                     )
-                    frame.position_options["border_shift"].pack(fill=tk.X, pady=2)
+                    frame.position_options["border_shift"].pack(fill=tk.X, expand=True, padx=10, pady=2)
+
                     frame.position_options["sector_center"] = Range(
                         opts, label="Active Sector Center", min_bound=0, max_bound=360,
                         set_min=asset.get("sector_center_min", 0),
@@ -262,11 +298,83 @@ class AssetEditor(ttk.Frame):
                 if hasattr(rw, "var_random"):
                     rw.var_random.trace_add("write", lambda *_: self.save_assets())
 
-        # ─── Delete Button ────────────────────────────────────────────────────────
-        ttk.Button(frame, text="Delete", width=10,
-                   command=lambda f=frame: self._delete_asset(f)).pack(side=tk.RIGHT, padx=8)
+        # ─── Change / Duplicate / Delete Buttons (stacked right) ───────────────
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(side=tk.RIGHT, padx=8, pady=4)
 
-        # Finally, keep track of this frame
+        def _change_asset():
+            window = AssetSearchWindow(self)
+            window.wait_window()
+            result = getattr(window, "selected_result", None)
+            if not result:
+                return
+
+            kind, name = result
+            is_tag = (kind == "tag")
+            old_name = asset["name"]  # ← capture before mutation
+
+            # Update the asset data
+            asset["name"] = name
+            asset["tag"] = is_tag
+            frame.asset_name = name
+
+            # Update the asset name label
+            for widget in content.winfo_children():
+                if isinstance(widget, ttk.Label) and widget.cget("text") == old_name:
+                    widget.config(text=name)
+                    break
+
+            # Remove the existing icon (image or tag)
+            for widget in frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.destroy()
+                    break
+
+            # Reinsert icon
+            if is_tag:
+                tag_label = tk.Label(frame, text="#", font=("Segoe UI", 32, "bold"), width=2, height=1)
+                tag_label.pack(side=tk.LEFT, padx=6)
+            else:
+                image_path = os.path.join(SRC_DIR, name, "default", "0.png")
+                if os.path.isfile(image_path):
+                    try:
+                        img = Image.open(image_path)
+                        img.thumbnail((64, 64), Image.Resampling.LANCZOS)
+                        photo = ImageTk.PhotoImage(img)
+                        img_label = tk.Label(frame, image=photo)
+                        img_label.image = photo  # keep reference
+                        img_label.pack(side=tk.LEFT, padx=6)
+                    except Exception:
+                        fallback = tk.Label(frame, text="?")
+                        fallback.pack(side=tk.LEFT, padx=6)
+                else:
+                    fallback = tk.Label(frame, text="?")
+                    fallback.pack(side=tk.LEFT, padx=6)
+
+            self.save_assets()
+
+
+        def _duplicate_asset():
+            import copy
+            new_asset = copy.deepcopy(asset)
+            self.get_asset_list().append(new_asset)
+            self._create_asset_widget(new_asset)
+            self.save_assets()
+
+        def _delete_asset_local():
+            self._delete_asset(frame)
+
+        button_style = {
+            "bg": "white",
+            "fg": "black",
+            "font": ("Segoe UI", 10, "bold"),
+            "width": 15
+        }
+
+        tk.Button(btn_frame, text="Change", command=_change_asset, **button_style).pack(pady=(0, 4))
+        tk.Button(btn_frame, text="Duplicate", command=_duplicate_asset, **button_style).pack(pady=(0, 4))
+        tk.Button(btn_frame, text="Delete", command=_delete_asset_local, **button_style).pack()
+
         self.asset_frames.append(frame)
 
 

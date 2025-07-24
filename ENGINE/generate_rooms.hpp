@@ -38,7 +38,7 @@ public:
                                              int map_radius,
                                              const std::string& boundary_json);
 
-    bool testing = true;
+    bool testing = false;
 
 private:
 

@@ -1,4 +1,5 @@
 #include "asset_info.hpp"
+#include "cache_manager.hpp"
 #include <SDL_image.h>
 #include <iostream>
 #include <fstream>
@@ -74,10 +75,6 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     variability_percentage = ss.value("variability_percentage", 0.0f);
     scale_factor           = scale_percentage / 100.0f;
 
-    // Warn if default animation missing (frames will be loaded later)
-    if (!animations.count("default") || animations["default"].frames.empty()) {
-        std::cerr << "[AssetInfo] WARNING: no valid 'default' animation for '" << name << "'\n";
-    }
 
     // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);
@@ -86,7 +83,7 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     int offset_y = (scaled_canvas_h - 0);
 
     load_collision_areas(data, dir_path_, offset_x, offset_y);
-    load_child_assets(data, dir_path_, scale_factor, offset_x, offset_y);
+    load_child_json_paths(data, dir_path_);
 }
 
 AssetInfo::~AssetInfo() {
@@ -101,7 +98,7 @@ AssetInfo::~AssetInfo() {
         anim.frames.clear();
     }
     animations.clear();
-    child_assets.clear();
+    child_json_paths.clear();
 }
 
 void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
@@ -147,7 +144,6 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
         duplication_interval = 0;
     }
 }
-
 
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
     lights.clear();
@@ -229,8 +225,6 @@ void AssetInfo::generate_lights(SDL_Renderer* renderer) {
     }
 }
 
-
-
 void AssetInfo::load_shading_info(const nlohmann::json& data) {
     if (!data.contains("shading_info") || !data["shading_info"].is_object()) return;
     const auto& s = data["shading_info"];
@@ -281,10 +275,6 @@ void AssetInfo::load_shading_info(const nlohmann::json& data) {
         cast_shadow_intensity = 0;
 }
 
-
-
-
-
 void AssetInfo::load_collision_areas(const nlohmann::json& data,
                                      const std::string& dir_path,
                                      int offset_x,
@@ -298,40 +288,69 @@ void AssetInfo::load_collision_areas(const nlohmann::json& data,
 
 
 
-void AssetInfo::load_child_assets(const nlohmann::json& data,
-                                  const std::string& dir_path,
-                                  float scale_factor,
-                                  int offset_x,
-                                  int offset_y)
+void AssetInfo::load_child_json_paths(const nlohmann::json& data,
+                                      const std::string& dir_path)
 {
-    if (!data.contains("child_assets") || !data["child_assets"].is_array()) return;
+    children.clear();
+    if (!data.contains("child_assets") || !data["child_assets"].is_array())
+        return;
 
-    for (const auto& c : data["child_assets"]) {
-        if (!c.contains("asset") || !c["area_path"].is_string()) continue;
-
-        ChildAsset ca;
-        ca.asset                 = c["asset"].get<std::string>();
-        ca.z_offset              = c.value("z_offset", 0);
-        ca.min                   = c.value("min", 0);
-        ca.max                   = c.value("max", 0);
-        ca.terminate_with_parent = c.value("terminate_with_parent", false);
-
-        // Use try_load_area to load the child area
-        bool area_loaded = false;
-        try_load_area(c, "area_path", dir_path, ca.area, area_loaded, scale_factor, offset_x, offset_y);
-
-        if (!area_loaded) {
-            std::cerr << "[AssetInfo] Failed to load child area for asset '" << ca.asset << "'\n";
+    for (const auto& entry : data["child_assets"]) {
+        std::string rel_path;
+        if (entry.is_string()) {
+            rel_path = entry.get<std::string>();
+        }
+        else if (entry.is_object() && entry.contains("json_path") && entry["json_path"].is_string()) {
+            rel_path = entry["json_path"].get<std::string>();
+        } else {
             continue;
         }
 
-        child_assets.push_back(std::move(ca));
+        fs::path full_path = fs::path(dir_path) / rel_path;
+        if (!fs::exists(full_path)) {
+            std::cerr << "[AssetInfo] child JSON not found: " << full_path << "\n";
+            continue;
+        }
+
+        // open the child JSON file and read its z_offset
+        int z_offset_value = 0;
+        try {
+            std::ifstream in(full_path);
+            nlohmann::json childJson;
+            in >> childJson;
+            if (childJson.contains("z_offset")) {
+                auto& jz = childJson["z_offset"];
+                if (jz.is_number()) {
+                    z_offset_value = static_cast<int>(jz.get<double>());
+                } else if (jz.is_string()) {
+                    try { z_offset_value = std::stoi(jz.get<std::string>()); } catch (...) {}
+                }
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[AssetInfo] failed to parse z_offset from "
+                      << full_path << " | " << e.what() << "\n";
+        }
+
+        ChildInfo ci;
+        ci.json_path = full_path.string();
+        ci.z_offset  = z_offset_value;
+
+        try {
+            std::string area_name = fs::path(rel_path).stem().string();
+            ci.area_ptr = std::make_unique<Area>(area_name, full_path.string(), scale_factor);
+            ci.area_ptr->apply_offset(0, 100);
+            ci.has_area = true;
+            std::cout << "[AssetInfo] loaded child area from: "
+                      << full_path.string() << "\n";
+        } catch (const std::exception& e) {
+            std::cerr << "[AssetInfo] failed to construct area from child JSON: "
+                      << full_path << " | " << e.what() << "\n";
+            ci.has_area = false;
+        }
+
+        children.emplace_back(std::move(ci));
     }
 }
-
-
-
-
 
 
 
@@ -343,13 +362,12 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
                                 int& scaled_sprite_w,
                                 int& scaled_sprite_h)
 {
-    namespace fs = std::filesystem;
-
-    // Base cache directory: ./cache/<asset_name>/animations/
+    CacheManager cache;
     std::string root_cache = "cache/" + name + "/animations";
+
     for (auto it = anims_json.begin(); it != anims_json.end(); ++it) {
-        const std::string& trigger   = it.key();
-        const auto&        anim_json = it.value();
+        const std::string& trigger = it.key();
+        const auto& anim_json = it.value();
         if (anim_json.is_null() || !anim_json.contains("frames_path"))
             continue;
 
@@ -357,12 +375,11 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         std::string cache_folder = root_cache + "/" + trigger;
         std::string meta_file    = cache_folder + "/metadata.json";
 
-        // 1) Scan source to determine expected metadata
         int expected_frames = 0;
         int orig_w = 0, orig_h = 0;
         while (true) {
             std::string f = src_folder + "/" + std::to_string(expected_frames) + ".png";
-            if (!fs::exists(f)) break;
+            if (!std::filesystem::exists(f)) break;
             if (expected_frames == 0) {
                 if (SDL_Surface* s = IMG_Load(f.c_str())) {
                     orig_w = s->w;
@@ -374,98 +391,68 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         }
         if (expected_frames == 0) continue;
 
-        // 2) Try to load metadata and decide if cache is valid
         bool use_cache = false;
-        if (fs::exists(meta_file)) {
-            std::ifstream mfs(meta_file);
-            if (mfs) {
-                nlohmann::json meta;
-                mfs >> meta;
-                if (meta.value("frame_count", -1)     == expected_frames
-                    && meta.value("scale_factor", -1.0f) == scale_factor
-                    && meta.value("original_width",  -1) == orig_w
-                    && meta.value("original_height", -1) == orig_h
-                    && meta.value("blend_mode", -1)      == int(blendmode))
-                {
-                    use_cache = true;
-                }
+        nlohmann::json meta;
+        if (cache.load_metadata(meta_file, meta)) {
+            if (meta.value("frame_count", -1) == expected_frames &&
+                meta.value("scale_factor", -1.0f) == scale_factor &&
+                meta.value("original_width", -1) == orig_w &&
+                meta.value("original_height", -1) == orig_h &&
+                meta.value("blend_mode", -1) == int(blendmode))
+            {
+                use_cache = true;
             }
         }
 
-        std::vector<SDL_Surface*> loaded_surfaces;
-        // 3a) If cache valid, load surfaces from cache
+        std::vector<SDL_Surface*> surfaces;
         if (use_cache) {
-            for (int i = 0; i < expected_frames; ++i) {
-                std::string f = cache_folder + "/" + std::to_string(i) + ".png";
-                SDL_Surface* s = IMG_Load(f.c_str());
-                if (!s) { use_cache = false; break; }
-                loaded_surfaces.push_back(s);
-            }
+            use_cache = cache.load_surface_sequence(cache_folder, expected_frames, surfaces);
         }
 
-        // 3b) Otherwise regenerate and rewrite cache
         if (!use_cache) {
-            fs::remove_all(cache_folder);
-            fs::create_directories(cache_folder);
-
+            surfaces.clear();
             for (int i = 0; i < expected_frames; ++i) {
                 std::string f = src_folder + "/" + std::to_string(i) + ".png";
-                SDL_Surface* surface = IMG_Load(f.c_str());
-                if (!surface) {
-                    std::cerr << "[AssetInfo] Failed to load: " << f << "\n";
+                int new_w = 0, new_h = 0;
+                SDL_Surface* scaled = cache.load_and_scale_surface(f, scale_factor, new_w, new_h);
+                if (!scaled) {
+                    std::cerr << "[AssetInfo] Failed to load or scale: " << f << "\n";
                     continue;
                 }
-                SDL_SetSurfaceBlendMode(surface, blendmode);
+
+                SDL_SetSurfaceBlendMode(scaled, blendmode);
 
                 if (i == 0) {
-                    original_canvas_width  = surface->w;
-                    original_canvas_height = surface->h;
-                }
-
-                int new_w = int(surface->w * scale_factor + 0.5f);
-                int new_h = int(surface->h * scale_factor + 0.5f);
-                if (i == 0) {
+                    original_canvas_width  = orig_w;
+                    original_canvas_height = orig_h;
                     scaled_sprite_w = new_w;
                     scaled_sprite_h = new_h;
                 }
 
-                SDL_Surface* scaled = SDL_CreateRGBSurfaceWithFormat(
-                    0, new_w, new_h, 32, SDL_PIXELFORMAT_RGBA32);
-                SDL_BlitScaled(surface, nullptr, scaled, nullptr);
-                SDL_FreeSurface(surface);
-
-                // save to cache
-                std::string out = cache_folder + "/" + std::to_string(i) + ".png";
-                if (IMG_SavePNG(scaled, out.c_str()) != 0) {
-                    std::cerr << "[AssetInfo] Failed to save cache: " << out << "\n";
-                }
-
-                loaded_surfaces.push_back(scaled);
+                surfaces.push_back(scaled);
             }
 
-            // write new metadata
-            nlohmann::json meta;
-            meta["frame_count"]     = expected_frames;
-            meta["scale_factor"]    = scale_factor;
-            meta["original_width"]  = orig_w;
-            meta["original_height"] = orig_h;
-            meta["blend_mode"]      = int(blendmode);
-            std::ofstream mofs(meta_file);
-            mofs << meta.dump(4);
+            cache.save_surface_sequence(cache_folder, surfaces);
+
+            nlohmann::json new_meta;
+            new_meta["frame_count"]     = expected_frames;
+            new_meta["scale_factor"]    = scale_factor;
+            new_meta["original_width"]  = orig_w;
+            new_meta["original_height"] = orig_h;
+            new_meta["blend_mode"]      = int(blendmode);
+            cache.save_metadata(meta_file, new_meta);
         }
 
-        // 4) Turn surfaces into textures
         Animation anim;
         anim.on_end    = anim_json.value("on_end", "");
         anim.randomize = anim_json.value("randomize", false);
         anim.loop      = (anim.on_end == trigger);
 
-        for (SDL_Surface* surf : loaded_surfaces) {
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+        for (SDL_Surface* surf : surfaces) {
+            SDL_Texture* tex = cache.surface_to_texture(renderer, surf);
             SDL_FreeSurface(surf);
             if (!tex) {
-                std::cerr << "[AssetInfo] Failed to create texture for '"
-                          << trigger << "'\n";
+                std::cerr << "[AssetInfo] Failed to create texture for '" << trigger << "'\n";
                 continue;
             }
             SDL_SetTextureBlendMode(tex, blendmode);
@@ -476,38 +463,57 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
             base_sprite = anim.frames[0];
         }
 
-        std::cout << "[AssetInfo] Loaded " << anim.frames.size()
-                  << " frames for '" << trigger << "'\n";
-
         animations[trigger] = std::move(anim);
     }
 }
 
-
-
-
-
-
-
-
 void AssetInfo::try_load_area(const nlohmann::json& data,
                               const std::string& key,
                               const std::string& dir,
-                              Area& area_ref,
+                              std::unique_ptr<Area>& area_ref,
                               bool& flag_ref,
                               float scale,
                               int offset_x,
                               int offset_y)
 {
+    bool area_loaded = false;
+
     if (data.contains(key) && data[key].is_string()) {
         try {
-            std::string path = dir + "/" + data[key].get<std::string>();
-            area_ref = Area(path, scale);
+            std::string filename = data[key].get<std::string>();
+            std::string path = dir + "/" + filename;
+            std::string name = fs::path(filename).stem().string();
+
+            area_ref = std::make_unique<Area>(name, path, scale);
+            area_ref->apply_offset(offset_x, offset_y);
             flag_ref = true;
+            area_loaded = true;
         } catch (const std::exception& e) {
             std::cerr << "[AssetInfo] warning: failed to load area '"
                       << key << "': " << e.what() << std::endl;
         }
+    }
+
+    if (!area_loaded && key == "spacing_area") {
+        std::string fallback_name = name + "_circle_spacing";
+        int radius = static_cast<int>(std::ceil(std::max(original_canvas_width, original_canvas_height) * scale / 2.0f));
+        int center_x = offset_x;
+        int center_y = offset_y;
+        int size = radius * 2;
+
+        area_ref = std::make_unique<Area>(
+            fallback_name,
+            center_x,
+            center_y,
+            size,
+            size,
+            "Circle",
+            1,
+            std::numeric_limits<int>::max(),
+            std::numeric_limits<int>::max()
+        );
+        flag_ref = true;
+        std::cerr << "[AssetInfo] fallback: created circular spacing area for '" << name << "'\n";
     }
 }
 

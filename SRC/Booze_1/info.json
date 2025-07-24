@@ -19,17 +19,25 @@
         }
     },
     "tags": [
-        "passable",
+        "small",
         "crime",
-        "booze",
+        "brown",
+        "child",
         "drinking",
+        "barrel_child",
+        "passable",
+        "booze",
         "default"
     ],
-    "z_threshold": 7,
+    "z_threshold": 6,
     "size_settings": {
-        "scale_percentage": 5,
+        "scale_percentage": 6,
         "variability_percentage": 0
     },
     "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400
+    "rnd_spawn_max": 400,
+    "anti_tags": [],
+    "has_spacing": true,
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 0
 }

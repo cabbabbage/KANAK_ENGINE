@@ -1,9 +1,9 @@
 {
   "name": "fountain",
-  "min_width": 1609,
-  "max_width": 1609,
-  "min_height": 956,
-  "max_height": 956,
+  "min_width": 2078,
+  "max_width": 2500,
+  "min_height": 2082,
+  "max_height": 2500,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": false,
@@ -81,13 +81,13 @@
       {
         "name": "Barrel",
         "tag": false,
-        "percent": 5,
+        "percent": 2,
         "color": "#e08b50"
       },
       {
         "name": "null",
         "tag": false,
-        "percent": 95,
+        "percent": 98,
         "color": "#123602"
       }
     ]

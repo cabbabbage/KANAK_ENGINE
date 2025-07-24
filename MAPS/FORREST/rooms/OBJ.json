@@ -8,7 +8,7 @@
   "geometry": "Circle",
   "is_spawn": false,
   "is_boss": true,
-  "inherits_map_assets": false,
+  "inherits_map_assets": true,
   "assets": [
     {
       "name": "flower",

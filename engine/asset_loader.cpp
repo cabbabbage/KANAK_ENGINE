@@ -52,7 +52,7 @@ void AssetLoader::load_map_json() {
         throw std::runtime_error("map_info.json missing required fields");
     }
 
-    map_radius_        = j.value("map_radius", 0);
+    map_radius_        = (j.value("map_radius", 0));
     map_boundary_file_ = j.value("map_boundary", "");
     map_center_x_      = map_center_y_ = map_radius_;
 
@@ -96,10 +96,6 @@ std::vector<Asset> AssetLoader::extract_all_assets() {
             out.push_back(std::move(*aup));
         }
     }
-
-    for (auto& a : out) {
-        a.finalize_setup(renderer_);
-    }
     return out;
 }
 
@@ -108,7 +104,7 @@ std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
     areas.reserve(rooms_.size());
 
     for (Room* r : rooms_) {
-        areas.push_back(r->room_area);
+        areas.push_back(*r->room_area);
     }
     return areas;
 }
@@ -116,44 +112,82 @@ std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
 SDL_Texture* AssetLoader::createMinimap(int width, int height) {
     if (!renderer_ || width <= 0 || height <= 0) return nullptr;
 
-    SDL_Texture* minimap = SDL_CreateTexture(
+    int scaleFactor = 2;
+    int render_width  = width  * scaleFactor;
+    int render_height = height * scaleFactor;
+
+    SDL_Texture* highres = SDL_CreateTexture(
         renderer_,
         SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_TARGET,
-        width, height
+        render_width, render_height
     );
-    if (!minimap) {
-        std::cerr << "[Minimap] SDL_CreateTexture failed: " << SDL_GetError() << "\n";
+    if (!highres) {
+        std::cerr << "[Minimap] Failed to create high-res texture: " << SDL_GetError() << "\n";
         return nullptr;
     }
-    else {
-        std::cout << "[Minimap] SDL_CreateTexture created\n";
-    }
-    SDL_SetTextureBlendMode(minimap, SDL_BLENDMODE_BLEND);
 
+    SDL_SetTextureBlendMode(highres, SDL_BLENDMODE_BLEND);
     SDL_Texture* prev = SDL_GetRenderTarget(renderer_);
-    SDL_SetRenderTarget(renderer_, minimap);
+    SDL_SetRenderTarget(renderer_, highres);
 
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
     SDL_RenderClear(renderer_);
 
-    SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 255);
-    float scaleX = float(width)  / float(map_radius_ * 2);
-    float scaleY = float(height) / float(map_radius_ * 2);
+    float scaleX = float(render_width)  / float(map_radius_ * 2);
+    float scaleY = float(render_height) / float(map_radius_ * 2);
 
     for (Room* room : rooms_) {
         try {
-            auto [minx, miny, maxx, maxy] = room->room_area.get_bounds();
+            auto [minx, miny, maxx, maxy] = room->room_area->get_bounds();
             SDL_Rect r{ int(std::round(minx * scaleX)),
                         int(std::round(miny * scaleY)),
                         int(std::round((maxx - minx) * scaleX)),
                         int(std::round((maxy - miny) * scaleY)) };
-            SDL_RenderFillRect(renderer_, &r);
+
+            if (room->room_name.find("trail") != std::string::npos) {
+                SDL_SetRenderDrawColor(renderer_, 0, 255, 0, 255);
+                int cx = int(std::round((minx + maxx) * 0.5 * scaleX));
+                int cy = int(std::round((miny + maxy) * 0.5 * scaleY));
+                for (Room* connected : room->connected_rooms) {
+                    auto [tx1, ty1, tx2, ty2] = connected->room_area->get_bounds();
+                    int tcx = int(std::round((tx1 + tx2) * 0.5 * scaleX));
+                    int tcy = int(std::round((ty1 + ty2) * 0.5 * scaleY));
+                    SDL_RenderDrawLine(renderer_, cx, cy, tcx, tcy);
+                }
+            } else {
+                SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 255);
+                SDL_RenderFillRect(renderer_, &r);
+            }
         } catch (const std::exception& e) {
             std::cerr << "[Minimap] Skipping room with invalid bounds: " << e.what() << "\n";
         }
     }
 
     SDL_SetRenderTarget(renderer_, prev);
-    return minimap;
+
+    SDL_Texture* final = SDL_CreateTexture(
+        renderer_,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        width, height
+    );
+    if (!final) {
+        std::cerr << "[Minimap] Failed to create final texture: " << SDL_GetError() << "\n";
+        SDL_DestroyTexture(highres);
+        return nullptr;
+    }
+
+    SDL_SetRenderTarget(renderer_, final);
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
+    SDL_RenderClear(renderer_);
+
+    SDL_Rect src{ 0, 0, render_width, render_height };
+    SDL_Rect dst{ 0, 0, width, height };
+    SDL_RenderCopy(renderer_, highres, &src, &dst);
+
+    SDL_SetRenderTarget(renderer_, prev);
+    SDL_DestroyTexture(highres);
+
+    return final;
 }

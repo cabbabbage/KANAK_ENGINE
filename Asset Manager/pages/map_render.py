@@ -135,7 +135,8 @@ class MapRenderer:
                 else:
                     r = prev_r + 1.2 * ((size / 2.0) + (largest_sizes[i - 1] / 2.0))
 
-                radii.append(r + 750)
+                radii.append(r ** 1.05)
+
                 prev_r = r
 
             self.layer_radii = radii
@@ -148,7 +149,7 @@ class MapRenderer:
             for layer in self.layer_widgets:
                 for room_widget in layer.rooms:
                     roominfo_lookup[room_widget.room_name] = room_widget
-            map_radius = radii[-1] + (largest_sizes[-1] / 2.0) + 1500
+            map_radius = ((radii[-1] + (largest_sizes[-1] / 2.0) + 1500))
             self.render_preview(radii, areas_meta, map_radius, global_room_lookup, roominfo_lookup)
 
         finally:
