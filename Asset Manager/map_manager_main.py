@@ -8,14 +8,15 @@ from pages.rooms_page        import RoomsPage
 from pages.trails_page       import TrailsPage
 from pages.boundary_page     import BoundaryPage
 from pages.map_assets_page   import MapAssetsPage
-
+from pages.map_light_page    import MapLightPage
 MAPS_DIR = "MAPS"
 TABS = {
     "Map Info": MapInfoPage,
     "Rooms": RoomsPage,
     "Trails": TrailsPage,
     "Boundary": BoundaryPage,
-    "Map-Wide Assets": MapAssetsPage
+    "Map-Wide Assets": MapAssetsPage,
+    "Map Lighting": MapLightPage
 }
 
 

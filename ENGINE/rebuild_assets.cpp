@@ -3,6 +3,7 @@
 #include "generate_rooms.hpp"
 #include <filesystem>
 #include <iostream>
+#include <cstdlib> // for system()
 
 namespace fs = std::filesystem;
 
@@ -13,8 +14,19 @@ RebuildAssets::RebuildAssets(SDL_Renderer* renderer, const std::string& map_dir)
         std::cout << "[RebuildAssets] Cache directory deleted.\n";
 
         std::cout << "[RebuildAssets] Creating new AssetLibrary...\n";
-        AssetLibrary asset_lib(renderer);
+        AssetLibrary asset_lib;
+        asset_lib.load_all_from_SRC();
+        asset_lib.loadAllAnimations(renderer);
         std::cout << "[RebuildAssets] AssetLibrary rebuilt successfully.\n";
+
+        std::cout << "[RebuildAssets] Running cartoon effect Python script...\n";
+        int result = std::system("python scripts/add_effects.py");
+        if (result != 0) {
+            std::cerr << "[RebuildAssets] Python script failed with exit code: " << result << "\n";
+        } else {
+            std::cout << "[RebuildAssets] Python script finished successfully.\n";
+        }
+
     } catch (const std::exception& e) {
         std::cerr << "[RebuildAssets] Error: " << e.what() << "\n";
     }

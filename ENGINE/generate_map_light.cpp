@@ -1,46 +1,109 @@
-// generate_map_light.cpp
-
 #include "generate_map_light.hpp"
+#include "cache_manager.hpp"
 #include <cmath>
 #include <algorithm>
 #include <random>
 #include <vector>
 #include <iostream>
 #include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <SDL_image.h>
 
 namespace fs = std::filesystem;
+using json = nlohmann::json;
 
 Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
                                        int screen_center_x,
                                        int screen_center_y,
                                        int screen_width,
-                                       SDL_Color base_color,
-                                       Uint8 min_opacity,
-                                       Uint8 max_opacity)
+                                       SDL_Color fallback_base_color,
+                                       const std::string& map_path)
     : renderer_(renderer),
       texture_(nullptr),
-      base_color_(base_color),
-      current_color_(base_color),
-      min_opacity_(min_opacity),
-      max_opacity_(max_opacity),
-      radius_(screen_width * 3),
+      current_color_(fallback_base_color),
       center_x_(screen_center_x),
       center_y_(screen_center_y + 200),
       angle_(0.0f),
       initialized_(false),
       pos_x_(0),
-      pos_y_(0) {
-    
+      pos_y_(0)
+{
+    // Defaults
+    min_opacity_ = 50;
+    max_opacity_ = 255;
+    radius_ = screen_width * 3;
+    intensity_ = 255;
+    orbit_radius = 150;
+    update_interval_ = 2;
+    mult_ = 0.4;
+    base_color_ = fallback_base_color;
+
+    std::string config_file = map_path + "/map_light.json";
+    std::ifstream file(config_file);
+    if (file.is_open()) {
+        try {
+            json j;
+            file >> j;
+            if (j.contains("min_opacity")) min_opacity_ = j["min_opacity"];
+            if (j.contains("max_opacity")) max_opacity_ = j["max_opacity"];
+            if (j.contains("radius")) radius_ = j["radius"];
+            if (j.contains("intensity")) intensity_ = j["intensity"];
+            if (j.contains("orbit_radius")) orbit_radius = j["orbit_radius"];
+            if (j.contains("update_interval")) update_interval_ = j["update_interval"];
+            if (j.contains("mult")) mult_ = j["mult"];
+            if (j.contains("base_color") && j["base_color"].is_array() && j["base_color"].size() >= 3) {
+                base_color_.r = j["base_color"][0];
+                base_color_.g = j["base_color"][1];
+                base_color_.b = j["base_color"][2];
+                base_color_.a = (j["base_color"].size() > 3) ? j["base_color"][3] : 255;
+            }
+            if (j.contains("keys") && j["keys"].is_array()) {
+                for (const auto& entry : j["keys"]) {
+                    if (!entry.is_array() || entry.size() != 2) continue;
+                    float deg = entry[0];
+                    auto color = entry[1];
+                    if (color.is_array() && color.size() == 4) {
+                        SDL_Color c;
+                        c.r = color[0];
+                        c.g = color[1];
+                        c.b = color[2];
+                        c.a = color[3];
+                        key_colors_.push_back({ deg, c });
+                    }
+                }
+            }
+        } catch (...) {
+            std::cerr << "[MapLight] Error parsing map_light.json; using defaults.\n";
+        }
+    }
+
+    if (key_colors_.empty()) {
+        key_colors_ = {
+            {  0.0f,   {255, 255, 255, 255}},
+            { 85.0f,   {255, 255, 255, 200}},
+            { 95.0f,   {120, 80,  50,  static_cast<Uint8>(60 * mult_)}},
+            {105.0f,   {90,  55,  90,  static_cast<Uint8>(50 * mult_)}},
+            {120.0f,   {60,  70, 150,  static_cast<Uint8>(20 * mult_)}},
+            {150.0f,   {0,   0,   0,   static_cast<Uint8>(0   * mult_)}},
+            {210.0f,   {0,   0,   0,   static_cast<Uint8>(0   * mult_)}},
+            {240.0f,   {60,  70, 150,  static_cast<Uint8>(20 * mult_)}},
+            {255.0f,   {90,  55,  90,  static_cast<Uint8>(50 * mult_)}},
+            {265.0f,   {120, 80,  50,  static_cast<Uint8>(60 * mult_)}},
+            {275.0f,   {255, 255, 255, 200}},
+            {360.0f,   {255, 255, 255, 255}}
+        };
+    }
+
     std::string cache_path = "cache/map_light.bmp";
+    CacheManager cache;
 
     if (fs::exists(cache_path)) {
-        SDL_Surface* surf = IMG_Load(cache_path.c_str());
+        SDL_Surface* surf = cache.load_surface(cache_path);
         if (surf) {
-            texture_ = SDL_CreateTextureFromSurface(renderer_, surf);
+            texture_ = cache.surface_to_texture(renderer_, surf);
             SDL_FreeSurface(surf);
             if (texture_) {
-                SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
                 std::cout << "[MapLight] Loaded cached light texture.\n";
                 return;
             }
@@ -50,6 +113,7 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
 
     build_texture();
 }
+
 
 void Generate_Map_Light::update() {
     ++frame_counter_;
@@ -72,7 +136,7 @@ void Generate_Map_Light::update() {
     float fade = compute_opacity_from_horizon(norm);
     Uint8 alpha = static_cast<Uint8>(min_opacity_ + (max_opacity_ - min_opacity_) * fade);
 
-    SDL_Color new_color = compute_color_from_horizon(norm);
+    SDL_Color new_color = compute_color_from_horizon();
     new_color.a = alpha;
     current_color_ = new_color;
 }
@@ -87,6 +151,7 @@ SDL_Texture* Generate_Map_Light::get_texture() const {
 
 void Generate_Map_Light::build_texture() {
     if (texture_) SDL_DestroyTexture(texture_);
+
     int size = radius_ * 2;
     texture_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, size, size);
     if (!texture_) return;
@@ -114,7 +179,6 @@ void Generate_Map_Light::build_texture() {
 
     SDL_SetRenderTarget(renderer_, nullptr);
 
-    // Save texture to BMP file
     int w, h;
     SDL_QueryTexture(texture_, nullptr, nullptr, &w, &h);
     SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA8888);
@@ -124,7 +188,8 @@ void Generate_Map_Light::build_texture() {
         SDL_SetRenderTarget(renderer_, nullptr);
 
         fs::create_directories("cache");
-        if (SDL_SaveBMP(surf, "cache/map_light.bmp") == 0) {
+        CacheManager cache;
+        if (cache.save_surface_as_png(surf, "cache/map_light.bmp")) {
             std::cout << "[MapLight] Cached light texture to disk.\n";
         } else {
             std::cerr << "[MapLight] Failed to save cache: " << SDL_GetError() << "\n";
@@ -139,41 +204,18 @@ float Generate_Map_Light::compute_opacity_from_horizon(float norm) const {
     return std::clamp(fade, 0.0f, 1.0f);
 }
 
-SDL_Color Generate_Map_Light::compute_color_from_horizon(float /*norm*/) const {
+SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
     float degrees = angle_ * (180.0f / M_PI);
     if (degrees < 0) degrees += 360.0f;
     if (degrees > 360.0f) degrees -= 360.0f;
-
-    struct KeyColor {
-        float degree;
-        SDL_Color color;
-    };
-
-    double mult = 0.4;
-
-    std::vector<KeyColor> keys = {
-        {  0.0f,   { 255, 255, 255, static_cast<Uint8>(255) }},
-        { 85.0f,   { 255, 255, 255, static_cast<Uint8>(200) }},
-        { 95.0f,   { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},
-        { 105.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},
-        { 120.0f,  { 60,  70, 150,  static_cast<Uint8>(20 * mult) }},
-        { 150.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},
-        { 210.0f,  { 0,   0,   0,   static_cast<Uint8>(0   * mult) }},
-        { 240.0f,  { 60,  70, 150,  static_cast<Uint8>(20 * mult) }},
-        { 255.0f,  { 90,  55,  90,  static_cast<Uint8>(50 * mult) }},
-        { 265.0f,  { 120, 80,  50,  static_cast<Uint8>(60 * mult) }},
-        { 275.0f,  { 255, 255, 255, static_cast<Uint8>(200) }},
-        { 360.0f,  { 255, 255, 255, static_cast<Uint8>(255) }}
-    };
 
     auto lerp = [](Uint8 a, Uint8 b, float t) -> Uint8 {
         return static_cast<Uint8>(a + t * (b - a));
     };
 
-    for (size_t i = 0; i < keys.size() - 1; ++i) {
-        const auto& k0 = keys[i];
-        const auto& k1 = keys[i + 1];
-
+    for (size_t i = 0; i + 1 < key_colors_.size(); ++i) {
+        const auto& k0 = key_colors_[i];
+        const auto& k1 = key_colors_[i + 1];
         if (degrees >= k0.degree && degrees <= k1.degree) {
             float t = (degrees - k0.degree) / (k1.degree - k0.degree);
             SDL_Color result;
@@ -185,5 +227,5 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon(float /*norm*/) const {
         }
     }
 
-    return keys.back().color;
+    return key_colors_.empty() ? base_color_ : key_colors_.back().color;
 }

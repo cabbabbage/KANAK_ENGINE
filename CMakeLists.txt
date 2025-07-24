@@ -14,7 +14,10 @@ file(GLOB ENGINE_SRC
 add_executable(engine ${ENGINE_SRC})
 
 # Include local headers
-target_include_directories(engine PRIVATE ${CMAKE_SOURCE_DIR}/ENGINE)
+target_include_directories(engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/ENGINE
+    ${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/include/custom
+)
 
 # VCPKG-managed dependencies (those that provide CMake config files)
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -25,8 +28,6 @@ find_package(SDL2_ttf CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(sdl2-gfx CONFIG REQUIRED)
-
-
 
 # SDL2_gfx does NOT provide a config file, so we locate it manually
 set(SDL2_GFX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/include/SDL2")

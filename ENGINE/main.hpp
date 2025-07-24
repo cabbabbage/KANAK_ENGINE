@@ -1,5 +1,9 @@
-// main.hpp
-#pragma once
-#include <string>
+#ifndef MAIN_HPP
+#define MAIN_HPP
 
-void run(const std::string& map_path);
+#include <string>
+#include <SDL.h>
+
+void run(const std::string& map_path, SDL_Renderer* renderer, int screen_w, int screen_h);
+
+#endif // MAIN_HPP

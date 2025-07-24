@@ -1,35 +1,13 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: === Optional flags -f and -r ===
-:: -r : remove cache folder first
-:: -f : run crop.py from inside ./cache
-
-:: Handle -r: Remove entire cache folder if requested
+set "EXTRA_ARGS="
 if "%~1"=="-r" (
-    echo [RESET] Removing entire cache folder...
-    rmdir /s /q cache >nul 2>&1
+    echo [INFO] RebuildAssets mode requested.
+    set "EXTRA_ARGS=-r"
 )
 
-:: Handle -f: Copy and run crop.py inside ./cache
-if "%~1"=="-f" (
-    echo [FORCE] Preparing cache directory...
-    if not exist "cache" mkdir cache
-
-    if exist "cache\\crop.py" (
-        del /q "cache\\crop.py"
-    )
-
-    echo [COPY] Copying crop.py to cache...
-    copy /Y crop.py cache\\ >nul
-
-    pushd cache
-    echo [RUN] Executing crop.py from cache...
-    python crop.py
-    popd
-)
-
-:: === Step 0: Ensure vcpkg exists and is bootstrapped ===
+:: === Step 1: Ensure vcpkg exists and is bootstrapped ===
 echo Checking vcpkg setup...
 if not exist "vcpkg" (
     echo [INFO] Cloning vcpkg...
@@ -52,7 +30,7 @@ if not exist "vcpkg\vcpkg.exe" (
     )
 )
 
-:: === Step 1: Confirm critical files exist ===
+:: === Step 2: Confirm critical files exist ===
 echo Checking required files and directories...
 if not exist "CMakeLists.txt" (
     echo [ERROR] Missing CMakeLists.txt in root directory.
@@ -71,7 +49,23 @@ if not exist "vcpkg\\scripts\\buildsystems\\vcpkg.cmake" (
     pause & exit /b 1
 )
 
-:: === Step 2: Install dependencies if missing ===
+:: === Step 2.5: Ensure stb_image_resize2.h is present ===
+set "STB_DEST=vcpkg\installed\x64-windows\include\custom"
+if not exist "%STB_DEST%\stb_image_resize2.h" (
+    echo [INFO] Downloading stb_image_resize2.h...
+    mkdir "%STB_DEST%" >nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; " ^
+        "Invoke-WebRequest https://raw.githubusercontent.com/nothings/stb/master/stb_image_resize2.h -OutFile '%STB_DEST%\stb_image_resize2.h'"
+    if errorlevel 1 (
+        echo [ERROR] Failed to download stb_image_resize2.h
+        pause & exit /b 1
+    )
+)
+
+
+
+:: === Step 3: Install missing dependencies ===
 set "VCPKG_TRIPLET=x64-windows"
 set "DEPENDENCIES=sdl2 sdl2-image sdl2-mixer sdl2-ttf sdl2-gfx nlohmann-json glad"
 
@@ -92,12 +86,12 @@ for %%D in (!DEPENDENCIES!) do (
 )
 echo ✅ All dependencies verified or installed.
 
-:: === Step 3: Clean old build cache ===
+:: === Step 4: Clean build ===
 echo Cleaning previous CMake cache...
 rmdir /s /q build >nul 2>&1
 mkdir build
 
-:: === Step 4: Configure project with CMake ===
+:: === Step 5: Configure with CMake ===
 echo Configuring project...
 cmake -G "Visual Studio 17 2022" -A x64 ^
   -DCMAKE_TOOLCHAIN_FILE="%cd%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake" ^
@@ -108,7 +102,7 @@ if errorlevel 1 (
     pause & exit /b 1
 )
 
-:: === Step 5: Build project ===
+:: === Step 6: Build ===
 echo Building project...
 cmake --build build --config Release
 if errorlevel 1 (
@@ -116,15 +110,15 @@ if errorlevel 1 (
     pause & exit /b 1
 )
 
-:: After successful build, launch the executable
+:: === Step 7: Launch executable ===
 set EXE1=%~dp0ENGINE\\Release\\engine.exe
 set EXE2=%~dp0build\\Release\\engine.exe
 
 echo Launching built game...
 if exist "%EXE1%" (
-    "%EXE1%"
+    "%EXE1%" %EXTRA_ARGS%
 ) else if exist "%EXE2%" (
-    "%EXE2%"
+    "%EXE2%" %EXTRA_ARGS%
 ) else (
     echo Executable not found at "%EXE1%" or "%EXE2%"
 )

@@ -1,4 +1,5 @@
 #include "asset_info.hpp"
+#include "cache_manager.hpp"
 #include <SDL_image.h>
 #include <iostream>
 #include <fstream>
@@ -334,9 +335,6 @@ void AssetInfo::load_child_assets(const nlohmann::json& data,
 
 
 
-
-
-
 void AssetInfo::load_animations(const nlohmann::json& anims_json,
                                 const std::string& dir_path,
                                 SDL_Renderer* renderer,
@@ -344,13 +342,12 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
                                 int& scaled_sprite_w,
                                 int& scaled_sprite_h)
 {
-    namespace fs = std::filesystem;
-
-    // Base cache directory: ./cache/<asset_name>/animations/
+    CacheManager cache;
     std::string root_cache = "cache/" + name + "/animations";
+
     for (auto it = anims_json.begin(); it != anims_json.end(); ++it) {
-        const std::string& trigger   = it.key();
-        const auto&        anim_json = it.value();
+        const std::string& trigger = it.key();
+        const auto& anim_json = it.value();
         if (anim_json.is_null() || !anim_json.contains("frames_path"))
             continue;
 
@@ -358,12 +355,11 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         std::string cache_folder = root_cache + "/" + trigger;
         std::string meta_file    = cache_folder + "/metadata.json";
 
-        // 1) Scan source to determine expected metadata
         int expected_frames = 0;
         int orig_w = 0, orig_h = 0;
         while (true) {
             std::string f = src_folder + "/" + std::to_string(expected_frames) + ".png";
-            if (!fs::exists(f)) break;
+            if (!std::filesystem::exists(f)) break;
             if (expected_frames == 0) {
                 if (SDL_Surface* s = IMG_Load(f.c_str())) {
                     orig_w = s->w;
@@ -375,98 +371,68 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         }
         if (expected_frames == 0) continue;
 
-        // 2) Try to load metadata and decide if cache is valid
         bool use_cache = false;
-        if (fs::exists(meta_file)) {
-            std::ifstream mfs(meta_file);
-            if (mfs) {
-                nlohmann::json meta;
-                mfs >> meta;
-                if (meta.value("frame_count", -1)     == expected_frames
-                    && meta.value("scale_factor", -1.0f) == scale_factor
-                    && meta.value("original_width",  -1) == orig_w
-                    && meta.value("original_height", -1) == orig_h
-                    && meta.value("blend_mode", -1)      == int(blendmode))
-                {
-                    use_cache = true;
-                }
+        nlohmann::json meta;
+        if (cache.load_metadata(meta_file, meta)) {
+            if (meta.value("frame_count", -1) == expected_frames &&
+                meta.value("scale_factor", -1.0f) == scale_factor &&
+                meta.value("original_width", -1) == orig_w &&
+                meta.value("original_height", -1) == orig_h &&
+                meta.value("blend_mode", -1) == int(blendmode))
+            {
+                use_cache = true;
             }
         }
 
-        std::vector<SDL_Surface*> loaded_surfaces;
-        // 3a) If cache valid, load surfaces from cache
+        std::vector<SDL_Surface*> surfaces;
         if (use_cache) {
-            for (int i = 0; i < expected_frames; ++i) {
-                std::string f = cache_folder + "/" + std::to_string(i) + ".png";
-                SDL_Surface* s = IMG_Load(f.c_str());
-                if (!s) { use_cache = false; break; }
-                loaded_surfaces.push_back(s);
-            }
+            use_cache = cache.load_surface_sequence(cache_folder, expected_frames, surfaces);
         }
 
-        // 3b) Otherwise regenerate and rewrite cache
         if (!use_cache) {
-            fs::remove_all(cache_folder);
-            fs::create_directories(cache_folder);
-
+            surfaces.clear();
             for (int i = 0; i < expected_frames; ++i) {
                 std::string f = src_folder + "/" + std::to_string(i) + ".png";
-                SDL_Surface* surface = IMG_Load(f.c_str());
-                if (!surface) {
-                    std::cerr << "[AssetInfo] Failed to load: " << f << "\n";
+                int new_w = 0, new_h = 0;
+                SDL_Surface* scaled = cache.load_and_scale_surface(f, scale_factor, new_w, new_h);
+                if (!scaled) {
+                    std::cerr << "[AssetInfo] Failed to load or scale: " << f << "\n";
                     continue;
                 }
-                SDL_SetSurfaceBlendMode(surface, blendmode);
+
+                SDL_SetSurfaceBlendMode(scaled, blendmode);
 
                 if (i == 0) {
-                    original_canvas_width  = surface->w;
-                    original_canvas_height = surface->h;
-                }
-
-                int new_w = int(surface->w * scale_factor + 0.5f);
-                int new_h = int(surface->h * scale_factor + 0.5f);
-                if (i == 0) {
+                    original_canvas_width  = orig_w;
+                    original_canvas_height = orig_h;
                     scaled_sprite_w = new_w;
                     scaled_sprite_h = new_h;
                 }
 
-                SDL_Surface* scaled = SDL_CreateRGBSurfaceWithFormat(
-                    0, new_w, new_h, 32, SDL_PIXELFORMAT_RGBA32);
-                SDL_BlitScaled(surface, nullptr, scaled, nullptr);
-                SDL_FreeSurface(surface);
-
-                // save to cache
-                std::string out = cache_folder + "/" + std::to_string(i) + ".png";
-                if (IMG_SavePNG(scaled, out.c_str()) != 0) {
-                    std::cerr << "[AssetInfo] Failed to save cache: " << out << "\n";
-                }
-
-                loaded_surfaces.push_back(scaled);
+                surfaces.push_back(scaled);
             }
 
-            // write new metadata
-            nlohmann::json meta;
-            meta["frame_count"]     = expected_frames;
-            meta["scale_factor"]    = scale_factor;
-            meta["original_width"]  = orig_w;
-            meta["original_height"] = orig_h;
-            meta["blend_mode"]      = int(blendmode);
-            std::ofstream mofs(meta_file);
-            mofs << meta.dump(4);
+            cache.save_surface_sequence(cache_folder, surfaces);
+
+            nlohmann::json new_meta;
+            new_meta["frame_count"]     = expected_frames;
+            new_meta["scale_factor"]    = scale_factor;
+            new_meta["original_width"]  = orig_w;
+            new_meta["original_height"] = orig_h;
+            new_meta["blend_mode"]      = int(blendmode);
+            cache.save_metadata(meta_file, new_meta);
         }
 
-        // 4) Turn surfaces into textures
         Animation anim;
         anim.on_end    = anim_json.value("on_end", "");
         anim.randomize = anim_json.value("randomize", false);
         anim.loop      = (anim.on_end == trigger);
 
-        for (SDL_Surface* surf : loaded_surfaces) {
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+        for (SDL_Surface* surf : surfaces) {
+            SDL_Texture* tex = cache.surface_to_texture(renderer, surf);
             SDL_FreeSurface(surf);
             if (!tex) {
-                std::cerr << "[AssetInfo] Failed to create texture for '"
-                          << trigger << "'\n";
+                std::cerr << "[AssetInfo] Failed to create texture for '" << trigger << "'\n";
                 continue;
             }
             SDL_SetTextureBlendMode(tex, blendmode);
@@ -483,7 +449,6 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
         animations[trigger] = std::move(anim);
     }
 }
-
 
 
 
