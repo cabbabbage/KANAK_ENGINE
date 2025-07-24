@@ -26,8 +26,6 @@ public:
     // Call this when you have an SDL_Renderer to generate lighting textures
     void finalize_setup(SDL_Renderer* renderer);
 
-
-
     // Move the asset and recompute its z-index
     void set_position(int x, int y);
 
@@ -72,9 +70,10 @@ public:
     std::vector<Area> base_areas;
     std::vector<Area> areas;
     std::vector<Asset> children;
+    int depth = 0;  // Tracks nesting level for limiting child spawning
 
 private:
-    void spawn_children(SDL_Renderer* renderer);
+
     void set_z_index();
     int current_frame_index = 0;
     bool static_frame = true;

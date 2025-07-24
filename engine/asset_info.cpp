@@ -87,7 +87,7 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     int offset_y = (scaled_canvas_h - 0);
 
     load_collision_areas(data, dir_path_, offset_x, offset_y);
-    load_child_assets(data, dir_path_, scale_factor, offset_x, offset_y);
+    load_child_json_paths(data, dir_path_);
 }
 
 AssetInfo::~AssetInfo() {
@@ -102,7 +102,7 @@ AssetInfo::~AssetInfo() {
         anim.frames.clear();
     }
     animations.clear();
-    child_assets.clear();
+    child_json_paths.clear();
 }
 
 void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
@@ -300,33 +300,20 @@ void AssetInfo::load_collision_areas(const nlohmann::json& data,
 
 
 
-void AssetInfo::load_child_assets(const nlohmann::json& data,
-                                  const std::string& dir_path,
-                                  float scale_factor,
-                                  int offset_x,
-                                  int offset_y)
+void AssetInfo::load_child_json_paths(const nlohmann::json& data,
+                                      const std::string& dir_path)
 {
-    if (!data.contains("child_assets") || !data["child_assets"].is_array()) return;
+    if (!data.contains("child_assets") || !data["child_assets"].is_array())
+        return;
 
     for (const auto& c : data["child_assets"]) {
-        if (!c.contains("asset") || !c["area_path"].is_string()) continue;
-
-        auto ca = std::make_unique<ChildAsset>();
-        ca->asset                 = c["asset"].get<std::string>();
-        ca->z_offset              = c.value("z_offset", 0);
-        ca->min                   = c.value("min", 0);
-        ca->max                   = c.value("max", 0);
-        ca->terminate_with_parent = c.value("terminate_with_parent", false);
-
-        bool area_loaded = false;
-        try_load_area(c, "area_path", dir_path, ca->area, area_loaded, scale_factor, offset_x, offset_y);
-
-        if (!area_loaded) {
-            std::cerr << "[AssetInfo] Failed to load child area for asset '" << ca->asset << "'\n";
-            continue;
+        if (c.is_string()) {
+            // Direct string path
+            child_json_paths.push_back(c.get<std::string>());
+        } else if (c.contains("json_path") && c["json_path"].is_string()) {
+            // Dictionary with explicit key
+            child_json_paths.push_back(c["json_path"].get<std::string>());
         }
-
-        child_assets.push_back(std::move(ca));
     }
 }
 

@@ -34,6 +34,7 @@ public:
     // Metadata
     const std::string& get_name() const { return area_name_; }
     double get_size() const;
+
 private:
     std::vector<Point> points;
     std::string area_name_;

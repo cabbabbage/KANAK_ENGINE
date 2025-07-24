@@ -1,0 +1,18 @@
+{
+  "z_min": 0,
+  "z_max": 0,
+  "area": null,
+  "assets": [
+    {
+      "name": "Bench",
+      "min_number": 0,
+      "max_number": 0,
+      "position": "Random",
+      "exact_position": null,
+      "tag": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    }
+  ]
+}

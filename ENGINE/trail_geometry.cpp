@@ -149,18 +149,23 @@ bool TrailGeometry::attempt_trail_connection(
                   << "  curvyness=" << curvyness << "\n";
     }
 
-    auto adjust_point = [](const Point& from, const Point& to, double d) {
+    // — Entry depth percentage (0.0 = center, 1.0 = edge) —
+    const double trail_entry_depth = 0.1;
+
+    auto adjust_point = [trail_entry_depth](const Point& from, const Point& to) {
         double dx = to.first  - from.first;
         double dy = to.second - from.second;
         double len = std::hypot(dx, dy);
         if (len == 0) return from;
         return Point {
-            int(std::round(from.first  + dx/len * d)),
-            int(std::round(from.second + dy/len * d))
+            int(std::round(from.first  + dx / len * len * trail_entry_depth)),
+            int(std::round(from.second + dy / len * len * trail_entry_depth))
         };
     };
-    Point start = adjust_point(a->map_origin, b->map_origin, 20);
-    Point end   = adjust_point(b->map_origin, a->map_origin, 20);
+
+    Point start = adjust_point(a->map_origin, b->map_origin);
+    Point end   = adjust_point(b->map_origin, a->map_origin);
+
 
     auto centerline = TrailGeometry().build_centerline(start, end, curvyness);
     auto polygon    = TrailGeometry().extrude_centerline(centerline, width);

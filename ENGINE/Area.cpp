@@ -243,3 +243,5 @@ Area::Point Area::get_center() const{
 double Area::get_size() const {
     return area_size;
 }
+
+
