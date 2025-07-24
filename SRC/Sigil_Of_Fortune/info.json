@@ -21,7 +21,7 @@
   "rnd_spawn_max": 400,
   "z_threshold": -100000,
   "size_settings": {
-    "scale_percentage": 100.0,
+    "scale_percentage": 116,
     "variability_percentage": 0.0
   },
   "spacing_area": "spacing_area.json",

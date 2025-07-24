@@ -1,5 +1,12 @@
+// === File: asset_spawner.hpp ===
 #pragma once
 
+#include <vector>
+#include <string>
+#include <memory>
+#include <random>
+#include <unordered_map>
+#include <nlohmann/json.hpp>
 #include "Area.hpp"
 #include "Asset.hpp"
 #include "Room.hpp"
@@ -7,15 +14,7 @@
 #include "asset_library.hpp"
 #include "asset_spawn_planner.hpp"
 #include "spawn_logger.hpp"
-
-// Forward declaration to break circular dependency
-class Check;
-
-#include <vector>
-#include <string>
-#include <memory>
-#include <random>
-#include <unordered_map>
+#include "check.hpp"
 
 class AssetSpawner {
 public:
@@ -30,14 +29,13 @@ public:
 
 private:
     void run_spawning(AssetSpawnPlanner* planner, const Area& area);
+    void spawn_all_children();
 
     std::vector<Area> exclusion_zones;
     AssetLibrary* asset_library_;
-
     std::mt19937 rng_;
-    Check checker_;  // Now known due to forward declaration + full include in .cpp
+    Check checker_;
     SpawnLogger logger_;
-
     std::vector<SpawnInfo> spawn_queue_;
     std::unordered_map<std::string, std::shared_ptr<AssetInfo>> asset_info_library_;
     std::vector<std::unique_ptr<Asset>> all_;

@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 1350,
-  "max_width": 1350,
+  "min_width": 1300,
+  "max_width": 1300,
   "curvyness": 1,
   "assets": [
     {
@@ -25,17 +25,17 @@
       "check_overlap": false,
       "check_min_spacing": false,
       "inherited": false,
-      "border_shift_min": 90,
-      "border_shift_max": 90,
+      "border_shift_min": 163,
+      "border_shift_max": 163,
       "sector_center_min": 0,
       "sector_center_max": 0,
       "sector_range_min": 360,
       "sector_range_max": 360
     },
     {
-      "name": "car",
-      "min_number": 0,
-      "max_number": 1,
+      "name": "Stump",
+      "min_number": -54,
+      "max_number": 20,
       "position": "Random",
       "exact_position": null,
       "tag": false,

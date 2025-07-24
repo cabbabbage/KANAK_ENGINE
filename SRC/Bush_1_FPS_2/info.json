@@ -14,7 +14,7 @@
   "impassable_area": null,
   "z_threshold": 4,
   "size_settings": {
-    "scale_percentage": 10,
+    "scale_percentage": 12,
     "variability_percentage": 0
   },
   "spacing_area": "spacing_area.json",
@@ -28,7 +28,6 @@
   "min_child_depth": 0,
   "max_child_depth": 2,
   "tags": [
-    "any",
     "passable"
   ],
   "rnd_spawn_min": 300,

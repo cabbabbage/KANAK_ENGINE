@@ -2,27 +2,27 @@
   "assets": [],
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 56,
-    "grid_spacing_max": 91,
-    "jitter_min": 4,
-    "jitter_max": 4,
+    "grid_spacing_min": 87,
+    "grid_spacing_max": 87,
+    "jitter_min": 5,
+    "jitter_max": 5,
     "batch_assets": [
       {
         "name": "Grass_FPS_2",
         "tag": false,
-        "percent": 39,
+        "percent": 31,
         "color": "#da2582"
       },
       {
         "name": "null",
         "tag": false,
-        "percent": 18,
+        "percent": 14,
         "color": "#a49367"
       },
       {
         "name": "Grass_1_FPS_2",
         "tag": false,
-        "percent": 39,
+        "percent": 31,
         "color": "#6193a3"
       },
       {
@@ -42,6 +42,18 @@
         "tag": false,
         "percent": 2,
         "color": "#f0431a"
+      },
+      {
+        "name": "pretty",
+        "tag": true,
+        "percent": 2,
+        "color": "#6ce51b"
+      },
+      {
+        "name": "fog",
+        "tag": false,
+        "percent": 18,
+        "color": "#439315"
       }
     ]
   }

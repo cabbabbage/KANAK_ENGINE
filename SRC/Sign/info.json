@@ -13,12 +13,11 @@
   },
   "impassable_area": null,
   "tags": [
-    "any",
     "passable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 503
+  "min_same_type_distance": 0
 }

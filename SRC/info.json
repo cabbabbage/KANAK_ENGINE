@@ -1,17 +1,16 @@
 {
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 0.25,
-            "on_end": "",
-            "event_data": [],
-            "randomize": true,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "tags": [
-        "default",
-        "any"
-    ]
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 0.25,
+      "on_end": "",
+      "event_data": [],
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "tags": [
+    "default"
+  ]
 }

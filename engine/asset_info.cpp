@@ -75,10 +75,6 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     variability_percentage = ss.value("variability_percentage", 0.0f);
     scale_factor           = scale_percentage / 100.0f;
 
-    // Warn if default animation missing (frames will be loaded later)
-    if (!animations.count("default") || animations["default"].frames.empty()) {
-        std::cerr << "[AssetInfo] WARNING: no valid 'default' animation for '" << name << "'\n";
-    }
 
     // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);
@@ -148,7 +144,6 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
         duplication_interval = 0;
     }
 }
-
 
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
     lights.clear();
@@ -230,8 +225,6 @@ void AssetInfo::generate_lights(SDL_Renderer* renderer) {
     }
 }
 
-
-
 void AssetInfo::load_shading_info(const nlohmann::json& data) {
     if (!data.contains("shading_info") || !data["shading_info"].is_object()) return;
     const auto& s = data["shading_info"];
@@ -282,10 +275,6 @@ void AssetInfo::load_shading_info(const nlohmann::json& data) {
         cast_shadow_intensity = 0;
 }
 
-
-
-
-
 void AssetInfo::load_collision_areas(const nlohmann::json& data,
                                      const std::string& dir_path,
                                      int offset_x,
@@ -299,25 +288,69 @@ void AssetInfo::load_collision_areas(const nlohmann::json& data,
 
 
 
-
 void AssetInfo::load_child_json_paths(const nlohmann::json& data,
                                       const std::string& dir_path)
 {
+    children.clear();
     if (!data.contains("child_assets") || !data["child_assets"].is_array())
         return;
 
-    for (const auto& c : data["child_assets"]) {
-        if (c.is_string()) {
-            // Direct string path
-            child_json_paths.push_back(c.get<std::string>());
-        } else if (c.contains("json_path") && c["json_path"].is_string()) {
-            // Dictionary with explicit key
-            child_json_paths.push_back(c["json_path"].get<std::string>());
+    for (const auto& entry : data["child_assets"]) {
+        std::string rel_path;
+        if (entry.is_string()) {
+            rel_path = entry.get<std::string>();
         }
+        else if (entry.is_object() && entry.contains("json_path") && entry["json_path"].is_string()) {
+            rel_path = entry["json_path"].get<std::string>();
+        } else {
+            continue;
+        }
+
+        fs::path full_path = fs::path(dir_path) / rel_path;
+        if (!fs::exists(full_path)) {
+            std::cerr << "[AssetInfo] child JSON not found: " << full_path << "\n";
+            continue;
+        }
+
+        // open the child JSON file and read its z_offset
+        int z_offset_value = 0;
+        try {
+            std::ifstream in(full_path);
+            nlohmann::json childJson;
+            in >> childJson;
+            if (childJson.contains("z_offset")) {
+                auto& jz = childJson["z_offset"];
+                if (jz.is_number()) {
+                    z_offset_value = static_cast<int>(jz.get<double>());
+                } else if (jz.is_string()) {
+                    try { z_offset_value = std::stoi(jz.get<std::string>()); } catch (...) {}
+                }
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[AssetInfo] failed to parse z_offset from "
+                      << full_path << " | " << e.what() << "\n";
+        }
+
+        ChildInfo ci;
+        ci.json_path = full_path.string();
+        ci.z_offset  = z_offset_value;
+
+        try {
+            std::string area_name = fs::path(rel_path).stem().string();
+            ci.area_ptr = std::make_unique<Area>(area_name, full_path.string(), scale_factor);
+            ci.area_ptr->apply_offset(0, 100);
+            ci.has_area = true;
+            std::cout << "[AssetInfo] loaded child area from: "
+                      << full_path.string() << "\n";
+        } catch (const std::exception& e) {
+            std::cerr << "[AssetInfo] failed to construct area from child JSON: "
+                      << full_path << " | " << e.what() << "\n";
+            ci.has_area = false;
+        }
+
+        children.emplace_back(std::move(ci));
     }
 }
-
-
 
 
 
@@ -430,18 +463,9 @@ void AssetInfo::load_animations(const nlohmann::json& anims_json,
             base_sprite = anim.frames[0];
         }
 
-        std::cout << "[AssetInfo] Loaded " << anim.frames.size()
-                  << " frames for '" << trigger << "'\n";
-
         animations[trigger] = std::move(anim);
     }
 }
-
-
-
-
-
-
 
 void AssetInfo::try_load_area(const nlohmann::json& data,
                               const std::string& key,
@@ -492,9 +516,6 @@ void AssetInfo::try_load_area(const nlohmann::json& data,
         std::cerr << "[AssetInfo] fallback: created circular spacing area for '" << name << "'\n";
     }
 }
-
-
-
 
 bool AssetInfo::has_tag(const std::string& tag) const {
     return std::find(tags.begin(), tags.end(), tag) != tags.end();

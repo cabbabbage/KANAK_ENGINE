@@ -4,9 +4,10 @@ import math
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
-
+import json
 from pages.range import Range
 from pages.search import AssetSearchWindow
+from pages.load_existing import LoadExistingChildren
 
 SRC_DIR = "SRC"
 
@@ -56,10 +57,25 @@ class BatchAssetEditor(ttk.Frame):
         self.asset_list_frame = ttk.Frame(outer)
         self.asset_list_frame.pack(fill=tk.BOTH, expand=True, padx=10)
 
+        top_bar = ttk.Frame(self)
+        top_bar.pack(fill=tk.X, pady=4, padx=20)
+
         # Add Asset button
-        btns = ttk.Frame(outer)
-        btns.pack(fill=tk.X, padx=10, pady=6)
-        ttk.Button(btns, text="Add Asset", command=self._add_asset).pack(side=tk.LEFT)
+        add_btn = tk.Button(
+            top_bar, text="Add Asset", bg="#007BFF", fg="white",
+            font=("Segoe UI", 11, "bold"), command=self._add_asset,
+            width=15
+        )
+        add_btn.pack(side=tk.LEFT, padx=10)
+
+        # Add Existing button
+        add_existing_btn = tk.Button(
+            top_bar, text="Add Existing", bg="#007BFF", fg="white",
+            font=("Segoe UI", 11, "bold"), command=self._add_existing_asset,
+            width=15
+        )
+        add_existing_btn.pack(side=tk.LEFT, padx=10)
+
 
     def _trigger_save(self, *_):
         if not self._suspend_save and self.save_callback:
@@ -165,6 +181,27 @@ class BatchAssetEditor(ttk.Frame):
             if j==idx: continue
             self.asset_data[j]["percent"] = floored[it]
             it+=1
+
+
+    def _add_existing_asset(self):
+        from pages.load_existing import open_window_and_return_data
+
+        new_assets = open_window_and_return_data("batch_assets")
+        if not new_assets or not isinstance(new_assets, list):
+            return  # User canceled or invalid return
+
+        current_assets = self.get_asset_list()
+
+        for asset in new_assets:
+            current_assets.append(asset)
+            self._create_asset_widget(asset)
+
+        self.set_asset_list(current_assets)
+        self.save_assets()
+
+
+
+
 
     def _remove_asset(self, idx):
         if 0<=idx<len(self.asset_data):

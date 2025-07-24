@@ -71,7 +71,7 @@ void AssetSpawner::run_spawning(AssetSpawnPlanner* planner, const Area& area) {
     int spacing = planner->get_batch_grid_spacing();
     int jitter  = planner->get_batch_jitter();
 
-    SpawnMethods methods(rng_, checker_, logger_, exclusion_zones, asset_info_library_, all_);
+    SpawnMethods methods(rng_, checker_, logger_, exclusion_zones, asset_info_library_, all_, asset_library_);
 
     for (auto& queue_item : spawn_queue_) {
         logger_.start_timer();

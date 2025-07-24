@@ -1,13 +1,14 @@
-// === File: spawn_methods.hpp ===
 #pragma once
 
 #include "spawn_logger.hpp"
 #include "Asset.hpp"
 #include "Area.hpp"
 #include "asset_info.hpp"
-#include "asset_library.hpp"
 #include "asset_spawn_planner.hpp"
 #include "check.hpp"
+#include "asset_library.hpp"
+
+#include "asset_spawner.hpp"
 
 #include <memory>
 #include <random>
@@ -24,7 +25,8 @@ public:
                  SpawnLogger& logger,
                  std::vector<Area>& exclusion_zones,
                  std::unordered_map<std::string, std::shared_ptr<AssetInfo>>& asset_info_library,
-                 std::vector<std::unique_ptr<Asset>>& all_assets);  // updated
+                 std::vector<std::unique_ptr<Asset>>& all_assets,
+                 AssetLibrary* asset_library);
 
     void spawn_item_exact(const SpawnInfo& item, const Area* area);
     void spawn_item_center(const SpawnInfo& item, const Area* area);
@@ -54,5 +56,5 @@ private:
     std::vector<Area>& exclusion_zones_;
     std::unordered_map<std::string, std::shared_ptr<AssetInfo>>& asset_info_library_;
     std::vector<std::unique_ptr<Asset>>& all_;
-    AssetLibrary* asset_library_;  // added
+    AssetLibrary* asset_library_;
 };

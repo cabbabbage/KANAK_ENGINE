@@ -130,9 +130,10 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset, int playerX, int playerY
     trapSettings_.screen_y = p.y;
 
     struct EdgeScales { float L,R,T,B; };
-    const EdgeScales bot{0.98f,0.98f,0.82f,0.92f},
-                     top{1.0f,1.0f,1.05f,0.92f},
-                     mid{0.89f,0.89f,0.89f,0.92f};
+    const EdgeScales top{0.96f, 0.96f, 0.96f, 0.91f},
+                    mid{0.93f, 0.93f, 0.93f, 0.91f},
+                    bot{0.88f, 0.88f, 0.88f, 0.91f};
+
     auto lerp = [](float a,float b,float t){return a+(b-a)*t;};
     auto lerpE = [&](auto A, auto B, float t){
         return EdgeScales{

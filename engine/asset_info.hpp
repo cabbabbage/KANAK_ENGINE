@@ -9,6 +9,15 @@
 #include "Area.hpp"
 #include "generate_light.hpp"
 
+
+struct ChildInfo {
+    std::string               json_path;
+    std::unique_ptr<Area>     area_ptr;
+    bool                      has_area = false;
+    int                       z_offset;
+};
+
+
 struct Animation {
     std::vector<SDL_Texture*> frames;
     std::string on_end;
@@ -93,8 +102,10 @@ public:
     std::map<std::string, Animation> animations;
 
     std::vector<std::string> child_json_paths;
-
+    std::vector<ChildInfo> children;
 private:
+    int offset_x;
+    int offset_y;
     void load_base_properties(const nlohmann::json& data);
     void load_lighting_info    (const nlohmann::json& data);
     void generate_lights(SDL_Renderer* renderer);

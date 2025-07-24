@@ -1,4 +1,3 @@
-// === File: check.cpp ===
 #include "check.hpp"
 #include <algorithm>
 #include <limits>
@@ -46,7 +45,7 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
     auto nearest = get_closest_assets(test_x, test_y, num_neighbors, assets);
     if (debug_) std::cout << "[Check] Found " << nearest.size() << " nearest assets.\n";
 
-    if (check_spacing) {
+    if (check_spacing && info->has_spacing_area && info->spacing_area) {
         if (check_spacing_overlap(info, test_x, test_y, nearest)) {
             if (debug_) std::cout << "[Check] Spacing overlap detected.\n";
             return true;
@@ -63,7 +62,6 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
     if (debug_) std::cout << "[Check] All checks passed.\n";
     return false;
 }
-
 
 bool Check::is_in_exclusion_zone(int x, int y, const std::vector<Area>& zones) const {
     for (const auto& area : zones) {
@@ -115,22 +113,18 @@ std::vector<Asset*> Check::get_closest_assets(int x, int y, int max_count,
     return closest;
 }
 
-
 bool Check::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
                                   int test_pos_X,
                                   int test_pos_Y,
                                   const std::vector<Asset*>& closest_assets) const
 {
-    if (!info) return false;
+    if (!info || !info->spacing_area) return false;
 
     std::unique_ptr<Area> test_area_ptr = std::make_unique<Area>(*info->spacing_area);
     test_area_ptr->align(test_pos_X, test_pos_Y);
 
     for (Asset* other : closest_assets) {
         if (!other || !other->info) continue;
-        if (info->type == "Background" &&
-            (other->info->type == "Background" || other->info->type == "MAP"))
-            continue;
 
         std::unique_ptr<Area> other_area_ptr;
         if (other->info->has_spacing_area && other->info->spacing_area) {
@@ -163,6 +157,9 @@ bool Check::check_min_type_distance(const std::shared_ptr<AssetInfo>& info,
     for (const auto& uptr : assets) {
         Asset* existing = uptr.get();
         if (!existing || !existing->info) continue;
+
+        if (existing->info->type != info->type)
+            continue;
 
         int dx = existing->pos_X - pos.first;
         int dy = existing->pos_Y - pos.second;

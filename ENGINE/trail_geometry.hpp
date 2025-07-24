@@ -6,6 +6,7 @@
 #include <random>
 #include <string>
 #include <memory>
+#include <utility>
 #include "Area.hpp"
 #include "Room.hpp"
 
@@ -32,6 +33,11 @@ public:
         bool testing,
         std::mt19937& rng
     );
+
+    static Point compute_entry_point(const Point& center,
+                                     const Point& target,
+                                     const Area* area,
+                                     double depth_percent);
 
 private:
     std::mt19937 rng_;

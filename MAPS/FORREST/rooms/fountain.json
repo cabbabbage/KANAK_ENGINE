@@ -1,9 +1,9 @@
 {
   "name": "fountain",
-  "min_width": 1609,
-  "max_width": 1609,
-  "min_height": 956,
-  "max_height": 956,
+  "min_width": 2078,
+  "max_width": 2500,
+  "min_height": 2082,
+  "max_height": 2500,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": false,

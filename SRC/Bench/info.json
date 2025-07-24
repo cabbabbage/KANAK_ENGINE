@@ -8,10 +8,10 @@
   "min_child_depth": 0,
   "max_child_depth": 2,
   "tags": [
-    "passable",
     "default",
     "wood",
-    "man-made"
+    "man-made",
+    "passable"
   ],
   "animations": {
     "default": {
@@ -28,7 +28,10 @@
   "rnd_spawn_max": 400,
   "z_threshold": 15,
   "size_settings": {
-    "scale_percentage": 16,
+    "scale_percentage": 19,
     "variability_percentage": 0
-  }
+  },
+  "child_assets": [
+    "child_assets_1.json"
+  ]
 }

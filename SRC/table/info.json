@@ -1,0 +1,48 @@
+{
+    "asset_name": "table",
+    "asset_type": "Object",
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "impassable_area": "impassable_area.json",
+    "z_threshold": 7,
+    "size_settings": {
+        "scale_percentage": 14,
+        "variability_percentage": 0
+    },
+    "visited_tabs": [
+        "Passability",
+        "Region-Based Child Assets",
+        "Spacing"
+    ],
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 911,
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "tags": [
+        "parent",
+        "wood",
+        "default",
+        "man-made",
+        "impassable",
+        "surface"
+    ],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "has_spacing": true,
+    "anti_tags": [],
+    "child_assets": [
+        "child_assets_1.json"
+    ]
+}

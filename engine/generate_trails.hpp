@@ -51,7 +51,7 @@ private:
     std::vector<Room*> all_rooms_reference;
     std::vector<Area> trail_areas_;
     std::mt19937 rng_;
-    bool testing = true;
+    bool testing = false;
 
     std::vector<std::pair<Room*, Room*>> illegal_connections;
 };

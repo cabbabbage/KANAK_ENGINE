@@ -1,8 +1,8 @@
 {
   "name": "random",
-  "min_width": 1439,
+  "min_width": 2020,
   "max_width": 2500,
-  "min_height": 1432,
+  "min_height": 2030,
   "max_height": 2500,
   "edge_smoothness": 100,
   "geometry": "Square",
@@ -11,31 +11,24 @@
   "inherits_map_assets": true,
   "assets": [
     {
-      "name": "any",
-      "min_number": 0,
-      "max_number": 200,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
-    {
       "name": "center",
       "min_number": 1,
       "max_number": 1,
-      "position": "Center",
+      "position": "Exact Position",
       "exact_position": null,
       "tag": true,
       "check_overlap": false,
       "check_min_spacing": false,
-      "inherited": false
+      "inherited": false,
+      "ep_x_min": 50,
+      "ep_x_max": 50,
+      "ep_y_min": 50,
+      "ep_y_max": 50
     },
     {
-      "name": "any",
-      "min_number": 0,
-      "max_number": 200,
+      "name": "parent",
+      "min_number": -100,
+      "max_number": 50,
       "position": "Random",
       "exact_position": null,
       "tag": true,
@@ -44,21 +37,10 @@
       "inherited": false
     },
     {
-      "name": "any",
-      "min_number": 0,
-      "max_number": 500,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
-    {
-      "name": "any",
+      "name": "ground",
       "min_number": 0,
       "max_number": 20,
-      "position": "Perimeter",
+      "position": "Random",
       "exact_position": null,
       "tag": true,
       "check_overlap": false,
@@ -82,13 +64,13 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 91,
+        "percent": 95,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 9,
+        "percent": 5,
         "color": "#7fff89"
       }
     ]

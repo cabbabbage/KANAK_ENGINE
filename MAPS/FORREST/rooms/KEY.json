@@ -1,9 +1,9 @@
 {
   "name": "KEY",
-  "min_width": 1453,
-  "max_width": 1786,
-  "min_height": 1542,
-  "max_height": 1542,
+  "min_width": 1983,
+  "max_width": 2500,
+  "min_height": 1984,
+  "max_height": 1984,
   "edge_smoothness": 100,
   "geometry": "Circle",
   "is_spawn": false,
@@ -33,7 +33,7 @@
       "inherited": false
     },
     {
-      "name": "man-made",
+      "name": "parent",
       "min_number": 0,
       "max_number": 0,
       "position": "Random",

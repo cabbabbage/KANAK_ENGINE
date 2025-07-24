@@ -7,7 +7,7 @@
 #include <sstream>
 
 static constexpr int fade_start_distance = 0;
-static constexpr int fade_end_distance = 1200; // 50 + 1200
+static constexpr int fade_end_distance = 1000; // 50 + 1200
 
 GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                                        const std::vector<Area>& zones,

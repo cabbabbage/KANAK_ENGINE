@@ -14,7 +14,7 @@
   "impassable_area": "impassable_area.json",
   "z_threshold": 4,
   "size_settings": {
-    "scale_percentage": 12,
+    "scale_percentage": 14,
     "variability_percentage": 0
   },
   "spacing_area": "spacing_area.json",
@@ -32,7 +32,6 @@
     "nature",
     "moving",
     "bush",
-    "any",
     "passable"
   ],
   "rnd_spawn_min": 300,

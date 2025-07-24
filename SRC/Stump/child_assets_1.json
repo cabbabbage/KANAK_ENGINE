@@ -1,0 +1,27 @@
+{
+  "z_offset": 1,
+  "assets": [
+    {
+      "name": "barrel_child",
+      "min_number": -100,
+      "max_number": 75,
+      "position": "Random",
+      "exact_position": null,
+      "tag": true,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    },
+    {
+      "name": "barrel_child",
+      "min_number": -100,
+      "max_number": 60,
+      "position": "Random",
+      "exact_position": null,
+      "tag": true,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    }
+  ]
+}

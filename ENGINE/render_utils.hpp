@@ -59,8 +59,8 @@ private:
     int     lastPy_;
 
     // parallax max offsets
-    static constexpr float parallaxMaxX_ = 15.0f;
-    static constexpr float parallaxMaxY_ = 10.0f;
+    static constexpr float parallaxMaxX_ = 0.0f;
+    static constexpr float parallaxMaxY_ = 0.0f;
 
     // light distortion
     SDL_Rect lightRect_;

@@ -213,6 +213,9 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
         return static_cast<Uint8>(a + t * (b - a));
     };
 
+    if (key_colors_.size() < 2)
+        return key_colors_.empty() ? base_color_ : key_colors_.front().color;
+
     for (size_t i = 0; i + 1 < key_colors_.size(); ++i) {
         const auto& k0 = key_colors_[i];
         const auto& k1 = key_colors_[i + 1];
@@ -227,5 +230,18 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
         }
     }
 
-    return key_colors_.empty() ? base_color_ : key_colors_.back().color;
+    // Wraparound interpolation from last to first key
+    const auto& k_last = key_colors_.back();
+    const auto& k_first = key_colors_.front();
+    float range = 360.0f - k_last.degree + k_first.degree;
+    float t = (degrees < k_first.degree)
+            ? (degrees + 360.0f - k_last.degree) / range
+            : (degrees - k_last.degree) / range;
+
+    SDL_Color result;
+    result.r = lerp(k_last.color.r, k_first.color.r, t);
+    result.g = lerp(k_last.color.g, k_first.color.g, t);
+    result.b = lerp(k_last.color.b, k_first.color.b, t);
+    result.a = lerp(k_last.color.a, k_first.color.a, t);
+    return result;
 }

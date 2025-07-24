@@ -1,6 +1,6 @@
 {
   "name": "manmade",
-  "min_width": 1198,
+  "min_width": 2238,
   "max_width": 2500,
   "min_height": 700,
   "max_height": 700,
@@ -10,17 +10,6 @@
   "is_boss": false,
   "inherits_map_assets": true,
   "assets": [
-    {
-      "name": "man-made",
-      "min_number": 0,
-      "max_number": 107,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
     {
       "name": "center",
       "min_number": 1,
@@ -35,7 +24,7 @@
     {
       "name": "man-made",
       "min_number": 0,
-      "max_number": 50,
+      "max_number": 20,
       "position": "Random",
       "exact_position": null,
       "tag": true,
@@ -45,8 +34,8 @@
     },
     {
       "name": "man-made",
-      "min_number": 0,
-      "max_number": 150,
+      "min_number": -100,
+      "max_number": 20,
       "position": "Random",
       "exact_position": null,
       "tag": true,

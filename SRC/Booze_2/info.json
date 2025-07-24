@@ -19,20 +19,34 @@
         }
     },
     "tags": [
-        "bar",
-        "booze",
-        "any",
-        "passable",
-        "glass",
-        "drinking",
+        "small",
         "crime",
-        "default"
+        "brown",
+        "child",
+        "drinking",
+        "still",
+        "barrel_child",
+        "passable",
+        "booze",
+        "default",
+        "man-made"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "z_threshold": 16,
+    "z_threshold": 10,
     "size_settings": {
-        "scale_percentage": 8,
+        "scale_percentage": 6,
         "variability_percentage": 0
-    }
+    },
+    "anti_tags": [
+        "book",
+        "center",
+        "library",
+        "nature",
+        "plant",
+        "wood"
+    ],
+    "has_spacing": true,
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 50
 }

@@ -21,7 +21,7 @@ Engine::Engine(const std::string& map_path, SDL_Renderer* renderer, int screen_w
       renderer(renderer),
       SCREEN_WIDTH(screen_w),
       SCREEN_HEIGHT(screen_h),
-      background_color({25, 43, 29, 150}),
+      background_color({20, 33, 21, 150}),
       overlay_texture(nullptr),
       minimap_texture_(nullptr),
       game_assets(nullptr),

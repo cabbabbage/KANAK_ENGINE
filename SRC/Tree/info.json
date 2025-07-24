@@ -7,13 +7,13 @@
   "min_child_depth": 0,
   "max_child_depth": 2,
   "tags": [
-    "default",
     "spawn",
+    "default",
     "impassable"
   ],
   "z_threshold": 5,
   "size_settings": {
-    "scale_percentage": 55,
+    "scale_percentage": 64,
     "variability_percentage": 0
   },
   "rnd_spawn_min": 300,
@@ -61,5 +61,6 @@
     "jitter_min": null,
     "jitter_max": null,
     "flicker": null
-  }
+  },
+  "child_assets": []
 }

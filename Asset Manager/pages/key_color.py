@@ -39,9 +39,6 @@ class ColorKeyCircleEditor(tk.Canvas):
         dx, dy = x-cx, y-cy
         return (math.degrees(math.atan2(dx, -dy))+360)%360
 
-    def _is_on_left_half(self, angle):
-        return 180<angle<360
-
     def _find_nearest_key(self, angle, tol=6):
         best, md = None, tol
         for k in self.keys:
@@ -50,17 +47,25 @@ class ColorKeyCircleEditor(tk.Canvas):
         return best
 
     def _on_double_click(self, e):
-        angle = self._mouse_to_angle(e.x,e.y)
-        if not self._is_on_left_half(angle): return
+        angle = self._mouse_to_angle(e.x, e.y)
         key = self._find_nearest_key(angle)
-        if key: self._open_context_menu(key)
-        else:   self._add_key_pair(angle)
-        self._draw(); self._save_if_needed()
+
+        if key:
+            if round(key["angle"] % 360, 2) in (0.0, 180.0):
+                self._change_color(key)
+            else:
+                self._open_context_menu(key)
+        else:
+            self._add_key_pair(angle)
+
+        self._draw()
+        self._save_if_needed()
+
 
     def _on_click(self, e):
         angle = self._mouse_to_angle(e.x,e.y)
         key = self._find_nearest_key(angle)
-        self.selected_key = key if key and self._is_on_left_half(angle) and key["angle"] not in self.fixed_angles else None
+        self.selected_key = key if key and key["angle"] not in self.fixed_angles else None
         self._draw()
 
     def _on_drag(self, e):
@@ -80,7 +85,7 @@ class ColorKeyCircleEditor(tk.Canvas):
 
     def _on_motion(self, e):
         angle = self._mouse_to_angle(e.x,e.y)
-        self.hover_key = self._find_nearest_key(angle) if self._is_on_left_half(angle) else None
+        self.hover_key = self._find_nearest_key(angle)
         self._draw()
 
     def _get_symmetric_angle(self, angle):

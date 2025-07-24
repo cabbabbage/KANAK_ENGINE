@@ -10,10 +10,10 @@
 #include "area.hpp"
 #include "asset_info.hpp"
 #include "asset_library.hpp"
-#include "asset_spawner.hpp"
+
 #include "asset_spawn_planner.hpp"
 
-class AssetLibrary;
+
 
 class Asset {
 public:
@@ -26,7 +26,7 @@ public:
           int depth,
           Asset* parent = nullptr);
 
-    void finalize_setup(SDL_Renderer* renderer, AssetLibrary* asset_library);
+    void finalize_setup(SDL_Renderer* renderer);
 
     void set_position(int x, int y);
     void update();
@@ -64,9 +64,9 @@ public:
     std::vector<Area> areas;
     std::vector<Asset> children;
     int depth = 0;
-
+    void set_z_offset(int z);
 private:
-    void spawn_children(AssetLibrary* asset_library);
+
     void set_z_index();
 
     int current_frame_index = 0;

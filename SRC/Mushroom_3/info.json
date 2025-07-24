@@ -1,31 +1,39 @@
 {
-    "asset_name": "Mushroom_3",
-    "asset_type": "Object",
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "impassable_area": null,
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 400,
-    "visited_tabs": [
-        "Spacing"
-    ],
-    "z_threshold": 4,
-    "size_settings": {
-        "scale_percentage": 22,
-        "variability_percentage": 0
-    },
-    "tags": [
-        "any",
-        "passable"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400
+  "asset_name": "Mushroom_3",
+  "asset_type": "Object",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": null,
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 400,
+  "visited_tabs": [
+    "Spacing"
+  ],
+  "z_threshold": 4,
+  "size_settings": {
+    "scale_percentage": 25,
+    "variability_percentage": 0
+  },
+  "tags": [
+    "plant",
+    "small",
+    "purple",
+    "passable",
+    "nature",
+    "pretty",
+    "cover",
+    "mushroom",
+    "ground"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "anti_tags": []
 }

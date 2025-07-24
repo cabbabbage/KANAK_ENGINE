@@ -10,6 +10,7 @@
 #include "asset_library.hpp"
 #include "Area.hpp"
 #include <iostream>
+#include <limits>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -49,7 +50,6 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
 
     // — Trim the first and last points inward by 1/6 of the path length —
     if (line.size() >= 2) {
-        // original endpoints
         Point s = line.front();
         Point e = line.back();
         double dx = double(e.first  - s.first);
@@ -59,7 +59,6 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
             double trim = total_len / 6.0;
             double ux = dx / total_len;
             double uy = dy / total_len;
-            // move start forward, end backward
             line.front() = {
                 int(std::round(s.first + ux * trim)),
                 int(std::round(s.second + uy * trim))
@@ -117,6 +116,47 @@ std::vector<TrailGeometry::Point> TrailGeometry::extrude_centerline(
     return polygon;
 }
 
+
+TrailGeometry::Point TrailGeometry::compute_entry_point(const TrailGeometry::Point& center,
+                                                        const TrailGeometry::Point& target,
+                                                        const Area* area,
+                                                        double depth_percent)
+{
+    if (!area) return center;
+
+    double dx = target.first  - center.first;
+    double dy = target.second - center.second;
+    double len = std::hypot(dx, dy);
+    if (len == 0.0) return center;
+
+    double dirX = dx / len;
+    double dirY = dy / len;
+
+    const int max_steps = 2000;
+    const double step_size = 1.0;
+    TrailGeometry::Point edge_point = center;
+
+    for (int i = 1; i <= max_steps; ++i) {
+        double px = center.first + dirX * i * step_size;
+        double py = center.second + dirY * i * step_size;
+        int ipx = static_cast<int>(std::round(px));
+        int ipy = static_cast<int>(std::round(py));
+        if (area->contains_point({ipx, ipy})) {
+            edge_point = {px, py};
+        } else {
+            break;
+        }
+    }
+
+    double t = std::clamp(depth_percent / 100.0, 0.0, 1.0);
+    double final_x = center.first + (edge_point.first  - center.first) * t;
+    double final_y = center.second + (edge_point.second - center.second) * t;
+    return TrailGeometry::Point{final_x, final_y};
+}
+
+
+
+
 bool TrailGeometry::attempt_trail_connection(
     Room*                                    a,
     Room*                                    b,
@@ -149,23 +189,14 @@ bool TrailGeometry::attempt_trail_connection(
                   << "  curvyness=" << curvyness << "\n";
     }
 
-    // — Entry depth percentage (0.0 = center, 1.0 = edge) —
-    const double trail_entry_depth = 0.1;
+    const double trail_entry_depth_percent = 0.0;
 
-    auto adjust_point = [trail_entry_depth](const Point& from, const Point& to) {
-        double dx = to.first  - from.first;
-        double dy = to.second - from.second;
-        double len = std::hypot(dx, dy);
-        if (len == 0) return from;
-        return Point {
-            int(std::round(from.first  + dx / len * len * trail_entry_depth)),
-            int(std::round(from.second + dy / len * len * trail_entry_depth))
-        };
-    };
+    // Use get_center from Area directly
+    Point a_center = a->room_area->get_center();
+    Point b_center = b->room_area->get_center();
 
-    Point start = adjust_point(a->map_origin, b->map_origin);
-    Point end   = adjust_point(b->map_origin, a->map_origin);
-
+    Point start = compute_entry_point(a_center, b_center, a->room_area.get(), trail_entry_depth_percent);
+    Point end   = compute_entry_point(b_center, a_center, b->room_area.get(), trail_entry_depth_percent);
 
     auto centerline = TrailGeometry().build_centerline(start, end, curvyness);
     auto polygon    = TrailGeometry().extrude_centerline(centerline, width);
@@ -182,8 +213,8 @@ bool TrailGeometry::attempt_trail_connection(
     int intersection_count = 0;
     for (auto& area : existing_areas) {
         auto [minx, miny, maxx, maxy] = area.get_bounds();
-        bool isA = (minx==aminx && miny==aminy && maxx==amaxx && maxy==amaxy);
-        bool isB = (minx==bminx && miny==bminy && maxx==bmaxx && maxy==bmaxy);
+        bool isA = (minx == aminx && miny == aminy && maxx == amaxx && maxy == amaxy);
+        bool isB = (minx == bminx && miny == bminy && maxx == bmaxx && maxy == bmaxy);
         if (isA || isB) continue;
 
         if (candidate.intersects(area)) {
@@ -208,7 +239,6 @@ bool TrailGeometry::attempt_trail_connection(
         asset_lib,
         &candidate
     );
-
 
     a->add_connecting_room(trail_room.get());
     b->add_connecting_room(trail_room.get());

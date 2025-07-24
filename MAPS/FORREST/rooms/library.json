@@ -1,6 +1,6 @@
 {
   "name": "library",
-  "min_width": 1290,
+  "min_width": 1751,
   "max_width": 2500,
   "min_height": 1062,
   "max_height": 1062,
@@ -10,28 +10,6 @@
   "is_boss": false,
   "inherits_map_assets": true,
   "assets": [
-    {
-      "name": "library",
-      "min_number": 0,
-      "max_number": 200,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
-    {
-      "name": "library",
-      "min_number": 0,
-      "max_number": 200,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
     {
       "name": "candle",
       "min_number": 0,
