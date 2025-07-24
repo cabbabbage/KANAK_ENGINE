@@ -32,7 +32,7 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
     // Finalize every spawned Asset with lighting/textures
     for (Room* room : rooms_) {
         for (auto& asset_up : room->assets) {
-            asset_up->finalize_setup(renderer_);
+            asset_up->finalize_setup(renderer_, asset_library_.get());
         }
     }
 }
@@ -98,7 +98,8 @@ std::vector<Asset> AssetLoader::extract_all_assets() {
     }
 
     for (auto& a : out) {
-        a.finalize_setup(renderer_);
+        a.finalize_setup(renderer_, asset_library_.get());
+
     }
     return out;
 }

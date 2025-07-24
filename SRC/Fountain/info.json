@@ -56,8 +56,5 @@
     "has_casted_shadows": null,
     "number_of_casted_shadows": null,
     "cast_shadow_intensity": null
-  },
-  "child_assets": [
-    "child_assets_1.json"
-  ]
+  }
 }

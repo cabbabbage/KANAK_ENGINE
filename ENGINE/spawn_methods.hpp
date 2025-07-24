@@ -5,6 +5,7 @@
 #include "Asset.hpp"
 #include "Area.hpp"
 #include "asset_info.hpp"
+#include "asset_library.hpp"
 #include "asset_spawn_planner.hpp"
 #include "check.hpp"
 
@@ -23,7 +24,7 @@ public:
                  SpawnLogger& logger,
                  std::vector<Area>& exclusion_zones,
                  std::unordered_map<std::string, std::shared_ptr<AssetInfo>>& asset_info_library,
-                 std::vector<std::unique_ptr<Asset>>& all_assets);
+                 std::vector<std::unique_ptr<Asset>>& all_assets);  // updated
 
     void spawn_item_exact(const SpawnInfo& item, const Area* area);
     void spawn_item_center(const SpawnInfo& item, const Area* area);
@@ -53,4 +54,5 @@ private:
     std::vector<Area>& exclusion_zones_;
     std::unordered_map<std::string, std::shared_ptr<AssetInfo>>& asset_info_library_;
     std::vector<std::unique_ptr<Asset>>& all_;
+    AssetLibrary* asset_library_;  // added
 };

@@ -7,6 +7,8 @@
 #include "asset_info.hpp"
 #include "Area.hpp"
 
+
+
 class Check {
 public:
     explicit Check(bool debug);

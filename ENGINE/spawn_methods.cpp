@@ -18,6 +18,24 @@ SpawnMethods::SpawnMethods(std::mt19937& rng,
       asset_info_library_(asset_info_library),
       all_(all_assets) {}
 
+
+
+Asset* SpawnMethods::spawn_(const std::string& name,
+                            const std::shared_ptr<AssetInfo>& info,
+                            const Area& area,
+                            int x,
+                            int y,
+                            int depth,
+                            Asset* parent)
+{
+    auto asset = std::make_unique<Asset>(info, area, x, y, depth, parent);
+    Asset* raw = asset.get();
+    all_.push_back(std::move(asset));
+    return raw;
+}
+
+
+
 SpawnMethods::Point SpawnMethods::get_area_center(const Area& area) const {
     return area.get_center();
 }
@@ -30,20 +48,6 @@ SpawnMethods::Point SpawnMethods::get_point_within_area(const Area& area) {
         if (area.contains_point({x, y})) return {x, y};
     }
     return {0, 0};
-}
-
-Asset* SpawnMethods::spawn_(const std::string& name,
-                            const std::shared_ptr<AssetInfo>& info,
-                            const Area& area,
-                            int x,
-                            int y,
-                            int depth,
-                            Asset* parent)
-{
-    auto asset = std::make_unique<Asset>(info, info->z_threshold, area, x, y, parent);
-    Asset* raw = asset.get();
-    all_.push_back(std::move(asset));
-    return raw;
 }
 
 void SpawnMethods::spawn_item_exact(const SpawnInfo& item, const Area* area) {

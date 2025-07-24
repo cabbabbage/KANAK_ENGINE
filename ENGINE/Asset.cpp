@@ -8,17 +8,13 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <SDL_image.h>
-#include "generate_light.hpp"
-#include "asset.hpp"
 #include <iostream>
 
-// === Asset constructor ===
 Asset::Asset(std::shared_ptr<AssetInfo> info_,
-             int z_offset_,
              const Area& spawn_area,
              int start_pos_X,
              int start_pos_Y,
+             int depth_,
              Asset* parent_)
     : parent(parent_),
       info(std::move(info_)),
@@ -26,14 +22,14 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
       pos_X(start_pos_X),
       pos_Y(start_pos_Y),
       z_index(0),
-      z_offset(z_offset_),
+      z_offset(info->z_threshold),
       player_speed_mult(10),
       is_lit(info->has_light_source),
       is_shaded(info->has_shading),
       gradient_opacity(1.0),
       has_base_shadow(false),
       spawn_area_local(spawn_area),
-      depth(parent_ ? parent_->depth + 1 : 0)
+      depth(depth_)
 {
     set_z_index();
 
@@ -44,6 +40,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
     if (it != info->animations.end() && !it->second.frames.empty()) {
         current_animation = it->first;
         static_frame = (it->second.frames.size() == 1);
+
         if (it->second.randomize && it->second.frames.size() > 1) {
             std::mt19937 g{std::random_device{}()};
             std::uniform_int_distribution<int> d(0, int(it->second.frames.size()) - 1);
@@ -62,17 +59,21 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
     }
 }
 
+void Asset::finalize_setup(SDL_Renderer* renderer, AssetLibrary* asset_library) {
+    if (!info || !renderer || !asset_library) return;
 
-// === finalize_setup: Asset.cpp ===
-void Asset::finalize_setup(SDL_Renderer* renderer) {
-    if (!info || !renderer) return;
+    if (children.empty()) {
+        spawn_children(asset_library);
+    }
 
     bool missing = current_animation.empty()
                 || info->animations[current_animation].frames.empty();
+
     if (missing) {
         auto it = info->animations.find("start");
         if (it == info->animations.end()) it = info->animations.find("default");
         if (it == info->animations.end()) it = info->animations.begin();
+
         if (it != info->animations.end() && !it->second.frames.empty()) {
             change_animation(it->first);
 
@@ -87,8 +88,6 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
     }
 }
 
-
-
 void Asset::set_position(int x, int y) {
     pos_X = x;
     pos_Y = y;
@@ -97,6 +96,7 @@ void Asset::set_position(int x, int y) {
 
 void Asset::update() {
     if (!info) return;
+
     auto it = info->animations.find(current_animation);
     if (it != info->animations.end() && !it->second.frames.empty() && !static_frame) {
         if (++current_frame_index >= int(it->second.frames.size())) {
@@ -109,6 +109,7 @@ void Asset::update() {
             }
         }
     }
+
     for (auto& c : children) {
         c.update();
     }
@@ -127,9 +128,11 @@ SDL_Texture* Asset::get_current_frame() const {
     auto itc = custom_frames.find(current_animation);
     if (itc != custom_frames.end() && !itc->second.empty())
         return itc->second[current_frame_index];
+
     auto iti = info->animations.find(current_animation);
     if (iti != info->animations.end() && !iti->second.frames.empty())
         return iti->second.frames[current_frame_index];
+
     return nullptr;
 }
 
@@ -144,10 +147,6 @@ std::string Asset::get_current_animation() const {
 std::string Asset::get_type() const {
     return info ? info->type : "";
 }
-
-
-
-
 
 Area Asset::get_global_collision_area() const {
     if (!info || !info->has_collision_area || !info->collision_area) return nullptr;
@@ -184,13 +183,8 @@ Area Asset::get_global_passability_area() const {
     return a;
 }
 
-
-
-
-
-
-
 void Asset::add_child(Asset child) {
+    child.finalize_setup(nullptr, nullptr); // Replace with actual renderer and library if needed
     children.push_back(std::move(child));
 }
 
@@ -203,5 +197,46 @@ void Asset::set_z_index() {
         }
     } catch (const std::exception& e) {
         std::cerr << "[set_z_index] Exception: " << e.what() << "\n";
+    }
+}
+
+void Asset::spawn_children(AssetLibrary* asset_library) {
+    if (!info || !asset_library) return;
+
+    for (const auto& path : info->child_json_paths) {
+        std::string json_path = path;
+        if (!std::filesystem::exists(json_path)) {
+            std::cerr << "[Asset] Child asset file not found: " << json_path << "\n";
+            continue;
+        }
+
+        nlohmann::json j;
+        try {
+            std::ifstream in(json_path);
+            in >> j;
+        } catch (const std::exception& e) {
+            std::cerr << "[Asset] Failed to parse child asset JSON: " << json_path << " | " << e.what() << "\n";
+            continue;
+        }
+
+        Area child_area("child_area", json_path, info->scale_percentage);
+        child_area.align(pos_X, pos_Y);
+
+        std::vector<nlohmann::json> sources = {j};
+
+        AssetSpawnPlanner* planner = new AssetSpawnPlanner(sources, child_area.get_area(), *asset_library);
+        AssetSpawner* spawner = new AssetSpawner(asset_library, {});
+
+        spawner->spawn_children(child_area, planner);
+
+        auto spawned = spawner->extract_all_assets();
+        for (auto& uptr : spawned) {
+            if (uptr) {
+                children.emplace_back(std::move(*uptr));
+            }
+        }
+
+        delete planner;
+        delete spawner;
     }
 }

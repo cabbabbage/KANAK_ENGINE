@@ -30,14 +30,11 @@
     "max_child_depth": 2,
     "tags": [
         "any",
-        "impassable",
         "boundary",
-        "rock"
+        "rock",
+        "impassable"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "has_spacing": true,
-    "child_assets": [
-        "child_assets_1.json"
-    ]
+    "has_spacing": true
 }

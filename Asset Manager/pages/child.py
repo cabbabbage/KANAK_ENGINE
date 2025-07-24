@@ -134,11 +134,14 @@ class ChildAssetsPage(ttk.Frame):
 
             filename = f"child_assets_{idx + 1}.json"
             full_path = os.path.join(base_folder, filename)
+
             data = {
                 "z_offset": z_offset,
-                "area": area,
                 "assets": assets
             }
+
+            if isinstance(area, dict):
+                data.update(area)  # Flatten area into top-level
 
             try:
                 with open(full_path, 'w') as f:

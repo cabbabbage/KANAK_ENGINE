@@ -1,75 +1,65 @@
 {
-    "asset_name": "Tree",
-    "asset_type": "Background",
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 0,
-    "max_child_depth": 2,
-    "tags": [
-        "default",
-        "spawn",
-        "impassable"
-    ],
-    "z_threshold": 5,
-    "size_settings": {
-        "scale_percentage": 55,
-        "variability_percentage": 0
+  "asset_name": "Tree",
+  "asset_type": "Background",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "tags": [
+    "default",
+    "spawn",
+    "impassable"
+  ],
+  "z_threshold": 5,
+  "size_settings": {
+    "scale_percentage": 55,
+    "variability_percentage": 0
+  },
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
     },
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": true,
-            "audio_path": "",
-            "volume": 50
-        },
-        "spawn": {
-            "frames_path": "spawn",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "impassable_area": "impassable_area.json",
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 0,
-    "shading_info": {
-        "has_shading": true,
-        "has_base_shadow": true,
-        "base_shadow_intensity": 100,
-        "has_gradient_shadow": false,
-        "number_of_gradient_shadows": 1,
-        "gradient_shadow_intensity": 100,
-        "has_casted_shadows": false,
-        "number_of_casted_shadows": 1,
-        "cast_shadow_intensity": 100
-    },
-    "lighting_info": {
-        "has_light_source": false,
-        "light_intensity": null,
-        "light_color": null,
-        "radius": null,
-        "fall_off": null,
-        "jitter_min": null,
-        "jitter_max": null,
-        "flicker": null
-    },
-    "child_assets": [
-        {
-            "asset": "noose",
-            "area_path": "child_area_2.json",
-            "z_offset": 0,
-            "min": -10,
-            "max": 1,
-            "terminate_with_parent": false
-        }
-    ]
+    "spawn": {
+      "frames_path": "spawn",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": "impassable_area.json",
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 0,
+  "shading_info": {
+    "has_shading": true,
+    "has_base_shadow": true,
+    "base_shadow_intensity": 100,
+    "has_gradient_shadow": false,
+    "number_of_gradient_shadows": 1,
+    "gradient_shadow_intensity": 100,
+    "has_casted_shadows": false,
+    "number_of_casted_shadows": 1,
+    "cast_shadow_intensity": 100
+  },
+  "lighting_info": {
+    "has_light_source": false,
+    "light_intensity": null,
+    "light_color": null,
+    "radius": null,
+    "fall_off": null,
+    "jitter_min": null,
+    "jitter_max": null,
+    "flicker": null
+  }
 }

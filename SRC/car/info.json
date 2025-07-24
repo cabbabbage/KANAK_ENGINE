@@ -37,7 +37,6 @@
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 1562,
-  "child_assets": [],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400
 }

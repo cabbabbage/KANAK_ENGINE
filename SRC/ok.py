@@ -1,34 +1,36 @@
-#!/usr/bin/env python3
 import os
 import json
+import re
 
-def process_info_json(path):
-    with open(path, 'r+', encoding='utf-8') as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            print(f"Skipping invalid JSON: {path}")
-            return
+def delete_child_json_and_clean_info(root_dir):
+    child_asset_pattern = re.compile(r'^child_assets_\d+\.json$')
+    child_area_pattern = re.compile(r'^child_area_\d+\.json$')
 
-        tags = data.get("tags")
-        if isinstance(tags, list):
-            if "any" not in tags:
-                tags.append("any")
-                # rewrite the file in-place
-                f.seek(0)
-                json.dump(data, f, indent=4)
-                f.truncate()
-                print(f"Updated tags in {path}")
-            else:
-                print(f"'any' already present in {path}")
-        else:
-            print(f"No \"tags\" list in {path}")
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        # Step 1: Delete matching JSON files
+        for filename in filenames:
+            if child_asset_pattern.match(filename) or child_area_pattern.match(filename):
+                full_path = os.path.join(dirpath, filename)
+                try:
+                    os.remove(full_path)
+                    print(f"[Deleted] {full_path}")
+                except Exception as e:
+                    print(f"[Error] Failed to delete {full_path}: {e}")
 
-def main():
-    for root, _, files in os.walk('.'):
-        for name in files:
-            if name == "info.json":
-                process_info_json(os.path.join(root, name))
+        # Step 2: Clean "child_assets" from info.json
+        if "info.json" in filenames:
+            info_path = os.path.join(dirpath, "info.json")
+            try:
+                with open(info_path, 'r') as f:
+                    data = json.load(f)
+                if "child_assets" in data:
+                    del data["child_assets"]
+                    with open(info_path, 'w') as f:
+                        json.dump(data, f, indent=2)
+                    print(f"[Cleaned] Removed 'child_assets' from {info_path}")
+            except Exception as e:
+                print(f"[Error] Failed to process {info_path}: {e}")
 
 if __name__ == "__main__":
-    main()
+    start_path = r"C:\Users\cal_m\OneDrive\Documents\GitHub\tarot_game\SRC"
+    delete_child_json_and_clean_info(start_path)

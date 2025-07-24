@@ -10,6 +10,8 @@
 #include <optional>
 #include <nlohmann/json.hpp>
 
+class Asset;
+
 class Room {
 public:
     using Point = std::pair<int, int>;
