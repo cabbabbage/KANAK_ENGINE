@@ -45,13 +45,21 @@ class SpacingThresholdPage(ttk.Frame):
         self.area_ui = AreaUI(self, self.area_file, "Spacing Area")
         self.area_ui.grid(row=3, column=0, columnspan=3, padx=12, pady=6)
 
+        # Min Distance from same type
         ttk.Label(self, text="Min Distance From Same Type:", style='Large.TLabel')\
             .grid(row=4, column=0, sticky='e', padx=12, pady=6)
-
         self.min_dist_range = Range(self, min_bound=0, max_bound=2000,
                                     set_min=0, set_max=0, force_fixed=True)
         self.min_dist_range.grid(row=4, column=1, columnspan=2,
                                  sticky='we', padx=12, pady=6)
+
+        # Min Distance from all assets
+        ttk.Label(self, text="Min Distance From All Assets:", style='Large.TLabel')\
+            .grid(row=5, column=0, sticky='e', padx=12, pady=6)
+        self.min_dist_all_range = Range(self, min_bound=0, max_bound=2000,
+                                        set_min=0, set_max=0, force_fixed=True)
+        self.min_dist_all_range.grid(row=5, column=1, columnspan=2,
+                                     sticky='we', padx=12, pady=6)
 
         BlueButton(self, "Save", command=self.save, x=0, y=0)
 
@@ -65,11 +73,12 @@ class SpacingThresholdPage(ttk.Frame):
             )
         )
 
-        # ✅ Fixed here: use existing Range methods
         if has_spacing:
             self.min_dist_range.enable()
+            self.min_dist_all_range.enable()
         else:
             self.min_dist_range.disable()
+            self.min_dist_all_range.disable()
 
         if has_spacing and self.area_ui.area_data:
             self.area_ui._draw_preview()
@@ -104,8 +113,11 @@ class SpacingThresholdPage(ttk.Frame):
         self.area_ui._load_area_json()
         self.area_ui._draw_preview()
 
-        dist = data.get("min_same_type_distance", 0)
-        self.min_dist_range.set(dist, dist)
+        same = data.get("min_same_type_distance", 0)
+        self.min_dist_range.set(same, same)
+
+        all_ = data.get("min_distance_all", 0)
+        self.min_dist_all_range.set(all_, all_)
 
         self._on_toggle()
 
@@ -132,11 +144,15 @@ class SpacingThresholdPage(ttk.Frame):
                 json.dump(self.area_ui.area_data, f, indent=2)
 
             info["spacing_area"] = self.area_file
-            min_val, max_val = self.min_dist_range.get()
-            info["min_same_type_distance"] = min_val if min_val == max_val else [min_val, max_val]
+            s_min, s_max = self.min_dist_range.get()
+            info["min_same_type_distance"] = s_min if s_min == s_max else [s_min, s_max]
+
+            a_min, a_max = self.min_dist_all_range.get()
+            info["min_distance_all"] = a_min if a_min == a_max else [a_min, a_max]
         else:
             info["spacing_area"] = None
             info["min_same_type_distance"] = 0
+            info["min_distance_all"] = 0
 
         with open(self.asset_path, 'w') as f:
             json.dump(info, f, indent=2)

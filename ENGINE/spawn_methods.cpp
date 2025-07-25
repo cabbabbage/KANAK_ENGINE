@@ -162,7 +162,7 @@ void SpawnMethods::spawn_item_exact(const SpawnInfo& item, const Area* area) {
     int final_y = center.second + static_cast<int>(norm_y * height);
 
     if (checker_.check(item.info, final_x, final_y, exclusion_zones_, all_,
-                       item.check_overlap, item.check_min_spacing, 5)) {
+                       item.check_overlap, item.check_min_spacing, true, 5)) {
         logger_.output_and_log(item.name, item.quantity, 0, 1, 1, "exact");
         return;
     }
@@ -181,7 +181,7 @@ void SpawnMethods::spawn_item_center(const SpawnInfo& item, const Area* area) {
     center.second -= Y_SHIFT;
 
     if (checker_.check(item.info, center.first, center.second, exclusion_zones_, all_,
-                       item.check_overlap, item.check_min_spacing, 5)) {
+                       item.check_overlap, item.check_min_spacing, false, 5)) {
         logger_.output_and_log(item.name, item.quantity, 0, 1, 1, "center");
         return;
     }
@@ -206,7 +206,7 @@ void SpawnMethods::spawn_item_random(const SpawnInfo& item, const Area* area) {
 
         if (!area->contains_point(pos)) continue;
         if (checker_.check(item.info, pos.first, pos.second, exclusion_zones_, all_,
-                           true, true, 5)) continue;
+                           true, true, true, 5)) continue;
 
         spawn_(item.name, item.info, *area, pos.first, pos.second, 0, nullptr);
         ++spawned;
@@ -238,7 +238,7 @@ void SpawnMethods::spawn_item_distributed(const SpawnInfo& item, const Area* are
             if (std::uniform_int_distribution<int>(0, 99)(rng_) < item.empty_grid_spaces) continue;
             if (!area->contains_point({cx, cy})) continue;
             if (checker_.check(item.info, cx, cy, exclusion_zones_, all_,
-                               item.check_overlap, item.check_min_spacing, 5)) continue;
+                               true, false, true, 5)) continue;
 
             spawn_(item.name, item.info, *area, cx, cy, 0, nullptr);
             ++placed;
@@ -329,7 +329,7 @@ void SpawnMethods::spawn_item_perimeter(const SpawnInfo& item, const Area* area)
 
         ++attempts;
         if (checker_.check(item.info, x, y, exclusion_zones_, all_,
-                           item.check_overlap, item.check_min_spacing, 5)) continue;
+                           item.check_overlap, false, false, 5)) continue;
 
         spawn_(item.name, item.info, *area, x, y, 0, nullptr);
         ++placed;
@@ -376,7 +376,7 @@ void SpawnMethods::spawn_distributed_batch(const std::vector<BatchSpawnInfo>& it
             if (it == asset_info_library_.end()) continue;
 
             auto& info = it->second;
-            if (checker_.check(info, cx, cy, exclusion_zones_, all_, true, false, 5)) continue;
+            if (checker_.check(info, cx, cy, exclusion_zones_, all_, true, false, true, 5)) continue;
 
             spawn_(selected.name, info, *area, cx, cy, 0, nullptr);
             ++placed_quantities[selected.name];

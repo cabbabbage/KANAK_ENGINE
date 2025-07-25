@@ -121,6 +121,7 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
     passable = has_tag("passable");
 
     min_same_type_distance = data.value("min_same_type_distance", 0);
+    min_distance_all = data.value("min_distance_all", 0);
     can_invert = data.value("can_invert", true);
     max_child_depth = data.value("max_child_depth", 0);
     min_child_depth = data.value("min_child_depth", 0);

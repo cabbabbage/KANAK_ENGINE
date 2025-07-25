@@ -29,7 +29,11 @@ public:
         std::vector<std::unique_ptr<Room>>& trail_rooms
     );
 
-    void remove_connection(Room* a, Room* b, std::vector<std::unique_ptr<Room>>& trail_rooms);
+    void remove_connection(Room* a,
+                                        Room* b,
+                                        std::vector<std::unique_ptr<Room>>& trail_rooms,
+                                        std::vector<Area>& existing_areas);
+
 
     void remove_random_connection(std::vector<std::unique_ptr<Room>>& trail_rooms);
 

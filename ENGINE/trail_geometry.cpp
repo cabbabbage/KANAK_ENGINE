@@ -15,10 +15,8 @@
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
-TrailGeometry::TrailGeometry() : rng_(std::random_device{}()) {}
-
 std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
-    const Point& start, const Point& end, int curvyness)
+    const Point& start, const Point& end, int curvyness, std::mt19937& rng)
 {
     std::vector<Point> line;
     line.reserve(curvyness + 2);
@@ -37,7 +35,7 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
             double py = start.second + t * dy;
             double nx = -dy / len;
             double ny =  dx / len;
-            double off = offset_dist(rng_);
+            double off = offset_dist(rng);
 
             line.emplace_back(
                 int(std::round(px + nx * off)),
@@ -47,29 +45,6 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
     }
 
     line.push_back(end);
-
-    // — Trim the first and last points inward by 1/6 of the path length —
-    if (line.size() >= 2) {
-        Point s = line.front();
-        Point e = line.back();
-        double dx = double(e.first  - s.first);
-        double dy = double(e.second - s.second);
-        double total_len = std::hypot(dx, dy);
-        if (total_len > 0.0) {
-            double trim = total_len / 6.0;
-            double ux = dx / total_len;
-            double uy = dy / total_len;
-            line.front() = {
-                int(std::round(s.first + ux * trim)),
-                int(std::round(s.second + uy * trim))
-            };
-            line.back()  = {
-                int(std::round(e.first - ux * trim)),
-                int(std::round(e.second - uy * trim))
-            };
-        }
-    }
-
     return line;
 }
 
@@ -116,16 +91,14 @@ std::vector<TrailGeometry::Point> TrailGeometry::extrude_centerline(
     return polygon;
 }
 
-
-TrailGeometry::Point TrailGeometry::compute_entry_point(const TrailGeometry::Point& center,
-                                                        const TrailGeometry::Point& target,
-                                                        const Area* area,
-                                                        double depth_percent)
+TrailGeometry::Point TrailGeometry::compute_edge_point(const Point& center,
+                                                       const Point& toward,
+                                                       const Area* area)
 {
     if (!area) return center;
 
-    double dx = target.first  - center.first;
-    double dy = target.second - center.second;
+    double dx = toward.first  - center.first;
+    double dy = toward.second - center.second;
     double len = std::hypot(dx, dy);
     if (len == 0.0) return center;
 
@@ -134,7 +107,7 @@ TrailGeometry::Point TrailGeometry::compute_entry_point(const TrailGeometry::Poi
 
     const int max_steps = 2000;
     const double step_size = 1.0;
-    TrailGeometry::Point edge_point = center;
+    Point edge = center;
 
     for (int i = 1; i <= max_steps; ++i) {
         double px = center.first + dirX * i * step_size;
@@ -142,32 +115,26 @@ TrailGeometry::Point TrailGeometry::compute_entry_point(const TrailGeometry::Poi
         int ipx = static_cast<int>(std::round(px));
         int ipy = static_cast<int>(std::round(py));
         if (area->contains_point({ipx, ipy})) {
-            edge_point = {px, py};
+            edge = {px, py};
         } else {
             break;
         }
     }
 
-    double t = std::clamp(depth_percent / 100.0, 0.0, 1.0);
-    double final_x = center.first + (edge_point.first  - center.first) * t;
-    double final_y = center.second + (edge_point.second - center.second) * t;
-    return TrailGeometry::Point{final_x, final_y};
+    return edge;
 }
 
-
-
-
 bool TrailGeometry::attempt_trail_connection(
-    Room*                                    a,
-    Room*                                    b,
-    std::vector<Area>&                       existing_areas,
-    const std::string&                       map_dir,
-    AssetLibrary*                            asset_lib,
-    std::vector<std::unique_ptr<Room>>&      trail_rooms,
-    int                                      allowed_intersections,
-    const std::string&                       path,
-    bool                                     testing,
-    std::mt19937&                            rng)
+    Room* a,
+    Room* b,
+    std::vector<Area>& existing_areas,
+    const std::string& map_dir,
+    AssetLibrary* asset_lib,
+    std::vector<std::unique_ptr<Room>>& trail_rooms,
+    int allowed_intersections,
+    const std::string& path,
+    bool testing,
+    std::mt19937& rng)
 {
     std::ifstream in(path);
     if (!in.is_open()) {
@@ -175,7 +142,8 @@ bool TrailGeometry::attempt_trail_connection(
         return false;
     }
 
-    json config; in >> config;
+    json config;
+    in >> config;
 
     int min_width = config.value("min_width", 40);
     int max_width = config.value("max_width", 80);
@@ -189,63 +157,96 @@ bool TrailGeometry::attempt_trail_connection(
                   << "  curvyness=" << curvyness << "\n";
     }
 
-    const double trail_entry_depth_percent = 0.0;
-
-    // Use get_center from Area directly
     Point a_center = a->room_area->get_center();
     Point b_center = b->room_area->get_center();
 
-    Point start = compute_entry_point(a_center, b_center, a->room_area.get(), trail_entry_depth_percent);
-    Point end   = compute_entry_point(b_center, a_center, b->room_area.get(), trail_entry_depth_percent);
+    const double overshoot = 300.0;
+    auto extend_past_edge = [&](const Point& center, const Point& toward, const Area* area) -> Point {
+        Point edge = TrailGeometry::compute_edge_point(center, toward, area);
+        double dx = edge.first - center.first;
+        double dy = edge.second - center.second;
+        double len = std::hypot(dx, dy);
+        if (len == 0.0) return edge;
 
-    auto centerline = TrailGeometry().build_centerline(start, end, curvyness);
-    auto polygon    = TrailGeometry().extrude_centerline(centerline, width);
+        double ux = dx / len;
+        double uy = dy / len;
 
-    std::vector<Area::Point> pts;
-    for (auto& p : polygon)
-        pts.emplace_back(int(std::round(p.first)), int(std::round(p.second)));
+        return {
+            edge.first + ux * overshoot,
+            edge.second + uy * overshoot
+        };
+    };
 
-    Area candidate("trail_candidate", pts);
+    Point a_edge = extend_past_edge(a_center, b_center, a->room_area.get());
+    Point b_edge = extend_past_edge(b_center, a_center, b->room_area.get());
 
     auto [aminx, aminy, amaxx, amaxy] = a->room_area->get_bounds();
     auto [bminx, bminy, bmaxx, bmaxy] = b->room_area->get_bounds();
 
-    int intersection_count = 0;
-    for (auto& area : existing_areas) {
-        auto [minx, miny, maxx, maxy] = area.get_bounds();
-        bool isA = (minx == aminx && miny == aminy && maxx == amaxx && maxy == amaxy);
-        bool isB = (minx == bminx && miny == bminy && maxx == bmaxx && maxy == bmaxy);
-        if (isA || isB) continue;
+    for (int attempt = 0; attempt < 1000; ++attempt) {
+        std::vector<Point> full_line;
+        full_line.push_back(a_center);
+        full_line.push_back(a_edge);
 
-        if (candidate.intersects(area)) {
-            if (++intersection_count > allowed_intersections) {
-                if (testing) {
-                    std::cout << "[TrailGen] Trail intersected too many areas ("
-                              << intersection_count << " > " << allowed_intersections << ")\n";
-                }
-                return false;
+        auto middle = build_centerline(a_edge, b_edge, curvyness, rng);
+        full_line.insert(full_line.end(), middle.begin(), middle.end());
+
+        full_line.push_back(b_edge);
+        full_line.push_back(b_center);
+
+        auto polygon = extrude_centerline(full_line, width);
+
+        std::vector<Area::Point> pts;
+        for (auto& p : polygon)
+            pts.emplace_back(int(std::round(p.first)), int(std::round(p.second)));
+
+        Area candidate("trail_candidate", pts);
+
+        int intersection_count = 0;
+        for (auto& area : existing_areas) {
+            auto [minx, miny, maxx, maxy] = area.get_bounds();
+            bool isA = (minx == aminx && miny == aminy && maxx == amaxx && maxy == amaxy);
+            bool isB = (minx == bminx && miny == bminy && maxx == bmaxx && maxy == bmaxy);
+            if (isA || isB) continue;
+
+            if (candidate.intersects(area)) {
+                intersection_count++;
+                break;
             }
         }
+
+        if (intersection_count > allowed_intersections) {
+            if (testing && attempt == 999) {
+                std::cout << "[TrailGen] Failed after 1000 attempts due to intersections\n";
+            }
+            continue;
+        }
+
+        std::string room_dir = fs::path(path).parent_path().string();
+        auto trail_room = std::make_unique<Room>(
+            a->map_origin,
+            "trail",
+            name,
+            nullptr,
+            room_dir,
+            map_dir,
+            asset_lib,
+            &candidate
+        );
+
+        a->add_connecting_room(trail_room.get());
+        b->add_connecting_room(trail_room.get());
+        trail_room->add_connecting_room(a);
+        trail_room->add_connecting_room(b);
+
+        existing_areas.push_back(candidate);
+        trail_rooms.push_back(std::move(trail_room));
+
+        if (testing) {
+            std::cout << "[TrailGen] Trail succeeded on attempt " << attempt + 1 << "\n";
+        }
+        return true;
     }
 
-    std::string room_dir = fs::path(path).parent_path().string();
-    auto trail_room = std::make_unique<Room>(
-        a->map_origin,
-        "trail",
-        name,
-        nullptr,
-        room_dir,
-        map_dir,
-        asset_lib,
-        &candidate
-    );
-
-    a->add_connecting_room(trail_room.get());
-    b->add_connecting_room(trail_room.get());
-    trail_room->add_connecting_room(a);
-    trail_room->add_connecting_room(b);
-
-    existing_areas.push_back(candidate);
-    trail_rooms.push_back(std::move(trail_room));
-    return true;
+    return false;
 }
