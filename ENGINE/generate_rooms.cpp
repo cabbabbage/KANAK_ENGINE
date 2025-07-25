@@ -253,6 +253,7 @@ std::vector<std::unique_ptr<Room>> GenerateRooms::build(AssetLibrary* asset_lib,
         int cy = map_radius;
         int diameter = map_radius * 2;
         Area area("Map", cx, cy, diameter, diameter, "Circle", 1, diameter, diameter);
+
         std::cout << "[Boundary] Created circular boundary area with diameter " << diameter << "\n";
 
         AssetSpawner spawner(asset_lib, exclusion_zones);

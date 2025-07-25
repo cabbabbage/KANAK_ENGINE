@@ -19,6 +19,7 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
                   const std::vector<std::unique_ptr<Asset>>& assets,
                   bool check_spacing,
                   bool check_min_distance,
+                  bool check_min_distance_all,
                   int num_neighbors) const
 {
     if (!info) {
@@ -35,6 +36,14 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
     if (is_in_exclusion_zone(test_x, test_y, exclusion_areas)) {
         if (debug_) std::cout << "[Check] Point is inside exclusion zone.\n";
         return true;
+    }
+
+    if (check_min_distance_all && info->min_distance_all > 0) {
+        if (this->check_min_distance_all(info, { test_x, test_y }, assets)) {
+
+            if (debug_) std::cout << "[Check] Minimum distance (all) violated.\n";
+            return true;
+        }
     }
 
     if (info->type == "Background") {
@@ -62,6 +71,7 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
     if (debug_) std::cout << "[Check] All checks passed.\n";
     return false;
 }
+
 
 bool Check::is_in_exclusion_zone(int x, int y, const std::vector<Area>& zones) const {
     for (const auto& area : zones) {
@@ -146,6 +156,34 @@ bool Check::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
     return false;
 }
 
+bool Check::check_min_distance_all(const std::shared_ptr<AssetInfo>& info,
+                                   const Point& pos,
+                                   const std::vector<std::unique_ptr<Asset>>& assets) const
+{
+    if (!info || info->min_distance_all <= 0)
+        return false;
+
+    int min_dist_sq = info->min_distance_all * info->min_distance_all;
+    for (const auto& uptr : assets) {
+        Asset* existing = uptr.get();
+        if (!existing || !existing->info) continue;
+
+        int dx = existing->pos_X - pos.first;
+        int dy = existing->pos_Y - pos.second;
+        if (dx * dx + dy * dy < min_dist_sq) {
+            if (debug_) {
+                std::cout << "[Check] Min distance (all) violated by asset: "
+                          << existing->info->name << " at ("
+                          << existing->pos_X << ", " << existing->pos_Y << ")\n";
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
 bool Check::check_min_type_distance(const std::shared_ptr<AssetInfo>& info,
                                     const Point& pos,
                                     const std::vector<std::unique_ptr<Asset>>& assets) const
@@ -158,17 +196,16 @@ bool Check::check_min_type_distance(const std::shared_ptr<AssetInfo>& info,
         Asset* existing = uptr.get();
         if (!existing || !existing->info) continue;
 
-        if (existing->info->type != info->type)
+        if (existing->info->name != info->name)
             continue;
 
         int dx = existing->pos_X - pos.first;
         int dy = existing->pos_Y - pos.second;
         if (dx * dx + dy * dy < min_dist_sq) {
             if (debug_) {
-                std::cout << "[Check] Minimum spacing violated by asset: "
-                          << existing->info->name
-                          << " at (" << existing->pos_X << ", "
-                          << existing->pos_Y << ")\n";
+                std::cout << "[Check] Min type distance violated by same-name asset: "
+                          << existing->info->name << " at ("
+                          << existing->pos_X << ", " << existing->pos_Y << ")\n";
             }
             return true;
         }

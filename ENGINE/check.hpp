@@ -7,8 +7,6 @@
 #include "asset_info.hpp"
 #include "Area.hpp"
 
-
-
 class Check {
 public:
     explicit Check(bool debug);
@@ -22,6 +20,7 @@ public:
                const std::vector<std::unique_ptr<Asset>>& assets,
                bool check_spacing,
                bool check_min_distance,
+               bool check_min_distance_all,
                int num_neighbors) const;
 
 private:
@@ -42,4 +41,8 @@ private:
     bool check_min_type_distance(const std::shared_ptr<AssetInfo>& info,
                                  const Point& pos,
                                  const std::vector<std::unique_ptr<Asset>>& assets) const;
+
+    bool check_min_distance_all(const std::shared_ptr<AssetInfo>& info,
+                                const Point& pos,
+                                const std::vector<std::unique_ptr<Asset>>& assets) const;
 };

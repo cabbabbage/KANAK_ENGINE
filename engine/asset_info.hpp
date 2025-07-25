@@ -50,6 +50,7 @@ public:
     int                           z_threshold;
     bool                          passable;
     int                           min_same_type_distance;
+    int                           min_distance_all;
     bool                          can_invert;
     int                           max_child_depth;
     int                           min_child_depth;

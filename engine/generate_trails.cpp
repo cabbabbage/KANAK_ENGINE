@@ -226,7 +226,11 @@ void GenerateTrails::find_and_connect_isolated(
 
 
 
-void GenerateTrails::remove_connection(Room* a, Room* b, std::vector<std::unique_ptr<Room>>& trail_rooms) {
+void GenerateTrails::remove_connection(Room* a,
+                                       Room* b,
+                                       std::vector<std::unique_ptr<Room>>& trail_rooms,
+                                       std::vector<Area>& existing_areas)
+ {
     if (!a || !b) return;
 
     std::cout << "[Debug][remove_connection] Removing connection between '"
@@ -251,10 +255,24 @@ void GenerateTrails::remove_connection(Room* a, Room* b, std::vector<std::unique
                     if (r == a) connects_a = true;
                     if (r == b) connects_b = true;
                 }
-                return connects_a && connects_b;
+
+                if (connects_a && connects_b) {
+                    // Also remove from existing_areas
+                    existing_areas.erase(
+                        std::remove_if(existing_areas.begin(), existing_areas.end(),
+                            [&](const Area& area) {
+                                return area.get_name() == trail->room_area->get_name();  // Or match by bounds if names reused
+                            }),
+                        existing_areas.end()
+                    );
+                    return true;
+                }
+
+                return false;
             }),
         trail_rooms.end()
     );
+
     std::cout << "[Debug][remove_connection] Removed "
               << (before - trail_rooms.size())
               << " trail room(s) connecting them.\n";
@@ -315,7 +333,7 @@ void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trai
     }
 
     if (!target) {
-        std::cout << "[Debug][remove_and_connect] No target room with layer>2 and >3 connections found.\n";
+        std::cout << "[Debug][remove_and_connect] No target room with layer > 2 and >3 connections found.\n";
         return;
     }
     std::cout << "[Debug][remove_and_connect] Selected target room '" << target->room_name
@@ -339,7 +357,7 @@ void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trai
               << "' with " << most_connected->connected_rooms.size() << " connections.\n";
 
     // Step 3: Remove the connection and mark it as illegal
-    remove_connection(target, most_connected, trail_rooms);
+    remove_connection(target, most_connected, trail_rooms, existing_areas);
     illegal_connections.emplace_back(target, most_connected);
     std::cout << "[Debug][remove_and_connect] Marked connection illegal: ('"
               << target->room_name << "', '" << most_connected->room_name << "')\n";
@@ -348,6 +366,7 @@ void GenerateTrails::remove_and_connect(std::vector<std::unique_ptr<Room>>& trai
     find_and_connect_isolated(map_dir, asset_lib, existing_areas, trail_rooms);
     std::cout << "[Debug][remove_and_connect] Completed reconnect attempt for isolated groups.\n";
 }
+
 
 void GenerateTrails::circular_connection(std::vector<std::unique_ptr<Room>>& trail_rooms,
                                          const std::string& map_dir,

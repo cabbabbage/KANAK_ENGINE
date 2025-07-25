@@ -135,7 +135,7 @@ class MapRenderer:
                 else:
                     r = prev_r + 1.2 * ((size / 2.0) + (largest_sizes[i - 1] / 2.0))
 
-                radii.append(r ** 1.05)
+                radii.append(r)
 
                 prev_r = r
 
