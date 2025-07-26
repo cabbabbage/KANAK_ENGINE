@@ -35,7 +35,7 @@
     {
       "name": "Stump",
       "min_number": -54,
-      "max_number": 20,
+      "max_number": 1717,
       "position": "Random",
       "exact_position": null,
       "tag": false,

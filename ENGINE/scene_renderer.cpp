@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-static constexpr SDL_Color SLATE_COLOR = {38, 44, 38, 150};
+static constexpr SDL_Color SLATE_COLOR = {38, 54, 38, 150};
 
 
 SceneRenderer::SceneRenderer(SDL_Renderer* renderer,

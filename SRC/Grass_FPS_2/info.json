@@ -18,20 +18,20 @@
     "scale_percentage": 3,
     "variability_percentage": 0
   },
-  "spacing_area": null,
-  "min_same_type_distance": 15,
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 40,
   "visited_tabs": [
     "Spacing"
   ],
   "tags": [
-    "nature",
-    "leafy",
-    "passable",
-    "bluff",
-    "moving",
-    "plant",
     "green",
     "default",
+    "moving",
+    "plant",
+    "nature",
+    "leafy",
+    "bluff",
+    "passable",
     "meadow"
   ],
   "rnd_spawn_min": 300,
@@ -40,5 +40,7 @@
   "duplication_interval_min": 30,
   "duplication_interval_max": 60,
   "min_child_depth": 0,
-  "max_child_depth": 2
+  "max_child_depth": 2,
+  "has_spacing": true,
+  "min_distance_all": 40
 }

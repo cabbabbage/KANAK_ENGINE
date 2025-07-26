@@ -24,18 +24,18 @@
     "variability_percentage": 0.0
   },
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 675,
+  "min_same_type_distance": 2000,
   "tags": [
-    "black",
-    "center",
-    "default",
-    "large",
     "light",
+    "default",
+    "center",
     "man-made",
+    "tall",
+    "black",
+    "large",
     "metal",
-    "passable",
     "still",
-    "tall"
+    "passable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -85,5 +85,6 @@
     "cast_shadow_intensity": null
   },
   "has_spacing": true,
-  "anti_tags": []
+  "anti_tags": [],
+  "min_distance_all": 82
 }

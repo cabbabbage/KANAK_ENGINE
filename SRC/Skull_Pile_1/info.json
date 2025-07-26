@@ -23,21 +23,22 @@
     "Spacing"
   ],
   "tags": [
-    "scary",
-    "white",
-    "still",
-    "bone",
-    "passable",
-    "nature",
     "graveyard",
-    "ground",
+    "white",
+    "passable",
     "default",
+    "skull",
+    "still",
+    "nature",
     "death",
     "small",
-    "skull"
+    "bone",
+    "scary",
+    "ground"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
   "anti_tags": [],
-  "has_spacing": true
+  "has_spacing": true,
+  "min_distance_all": 107
 }

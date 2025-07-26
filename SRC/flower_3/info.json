@@ -19,18 +19,18 @@
     }
   },
   "tags": [
-    "small",
-    "default",
-    "meadow",
-    "blue",
-    "nature",
-    "still",
     "plant",
     "flowers",
-    "passable",
+    "default",
     "pretty",
     "cover",
-    "leafy"
+    "blue",
+    "leafy",
+    "nature",
+    "meadow",
+    "still",
+    "small",
+    "passable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -41,6 +41,7 @@
   },
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 572,
-  "anti_tags": []
+  "min_same_type_distance": 20,
+  "anti_tags": [],
+  "min_distance_all": 0
 }

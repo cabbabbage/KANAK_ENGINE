@@ -19,14 +19,14 @@
         }
     },
     "tags": [
-        "small",
         "crime",
-        "brown",
-        "child",
-        "drinking",
-        "barrel_child",
         "passable",
+        "barrel_child",
+        "child",
+        "small",
         "booze",
+        "brown",
+        "drinking",
         "default"
     ],
     "z_threshold": 6,

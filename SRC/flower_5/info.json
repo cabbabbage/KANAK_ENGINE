@@ -1,5 +1,5 @@
 {
-  "asset_name": "flower",
+  "asset_name": "flower_5",
   "asset_type": "Object",
   "duplicatable": false,
   "duplication_interval_min": 30,
@@ -8,13 +8,13 @@
   "max_child_depth": 2,
   "tags": [
     "plant",
+    "yellow",
     "flowers",
     "default",
     "pretty",
     "cover",
     "ground",
     "small",
-    "purple",
     "nature",
     "meadow",
     "still",
@@ -70,7 +70,7 @@
   },
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 20,
+  "min_same_type_distance": 500,
   "anti_tags": [
     "bone",
     "book",

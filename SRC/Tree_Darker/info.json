@@ -1,53 +1,53 @@
 {
-  "impassable_area": "impassable_area.json",
-  "asset_name": "Tree_Darker",
-  "asset_type": "Background",
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 4,
-  "max_child_depth": 8,
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "randomize": true,
-      "audio_path": "",
-      "volume": 50
+    "impassable_area": "impassable_area.json",
+    "asset_name": "Tree_Darker",
+    "asset_type": "Background",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 4,
+    "max_child_depth": 8,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "randomize": true,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "z_threshold": 5,
+    "size_settings": {
+        "scale_percentage": 64,
+        "variability_percentage": 0
+    },
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 21,
+    "tags": [
+        "impassable"
+    ],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "shading_info": {
+        "has_shading": true,
+        "has_base_shadow": true,
+        "base_shadow_intensity": 100,
+        "has_gradient_shadow": false,
+        "number_of_gradient_shadows": 1,
+        "gradient_shadow_intensity": 100,
+        "has_casted_shadows": false,
+        "number_of_casted_shadows": 1,
+        "cast_shadow_intensity": 100
+    },
+    "lighting_info": {
+        "has_light_source": false,
+        "light_intensity": null,
+        "light_color": null,
+        "radius": null,
+        "fall_off": null,
+        "jitter_min": null,
+        "jitter_max": null,
+        "flicker": null
     }
-  },
-  "z_threshold": 5,
-  "size_settings": {
-    "scale_percentage": 64,
-    "variability_percentage": 0
-  },
-  "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 21,
-  "tags": [
-    "impassable"
-  ],
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400,
-  "shading_info": {
-    "has_shading": true,
-    "has_base_shadow": true,
-    "base_shadow_intensity": 100,
-    "has_gradient_shadow": false,
-    "number_of_gradient_shadows": 1,
-    "gradient_shadow_intensity": 100,
-    "has_casted_shadows": false,
-    "number_of_casted_shadows": 1,
-    "cast_shadow_intensity": 100
-  },
-  "lighting_info": {
-    "has_light_source": false,
-    "light_intensity": null,
-    "light_color": null,
-    "radius": null,
-    "fall_off": null,
-    "jitter_min": null,
-    "jitter_max": null,
-    "flicker": null
-  }
 }
