@@ -178,5 +178,7 @@
         214,
         232
     ],
-    "type": "mask"
+    "type": "mask",
+    "offset_x": 0,
+    "offset_y": 0
 }

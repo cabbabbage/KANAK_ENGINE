@@ -32,7 +32,7 @@
   ],
   "z_threshold": 5,
   "size_settings": {
-    "scale_percentage": 17,
+    "scale_percentage": 15,
     "variability_percentage": 0
   },
   "rnd_spawn_min": 300,

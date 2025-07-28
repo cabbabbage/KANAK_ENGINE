@@ -10,7 +10,7 @@
       {
         "name": "Grass_FPS_2",
         "tag": false,
-        "percent": 31,
+        "percent": 30,
         "color": "#da2582"
       },
       {
@@ -54,6 +54,12 @@
         "tag": false,
         "percent": 18,
         "color": "#439315"
+      },
+      {
+        "name": "Big_Rock",
+        "tag": false,
+        "percent": 1,
+        "color": "#a0068a"
       }
     ]
   }

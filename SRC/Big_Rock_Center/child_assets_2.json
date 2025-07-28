@@ -3,31 +3,9 @@
   "assets": [
     {
       "name": "cover",
-      "min_number": -100,
-      "max_number": 50,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
-    {
-      "name": "small",
-      "min_number": -100,
-      "max_number": 50,
-      "position": "Random",
-      "exact_position": null,
-      "tag": true,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    },
-    {
-      "name": "cover",
-      "min_number": -100,
-      "max_number": 50,
-      "position": "Random",
+      "min_number": 1,
+      "max_number": 1,
+      "position": "Center",
       "exact_position": null,
       "tag": true,
       "check_overlap": false,
@@ -166,5 +144,7 @@
     389,
     228
   ],
-  "type": "draw"
+  "type": "draw",
+  "offset_x": 0,
+  "offset_y": 0
 }

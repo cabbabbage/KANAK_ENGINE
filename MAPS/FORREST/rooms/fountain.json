@@ -81,13 +81,13 @@
       {
         "name": "Barrel",
         "tag": false,
-        "percent": 2,
+        "percent": 1,
         "color": "#e08b50"
       },
       {
         "name": "null",
         "tag": false,
-        "percent": 98,
+        "percent": 99,
         "color": "#123602"
       }
     ]

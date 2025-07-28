@@ -8,21 +8,13 @@
 #include <nlohmann/json.hpp>
 #include "Area.hpp"
 #include "generate_light.hpp"
-
+#include "animation.hpp"
 
 struct ChildInfo {
     std::string               json_path;
     std::unique_ptr<Area>     area_ptr;
     bool                      has_area = false;
     int                       z_offset;
-};
-
-
-struct Animation {
-    std::vector<SDL_Texture*> frames;
-    std::string on_end;
-    bool loop;
-    bool randomize;
 };
 
 struct LightSource {
@@ -64,6 +56,7 @@ public:
     float                         scale_factor;
     int                           original_canvas_width;
     int                           original_canvas_height;
+    bool flipable;
 
     std::vector<std::string>      tags;
     SDL_BlendMode                 blendmode;
@@ -105,6 +98,8 @@ public:
     std::vector<std::string> child_json_paths;
     std::vector<ChildInfo> children;
 private:
+    void get_area_textures(SDL_Renderer* renderer);
+
     int offset_x;
     int offset_y;
     void load_base_properties(const nlohmann::json& data);

@@ -14,7 +14,7 @@ def boost_scale_percentage(root_dir):
                     size_settings = data["size_settings"]
                     if "scale_percentage" in size_settings and isinstance(size_settings["scale_percentage"], (int, float)):
                         original = size_settings["scale_percentage"]
-                        boosted = round(original * 1.05)
+                        boosted = round(original * 0.9)
                         if boosted != original:
                             data["size_settings"]["scale_percentage"] = boosted
                             updated = True

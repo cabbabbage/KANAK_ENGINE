@@ -6,25 +6,31 @@
       "frames_path": "default",
       "speed": 1.0,
       "on_end": "default",
+      "event_data": [],
       "randomize": false,
       "audio_path": "",
-      "volume": 50
+      "volume": 50,
+      "lock_until_done": false
     },
     "interaction": {
       "frames_path": "interaction",
       "speed": 1.0,
-      "on_end": "interaction",
+      "on_end": "freeze_on_last",
+      "event_data": [],
       "randomize": false,
       "audio_path": "",
       "volume": 50,
+      "lock_until_done": true,
       "area_path": "interaction_area.json"
     }
   },
-  "impassable_area": null,
-  "z_threshold": 12,
+  "interaction_area": "interaction_area.json",
+  "impassable_area": "impassable_area.json",
+  "z_threshold": 10,
   "size_settings": {
-    "scale_percentage": 46,
-    "variability_percentage": 0
+    "scale_percentage": 41,
+    "variability_percentage": 0,
+    "flipability": false
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 1000,
@@ -32,12 +38,14 @@
     "Spacing"
   ],
   "tags": [
-    "passable",
     "loot",
-    "man-made",
-    "wood",
     "center",
-    "valuable"
+    "interaction",
+    "wood",
+    "valuable",
+    "impassable",
+    "man-made",
+    "default"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -69,5 +77,8 @@
     "has_casted_shadows": null,
     "number_of_casted_shadows": null,
     "cast_shadow_intensity": null
-  }
+  },
+  "has_spacing": true,
+  "min_distance_all": 1011,
+  "anti_tags": []
 }

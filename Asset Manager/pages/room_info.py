@@ -1,83 +1,119 @@
+# === File: pages/room_info.py ===
 import os
 import json
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from pages.search_rooms import SearchRoomsFrame
 
-class RoomInfo(ttk.LabelFrame):
+class RoomInfo(tk.Frame):
     """
     UI element for configuring a single room within a map layer.
     Now supports:
       - min_instances, max_instances
       - required_child selection (supports multiple)
     """
-    def __init__(
-        self, parent, name,
-        min_instances=0, max_instances=0,
-        required_children=None
-    ):
+    def __init__(self, parent, name,
+                 min_instances=0, max_instances=0,
+                 required_children=None):
+        super().__init__(parent, bg='#2a2a2a', bd=0)
         self.room_name = name
         self.name_label_var = tk.StringVar(value=name)
         self.required_children = required_children or []
 
-        label = ttk.Label(parent, textvariable=self.name_label_var,
-                          font=("Segoe UI", 11, "bold"))
-        super().__init__(parent, labelwidget=label, padding=(6,4))
+        # header with room name and delete button
+        hdr = tk.Frame(self, bg='#2a2a2a')
+        hdr.pack(fill='x', pady=(0,4))
+        tk.Label(
+            hdr, textvariable=self.name_label_var,
+            font=("Segoe UI", 12, "bold"),
+            fg='white', bg='#2a2a2a'
+        ).pack(side='left', padx=(4,0))
+        tk.Button(
+            hdr, text='✕',
+            bg='#D9534F', fg='white',
+            relief='flat', font=("Segoe UI",11,"bold"),
+            width=2, command=self._on_delete
+        ).pack(side='right', padx=(0,4))
 
+        # Min / Max instances
+        row1 = tk.Frame(self, bg='#2a2a2a')
+        row1.pack(fill='x', padx=4, pady=2)
+        tk.Label(
+            row1, text="Min Instances:",
+            font=("Segoe UI",11),
+            fg='white', bg='#2a2a2a'
+        ).pack(side='left')
         self.min_var = tk.IntVar(value=min_instances)
+        min_sb = tk.Spinbox(
+            row1, from_=0, to=9999,
+            textvariable=self.min_var,
+            font=("Segoe UI",11),
+            width=5, relief='flat',
+            bg='#1e1e1e', fg='white',
+            command=self._on_value_change,
+            insertbackground='white'
+        )
+        min_sb.pack(side='left', padx=6)
+        min_sb.bind("<FocusOut>", lambda e: self._on_value_change())
+        min_sb.bind("<Return>",   lambda e: self._on_value_change())
+
+        row2 = tk.Frame(self, bg='#2a2a2a')
+        row2.pack(fill='x', padx=4, pady=2)
+        tk.Label(
+            row2, text="Max Instances:",
+            font=("Segoe UI",11),
+            fg='white', bg='#2a2a2a'
+        ).pack(side='left')
         self.max_var = tk.IntVar(value=max_instances)
-
-        self._build_ui()
-        self.load({
-            "name": name,
-            "min_instances": min_instances,
-            "max_instances": max_instances,
-            "required_children": self.required_children
-        })
-
-    def _build_ui(self):
-        btn = ttk.Button(self, text="Delete", command=self._on_delete)
-        btn.pack(anchor="ne", padx=4, pady=2)
-
-        f1 = ttk.Frame(self); f1.pack(fill="x", padx=4, pady=2)
-        ttk.Label(f1, text="Min Instances:").pack(side="left")
-        self.min_spin = tk.Spinbox(
-            f1, from_=0, to=9999,
-            textvariable=self.min_var, width=5,
-            command=self._on_value_change
+        max_sb = tk.Spinbox(
+            row2, from_=0, to=9999,
+            textvariable=self.max_var,
+            font=("Segoe UI",11),
+            width=5, relief='flat',
+            bg='#1e1e1e', fg='white',
+            command=self._on_value_change,
+            insertbackground='white'
         )
-        self.min_spin.pack(side="left", padx=4)
-        self.min_spin.bind("<FocusOut>", lambda e: self._on_value_change())
-        self.min_spin.bind("<Return>",   lambda e: self._on_value_change())
+        max_sb.pack(side='left', padx=6)
+        max_sb.bind("<FocusOut>", lambda e: self._on_value_change())
+        max_sb.bind("<Return>",   lambda e: self._on_value_change())
 
-        f2 = ttk.Frame(self); f2.pack(fill="x", padx=4, pady=2)
-        ttk.Label(f2, text="Max Instances:").pack(side="left")
-        self.max_spin = tk.Spinbox(
-            f2, from_=0, to=9999,
-            textvariable=self.max_var, width=5,
-            command=self._on_value_change
+        # Required children list
+        child_frame = tk.LabelFrame(
+            self, text="Required Children",
+            font=("Segoe UI",11,"bold"),
+            fg='white', bg='#2a2a2a', labelanchor='n'
         )
-        self.max_spin.pack(side="left", padx=4)
-        self.max_spin.bind("<FocusOut>", lambda e: self._on_value_change())
-        self.max_spin.bind("<Return>",   lambda e: self._on_value_change())
-
-        f3 = ttk.LabelFrame(self, text="Required Children")
-        f3.pack(fill="x", padx=4, pady=4)
-
-        self.child_list_frame = ttk.Frame(f3)
-        self.child_list_frame.pack(fill="x", padx=4, pady=2)
+        child_frame.configure(highlightbackground='#444', highlightthickness=1)
+        child_frame.pack(fill='x', padx=4, pady=6)
+        self.child_list = tk.Frame(child_frame, bg='#2a2a2a')
+        self.child_list.pack(fill='x', padx=4, pady=(4,2))
         self._refresh_required_child_list()
 
-        ttk.Button(f3, text="Add Child", command=self._on_add_required_child).pack(anchor="w", padx=4, pady=2)
+        tk.Button(
+            child_frame, text="Add Child",
+            bg='#007BFF', fg='white',
+            relief='flat', font=("Segoe UI",11,"bold"),
+            command=self._on_add_required_child
+        ).pack(anchor='w', padx=4, pady=(0,4))
 
     def _refresh_required_child_list(self):
-        for widget in self.child_list_frame.winfo_children():
-            widget.destroy()
+        for w in self.child_list.winfo_children():
+            w.destroy()
         for child in self.required_children:
-            f = ttk.Frame(self.child_list_frame)
-            f.pack(fill="x", pady=1, anchor="w")
-            ttk.Label(f, text=child).pack(side="left")
-            ttk.Button(f, text="✕", width=2, command=lambda c=child: self._remove_required_child(c)).pack(side="left", padx=4)
+            f = tk.Frame(self.child_list, bg='#2a2a2a')
+            f.pack(fill='x', pady=1, padx=(0,4))
+            tk.Label(
+                f, text=child,
+                font=("Segoe UI",11),
+                fg='white', bg='#2a2a2a'
+            ).pack(side='left')
+            tk.Button(
+                f, text='✕', width=2,
+                bg='#D9534F', fg='white',
+                relief='flat', font=("Segoe UI",10,"bold"),
+                command=lambda c=child: self._remove_required_child(c)
+            ).pack(side='left', padx=6)
 
     def _remove_required_child(self, name):
         if name in self.required_children:
@@ -87,14 +123,14 @@ class RoomInfo(ttk.LabelFrame):
 
     def _on_add_required_child(self):
         top = tk.Toplevel(self)
+        top.configure(bg='#1e1e1e')
         top.title("Select Required Child")
         layer = self.master.master
         sr = SearchRoomsFrame(
-            top,
-            rooms_dir=layer.rooms_dir,
+            top, rooms_dir=layer.rooms_dir,
             on_select=lambda nm: self._on_required_selected(nm, top)
         )
-        sr.pack(fill="both", expand=True)
+        sr.pack(fill='both', expand=True)
 
     def _on_required_selected(self, name, popup):
         if name not in self.required_children:
@@ -104,6 +140,7 @@ class RoomInfo(ttk.LabelFrame):
         popup.destroy()
 
     def _on_delete(self):
+        # remove self from parent layer
         layer = self.master.master
         if hasattr(layer, 'rooms'):
             try:
@@ -121,10 +158,10 @@ class RoomInfo(ttk.LabelFrame):
 
     def get_data(self):
         return {
-            "name": self.room_name,
+            "name":        self.room_name,
             "min_instances": self.min_var.get(),
             "max_instances": self.max_var.get(),
-            "required_children": self.required_children
+            "required_children": list(self.required_children)
         }
 
     def load(self, data):

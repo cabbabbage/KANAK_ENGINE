@@ -1,52 +1,54 @@
 {
-    "impassable_area": null,
-    "asset_name": "Booze_2",
-    "asset_type": "Object",
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 0,
-    "max_child_depth": 2,
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "tags": [
-        "small",
-        "crime",
-        "brown",
-        "child",
-        "drinking",
-        "still",
-        "barrel_child",
-        "passable",
-        "booze",
-        "default",
-        "man-made"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "z_threshold": 10,
-    "size_settings": {
-        "scale_percentage": 6,
-        "variability_percentage": 0
-    },
-    "anti_tags": [
-        "book",
-        "center",
-        "library",
-        "nature",
-        "plant",
-        "wood"
-    ],
-    "has_spacing": true,
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 50
+  "impassable_area": null,
+  "asset_name": "Booze_2",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "tags": [
+    "brown",
+    "crime",
+    "small",
+    "drinking",
+    "passable",
+    "barrel_child",
+    "booze",
+    "still",
+    "child",
+    "man-made",
+    "default"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "z_threshold": 10,
+  "size_settings": {
+    "scale_percentage": 5,
+    "variability_percentage": 0,
+    "flipability": true
+  },
+  "anti_tags": [
+    "book",
+    "center",
+    "library",
+    "nature",
+    "plant",
+    "wood"
+  ],
+  "has_spacing": true,
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 50,
+  "min_distance_all": 0
 }

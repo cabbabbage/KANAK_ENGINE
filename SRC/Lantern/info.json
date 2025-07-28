@@ -18,23 +18,24 @@
       "volume": 50
     }
   },
-  "z_threshold": 4,
+  "z_threshold": 3,
   "size_settings": {
-    "scale_percentage": 34,
-    "variability_percentage": 0.0
+    "scale_percentage": 30,
+    "variability_percentage": 0,
+    "flipability": true
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 2000,
   "tags": [
-    "light",
     "default",
-    "center",
-    "man-made",
     "tall",
-    "black",
-    "large",
-    "metal",
+    "light",
+    "center",
     "still",
+    "man-made",
+    "metal",
+    "large",
+    "black",
     "passable"
   ],
   "rnd_spawn_min": 300,
@@ -42,7 +43,7 @@
   "lighting_info": [
     {
       "has_light_source": true,
-      "light_intensity": 30,
+      "light_intensity": 100,
       "light_color": [
         255,
         255,
@@ -58,7 +59,7 @@
     },
     {
       "has_light_source": true,
-      "light_intensity": 81,
+      "light_intensity": 100,
       "light_color": [
         255,
         255,

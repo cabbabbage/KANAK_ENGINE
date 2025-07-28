@@ -37,13 +37,7 @@ public:
 
     std::string get_current_animation() const;
     std::string get_type() const;
-
-    Area get_global_collision_area() const;
-    Area get_global_interaction_area() const;
-    Area get_global_attack_area() const;
-    Area get_global_spacing_area() const;
-    Area get_global_passability_area() const;
-
+    
     void add_child(Asset child);
 
     Asset* parent = nullptr;
@@ -65,8 +59,10 @@ public:
     std::vector<Asset> children;
     int depth = 0;
     void set_z_offset(int z);
+    bool flipped;
 private:
-
+    void set_flip();
+    std::string next_animation;
     void set_z_index();
 
     int current_frame_index = 0;

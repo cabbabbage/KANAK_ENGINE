@@ -2,11 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageFilter
 import numpy as np
+from pages.range import Range
 
 
 class MaskModePanel(tk.Frame):
     def __init__(self, parent, frames, scale, anchor):
-        super().__init__(parent)
+        super().__init__(parent, bg="#1e1e1e")
         self.frames = frames
         self.scale = scale
         self.anchor = anchor
@@ -20,24 +21,24 @@ class MaskModePanel(tk.Frame):
         self._prepare_images()
 
     def _build_ui(self):
-        self.canvas = tk.Canvas(self, bg='black')
+        self.canvas = tk.Canvas(self, bg='black', highlightthickness=0)
         self.canvas.pack(fill='both', expand=True)
 
-        self.slider_frame = ttk.Frame(self)
-        self.slider_frame.pack(fill='x', pady=6)
+        self.slider_frame = ttk.Frame(self, style="Dark.TFrame")
+        self.slider_frame.pack(fill='x', padx=10, pady=(8, 12))
+
+        ttk.Style().configure("Dark.TFrame", background="#1e1e1e")
+        ttk.Style().configure("Dark.TLabel", background="#1e1e1e", foreground="#FFFFFF", font=("Segoe UI", 12))
 
         self.sliders = {}
-        for key in ('top_pct', 'bottom_pct', 'left_pct', 'right_pct'):
-            self._add_slider(key, 0, 100, 0)
-
-    def _add_slider(self, name, mn, mx, val):
-        ttk.Label(self.slider_frame, text=name).pack(side='left')
-        var = tk.IntVar(value=val)
-        slider = tk.Scale(self.slider_frame, from_=mn, to=mx,
-                          orient='horizontal', variable=var,
-                          command=lambda v: self._refresh_preview())
-        slider.pack(side='left', fill='x', expand=True, padx=4)
-        self.sliders[name] = slider
+        for label, key in [("Top", "top_pct"), ("Bottom", "bottom_pct"), ("Left", "left_pct"), ("Right", "right_pct")]:
+            row = ttk.Frame(self.slider_frame, style="Dark.TFrame")
+            row.pack(fill="x", pady=4)
+            ttk.Label(row, text=f"{label} Mask %:", style="Dark.TLabel").pack(side="left", padx=(0, 8))
+            rng = Range(row, min_bound=0, max_bound=100, set_min=0, set_max=0, force_fixed=True)
+            rng.pack(side="left", fill="x", expand=True)
+            rng.var_max.trace_add("write", lambda *_: self._refresh_preview())
+            self.sliders[key] = rng
 
     def _prepare_images(self):
         self.mask_arr = self._get_union_mask_arr()
@@ -53,10 +54,11 @@ class MaskModePanel(tk.Frame):
     def _refresh_preview(self):
         arr = self.mask_arr.copy()
         h0, w0 = arr.shape
-        top = self.sliders['top_pct'].get() / 100.0
-        bot = self.sliders['bottom_pct'].get() / 100.0
-        left = self.sliders['left_pct'].get() / 100.0
-        right = self.sliders['right_pct'].get() / 100.0
+
+        top = self.sliders['top_pct'].get_max() / 100.0
+        bot = self.sliders['bottom_pct'].get_max() / 100.0
+        left = self.sliders['left_pct'].get_max() / 100.0
+        right = self.sliders['right_pct'].get_max() / 100.0
 
         arr[:int(top * h0), :] = False
         arr[int((1 - bot) * h0):, :] = False
@@ -83,7 +85,6 @@ class MaskModePanel(tk.Frame):
         return [(int(x), int(y)) for x, y in pts]
 
     def get_points(self):
-        # Scale back to original size
         pts = self._extract_edge_pixels(self.cropped_mask)
         return [
             (x - self.anchor_x, y - self.anchor_y)

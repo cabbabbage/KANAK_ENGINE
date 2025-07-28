@@ -74,7 +74,7 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     scale_percentage       = ss.value("scale_percentage", 100.0f);
     variability_percentage = ss.value("variability_percentage", 0.0f);
     scale_factor           = scale_percentage / 100.0f;
-
+    flipable               = ss.value("flipable", false);
 
     // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);
@@ -108,8 +108,94 @@ void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
     int scaled_sprite_w = 0;
     int scaled_sprite_h = 0;
     generate_lights(renderer);
-    load_animations(anims_json_, dir_path_, renderer, base_sprite, scaled_sprite_w, scaled_sprite_h);
+
+    CacheManager cache;
+    std::string root_cache = "cache/" + name + "/animations";
+
+    for (auto it = anims_json_.begin(); it != anims_json_.end(); ++it) {
+        const std::string& trigger = it.key();
+        const auto& anim_json = it.value();
+        if (anim_json.is_null() || !anim_json.contains("frames_path"))
+            continue;
+
+        Animation anim;
+        anim.load(trigger,
+                  anim_json,
+                  dir_path_,
+                  root_cache,
+                  scale_factor,
+                  blendmode,
+                  renderer,
+                  base_sprite,
+                  scaled_sprite_w,
+                  scaled_sprite_h,
+                  original_canvas_width,
+                  original_canvas_height);
+
+        if (!anim.frames.empty()) {
+            animations[trigger] = std::move(anim);
+        }
+    }
+
+    get_area_textures(renderer);
 }
+
+
+void AssetInfo::get_area_textures(SDL_Renderer* renderer) {
+    if (!renderer) return;
+
+    CacheManager cache;
+
+    auto try_load_or_create = [&](std::unique_ptr<Area>& area, const std::string& kind) {
+        if (!area) return;
+
+        std::string folder = "cache/areas/" + name + "_" + kind;
+        std::string meta_file = folder + "/metadata.json";
+        std::string bmp_file = folder + "/0.bmp";
+
+        auto [minx, miny, maxx, maxy] = area->get_bounds();
+        nlohmann::json meta;
+        if (cache.load_metadata(meta_file, meta)) {
+            if (meta.value("bounds", std::vector<int>{}) == std::vector<int>{minx, miny, maxx, maxy}) {
+                SDL_Surface* surf = cache.load_surface(bmp_file);
+                if (surf) {
+                    SDL_Texture* tex = cache.surface_to_texture(renderer, surf);
+                    SDL_FreeSurface(surf);
+                    if (tex) {
+                        // Assign loaded texture to the area
+                        area->create_area_texture(renderer); // Still call to set internal pointer
+                        return;
+                    }
+                }
+            }
+        }
+
+        area->create_area_texture(renderer);
+
+        // Save for future
+        area->create_area_texture(renderer);
+        SDL_Texture* tex = area->get_texture();
+        if (tex) {
+            SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, maxx - minx + 1, maxy - miny + 1, 32, SDL_PIXELFORMAT_RGBA8888);
+            if (surf) {
+                SDL_SetRenderTarget(renderer, tex);
+                SDL_RenderReadPixels(renderer, nullptr, SDL_PIXELFORMAT_RGBA8888, surf->pixels, surf->pitch);
+                cache.save_surface_as_png(surf, bmp_file);
+                SDL_FreeSurface(surf);
+                meta["bounds"] = {minx, miny, maxx, maxy};
+                cache.save_metadata(meta_file, meta);
+                SDL_SetRenderTarget(renderer, nullptr);
+            }
+        }
+    };
+
+    try_load_or_create(passability_area, "passability");
+    try_load_or_create(spacing_area, "spacing");
+    try_load_or_create(collision_area, "collision");
+    try_load_or_create(interaction_area, "interaction");
+    try_load_or_create(attack_area, "attack");
+}
+
 
 void AssetInfo::load_base_properties(const nlohmann::json& data) {
     type = data.value("asset_type", "Object");
@@ -287,8 +373,6 @@ void AssetInfo::load_collision_areas(const nlohmann::json& data,
     try_load_area(data, "hit_area", dir_path, attack_area, has_attack_area, scale_factor, offset_x, offset_y);
 }
 
-
-
 void AssetInfo::load_child_json_paths(const nlohmann::json& data,
                                       const std::string& dir_path)
 {
@@ -352,9 +436,6 @@ void AssetInfo::load_child_json_paths(const nlohmann::json& data,
         children.emplace_back(std::move(ci));
     }
 }
-
-
-
 
 void AssetInfo::load_animations(const nlohmann::json& anims_json,
                                 const std::string& dir_path,

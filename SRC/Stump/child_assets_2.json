@@ -4,7 +4,7 @@
     {
       "name": "Axe",
       "min_number": -100,
-      "max_number": 292,
+      "max_number": 91,
       "position": "Random",
       "exact_position": null,
       "tag": false,
@@ -176,5 +176,7 @@
     476,
     232
   ],
-  "type": "draw"
+  "type": "draw",
+  "offset_x": 0,
+  "offset_y": 0
 }

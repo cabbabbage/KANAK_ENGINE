@@ -1,4 +1,3 @@
-// === File: Asset.cpp ===
 #include "asset.hpp"
 #include "generate_light.hpp"
 #include <random>
@@ -64,7 +63,12 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
             it = info->animations.begin();
 
         if (it != info->animations.end() && !it->second.frames.empty()) {
+            // Queue and immediately apply fallback
             change_animation(it->first);
+            current_animation = next_animation;
+            info->animations[current_animation].change(current_frame_index, static_frame);
+            next_animation.clear();
+
             if (info->animations[current_animation].randomize &&
                 info->animations[current_animation].frames.size() > 1)
             {
@@ -92,6 +96,7 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
             }
         }
     }
+    set_flip();
 }
 
 void Asset::set_position(int x, int y) {
@@ -100,40 +105,84 @@ void Asset::set_position(int x, int y) {
     set_z_index();
 }
 
+
 void Asset::update() {
     if (!info) return;
 
     auto it = info->animations.find(current_animation);
-    if (it != info->animations.end() &&
-        !it->second.frames.empty() &&
-        !static_frame)
-    {
-        if (++current_frame_index >= int(it->second.frames.size())) {
-            if (it->second.loop) {
+    if (it == info->animations.end()) return;
+
+    Animation& anim = it->second;
+
+    // Immediate queued-change if not locked
+    if (!next_animation.empty() && !anim.lock_until_done) {
+        auto nit = info->animations.find(next_animation);
+        if (nit != info->animations.end()) {
+            current_animation = next_animation;
+            Animation& newAnim = nit->second;
+            newAnim.change(current_frame_index, static_frame);
+        }
+        next_animation.clear();
+        it = info->animations.find(current_animation);
+        anim = it->second;
+    }
+
+    // Advance frame or handle auto-transition
+    if (!static_frame) {
+        bool end_reached = false;
+        std::string auto_transition;
+
+        if (next_animation == "reverse") {
+            --current_frame_index;
+            if (current_frame_index <= 0) {
+                end_reached = true;
                 current_frame_index = 0;
-            } else if (!it->second.on_end.empty() &&
-                       info->animations.count(it->second.on_end))
-            {
-                change_animation(it->second.on_end);
-            } else {
-                current_frame_index = int(it->second.frames.size()) - 1;
+            }
+        } else {
+            bool advanced = anim.advance(current_frame_index, auto_transition);
+            end_reached = !advanced;
+        }
+
+        if (end_reached) {
+            if (next_animation == "freeze_on_last") {
+                anim.freeze();
+                static_frame = true;
+                next_animation.clear();
+            } else if (next_animation == "terminate") {
+                this->~Asset();
+                return;
+            } else if (next_animation == "reverse") {
+                int last = static_cast<int>(anim.frames.size()) - 1;
+                if (current_frame_index == 0) {
+                    current_frame_index = std::min(last, 1);
+                } else {
+                    current_frame_index = std::max(0, last - 1);
+                }
+                // keep next_animation as "reverse" for continuous flip
+            } else if (!next_animation.empty() && info->animations.count(next_animation)) {
+                if (!anim.lock_until_done) {
+                    auto & nxt = info->animations[next_animation];
+                    current_animation = next_animation;
+                    nxt.change(current_frame_index, static_frame);
+                    next_animation.clear();
+                }
+            } else if (!auto_transition.empty() && info->animations.count(auto_transition)) {
+                auto & at = info->animations[auto_transition];
+                current_animation = auto_transition;
+                at.change(current_frame_index, static_frame);
             }
         }
     }
 
-    // update own logic, then children
     for (auto& c : children) {
         c.update();
     }
 }
 
 void Asset::change_animation(const std::string& name) {
-    auto it = info->animations.find(name);
-    if (it != info->animations.end() && !it->second.frames.empty()) {
-        current_animation = name;
-        current_frame_index = 0;
-        static_frame = (it->second.frames.size() == 1);
-    }
+    if (!info || name.empty()) return;
+    if (name == current_animation && name != "reverse") return;
+    next_animation = name;
 }
 
 SDL_Texture* Asset::get_current_frame() const {
@@ -142,8 +191,8 @@ SDL_Texture* Asset::get_current_frame() const {
         return itc->second[current_frame_index];
 
     auto iti = info->animations.find(current_animation);
-    if (iti != info->animations.end() && !iti->second.frames.empty())
-        return iti->second.frames[current_frame_index];
+    if (iti != info->animations.end())
+        return iti->second.get_frame(current_frame_index);
 
     return nullptr;
 }
@@ -160,83 +209,32 @@ std::string Asset::get_type() const {
     return info ? info->type : "";
 }
 
-Area Asset::get_global_collision_area() const {
-    if (!info || !info->has_collision_area || !info->collision_area)
-        return nullptr;
-    Area a = *info->collision_area;
-    a.align(pos_X, pos_Y);
-    return a;
-}
-
-Area Asset::get_global_interaction_area() const {
-    if (!info || !info->has_interaction_area || !info->interaction_area)
-        return nullptr;
-    Area a = *info->interaction_area;
-    a.align(pos_X, pos_Y);
-    return a;
-}
-
-Area Asset::get_global_attack_area() const {
-    if (!info || !info->has_attack_area || !info->attack_area)
-        return nullptr;
-    Area a = *info->attack_area;
-    a.align(pos_X, pos_Y);
-    return a;
-}
-
-Area Asset::get_global_spacing_area() const {
-    if (!info || !info->has_spacing_area || !info->spacing_area)
-        return nullptr;
-    Area a = *info->spacing_area;
-    a.align(pos_X, pos_Y);
-    return a;
-}
-
-Area Asset::get_global_passability_area() const {
-    if (!info || !info->has_passability_area || !info->passability_area)
-        return nullptr;
-    Area a = *info->passability_area;
-    a.align(pos_X, pos_Y);
-    return a;
-}
-
 void Asset::add_child(Asset child) {
-    // look up this child's z_offset from our AssetInfo
     if (info) {
         for (auto& ci : info->children) {
-            // match on the stem of the JSON path == the child's asset name
             if (std::filesystem::path(ci.json_path).stem().string() == child.info->name) {
                 child.set_z_offset(ci.z_offset);
                 break;
             }
         }
     }
-
-    // assign parent and recalc final z_index
     child.parent = this;
     child.set_z_index();
-
     if (info && child.info) {
-        std::cout 
-            << "[Asset] " << info->name 
-            << " adding child \"" << child.info->name 
-            << "\" at (" << child.pos_X << ", " << child.pos_Y 
-            << "), z_index=" << child.z_index << "\n";
+        std::cout << "[Asset] " << info->name
+                  << " adding child \"" << child.info->name
+                  << "\" at (" << child.pos_X << ", " << child.pos_Y
+                  << "), z_index=" << child.z_index << "\n";
     }
-
     children.push_back(std::move(child));
 }
 
 void Asset::set_z_index() {
     try {
         if (parent) {
-            if (z_offset > 0) {
-                z_index = parent->z_index + 1;
-            } else if (z_offset < 0) {
-                z_index = parent->z_index - 1;
-            } else {
-                z_index = pos_Y + info->z_threshold;
-            }
+            if (z_offset > 0) z_index = parent->z_index + 1;
+            else if (z_offset < 0) z_index = parent->z_index - 1;
+            else z_index = pos_Y + info->z_threshold;
         } else if (info) {
             z_index = pos_Y + info->z_threshold;
         }
@@ -245,8 +243,16 @@ void Asset::set_z_index() {
     }
 }
 
-void Asset::set_z_offset(int z){
+void Asset::set_z_offset(int z) {
     z_offset = z;
     set_z_index();
-    std::cout << "Z offset set to " << z  << "for asset " << info->name << " \n";
+    std::cout << "Z offset set to " << z << " for asset " << info->name << "\n";
+}
+
+void Asset::set_flip() {
+    if (!info || !info->can_invert) return;
+
+    std::mt19937 rng{std::random_device{}()};
+    std::uniform_int_distribution<int> dist(0, 1);
+    flipped = (dist(rng) == 1);
 }

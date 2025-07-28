@@ -15,13 +15,13 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 66,
+        "percent": 65,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 30,
+        "percent": 31,
         "color": "#2911cb"
       },
       {

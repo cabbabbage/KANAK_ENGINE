@@ -1,208 +1,230 @@
+# === File: pages/size.py ===
 import os
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
-from pages.button import BlueButton
 from pages.range import Range
 
-class SizePage(ttk.Frame):
+class SizePage(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        self.FONT = ('Segoe UI', 14)
-        self.FONT_BOLD = ('Segoe UI', 18, 'bold')
-        self.MAIN_COLOR = "#005f73"
-        self.SECONDARY_COLOR = "#ee9b00"
-
         self.asset_path = None
         self._orig_img = None
         self._fit_img = None
+        self._loaded = False
 
-        # Range controls
-        self.scale_range = Range(self, min_bound=1, max_bound=150,
-                                 set_min=100, set_max=100,
-                                 force_fixed=True, label="Scale (%)")
-        self.variability_range = Range(self, min_bound=0, max_bound=20,
-                                       set_min=0, set_max=0,
-                                       force_fixed=True, label="Size Variability (%)")
-        self.threshold_range = Range(self, min_bound=0, max_bound=1,
-                                     set_min=0, set_max=0,
-                                     force_fixed=True, label="Z Threshold (px)")
+        # Page background
+        self.configure(bg='#1e1e1e')
 
-        # Bind live update on any slider change
-        for rw in (self.scale_range, self.variability_range, self.threshold_range):
-            rw.var_min.trace_add("write", lambda *_: self._rescale())
-            rw.var_max.trace_add("write", lambda *_: self._rescale())
-            if hasattr(rw, "var_random"):
-                rw.var_random.trace_add("write", lambda *_: self._rescale())
+        # Title header
+        title = tk.Label(
+            self, text="Size Settings",
+            font=("Segoe UI", 20, "bold"),
+            fg="#005f73", bg='#1e1e1e'
+        )
+        title.pack(fill=tk.X, pady=(10, 20))
 
-        # styles
-        style = ttk.Style(self)
-        style.configure('Main.TButton', font=self.FONT, padding=6,
-                        background=self.MAIN_COLOR, foreground='black')
-        style.map('Main.TButton', background=[('active', self.SECONDARY_COLOR)])
-        style.configure('Large.TLabel', font=self.FONT)
-        style.configure('LargeBold.TLabel', font=self.FONT_BOLD, foreground=self.SECONDARY_COLOR)
+        # Scrollable area
+        canvas = tk.Canvas(self, bg='#2a2a2a', highlightthickness=0)
+        scroll_frame = tk.Frame(canvas, bg='#2a2a2a')
+        window_id = canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
+        # update scrollregion
+        scroll_frame.bind(
+            '<Configure>',
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+        )
+        # span full width
+        canvas.bind(
+            '<Configure>',
+            lambda e: canvas.itemconfig(window_id, width=e.width)
+        )
+        # mousewheel on hover
+        def _scroll(ev):
+            canvas.yview_scroll(int(-1*(ev.delta/120)), 'units')
+        scroll_frame.bind('<Enter>', lambda e: canvas.bind_all('<MouseWheel>', _scroll))
+        scroll_frame.bind('<Leave>', lambda e: canvas.unbind_all('<MouseWheel>'))
+        canvas.pack(fill=tk.BOTH, expand=True)
 
-        # layout columns
-        for c in range(4):
-            self.columnconfigure(c, weight=1)
+        # -- Image Preview --
+        hdr1 = tk.Label(
+            scroll_frame, text="Image Preview",
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr1.pack(anchor='w', padx=12, pady=(10, 4))
 
-        # title
-        ttk.Label(self, text="Size Settings", style='LargeBold.TLabel') \
-            .grid(row=0, column=0, columnspan=4, pady=(10, 20), padx=12)
-
-        # main preview canvas
         self.CANVAS_W, self.CANVAS_H = 480, 270
-        self.preview = tk.Canvas(self, width=self.CANVAS_W, height=self.CANVAS_H,
-                                 bg='black', bd=2, relief='sunken')
-        self.preview.grid(row=1, column=0, columnspan=4, padx=12, pady=6)
+        self.preview = tk.Canvas(
+            scroll_frame, width=self.CANVAS_W, height=self.CANVAS_H,
+            bg='black', bd=2, relief='sunken'
+        )
+        self.preview.pack(padx=12, pady=(0, 8))
 
-        # Scale range
-        self.scale_range.grid(row=2, column=1, columnspan=3,
-                              sticky="we", padx=12, pady=6)
+        # -- Size Controls --
+        hdr2 = tk.Label(
+            scroll_frame, text="Size Controls",
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr2.pack(anchor='w', padx=12, pady=(10, 4))
 
-        # Variability range
-        self.variability_range.grid(row=3, column=1, columnspan=3,
-                                    sticky="we", padx=12, pady=6)
+        # Range widgets
+        self.scale_range = Range(
+            scroll_frame, min_bound=1, max_bound=150,
+            set_min=100, set_max=100,
+            force_fixed=True, label="Scale (%)"
+        )
+        self.variability_range = Range(
+            scroll_frame, min_bound=0, max_bound=20,
+            set_min=0, set_max=0,
+            force_fixed=True, label="Size Variability (%)"
+        )
+        self.threshold_range = Range(
+            scroll_frame, min_bound=0, max_bound=1,
+            set_min=0, set_max=0,
+            force_fixed=True, label="Z Threshold (px)"
+        )
+        for rw in (self.scale_range, self.variability_range, self.threshold_range):
+            rw.pack(fill='x', padx=12, pady=6)
+            rw.var_min.trace_add("write", lambda *_: [self._rescale(), self._autosave()])
+            rw.var_max.trace_add("write", lambda *_: [self._rescale(), self._autosave()])
+            if hasattr(rw, 'var_random'):
+                rw.var_random.trace_add("write", lambda *_: [self._rescale(), self._autosave()])
 
-        # Z-threshold range
-        self.threshold_range.grid(row=4, column=1, columnspan=3,
-                                  sticky="we", padx=12, pady=6)
+        # -- Options --
+        hdr3 = tk.Label(
+            scroll_frame, text="Options",
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr3.pack(anchor='w', padx=12, pady=(10, 4))
+        self.flipability_var = tk.BooleanVar(value=False)
+        self.flipability_var.trace_add("write", lambda *_: self._autosave())
+        chk = ttk.Checkbutton(
+            scroll_frame, text="Randomly Flip Y-Axis",
+            variable=self.flipability_var,
+            style='W.TCheckbutton'
+        )
+        chk.pack(anchor='w', padx=12, pady=6)
+        ttk.Style().configure('W.TCheckbutton', font=("Segoe UI", 12), background='#2a2a2a', foreground='#FFFFFF')
 
-        # min/max size previews
-        ttk.Label(self, text="Min Size Preview", style='Large.TLabel') \
-            .grid(row=5, column=0, pady=(10, 0))
-        ttk.Label(self, text="Max Size Preview", style='Large.TLabel') \
-            .grid(row=5, column=2, pady=(10, 0))
+        # -- Min/Max Preview --
+        hdr4 = tk.Label(
+            scroll_frame, text="Min / Max Size Preview",
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr4.pack(anchor='w', padx=12, pady=(10, 4))
 
-        self.preview_min = tk.Canvas(self, width=self.CANVAS_W // 2, height=self.CANVAS_H // 2,
-                                     bg='black', bd=1, relief='sunken')
-        self.preview_min.grid(row=6, column=0, columnspan=2, padx=6, pady=6)
+        label_row = tk.Frame(scroll_frame, bg='#2a2a2a')
+        label_row.pack(fill='x', padx=12)
+        tk.Label(
+            label_row, text="Min Size Preview",
+            font=("Segoe UI", 12), fg="#FFFFFF", bg='#2a2a2a'
+        ).pack(side='left', pady=(0,4))
+        tk.Label(
+            label_row, text="Max Size Preview",
+            font=("Segoe UI", 12), fg="#FFFFFF", bg='#2a2a2a'
+        ).pack(side='right', pady=(0,4))
 
-        self.preview_max = tk.Canvas(self, width=self.CANVAS_W // 2, height=self.CANVAS_H // 2,
-                                     bg='black', bd=1, relief='sunken')
-        self.preview_max.grid(row=6, column=2, columnspan=2, padx=6, pady=6)
+        preview_row = tk.Frame(scroll_frame, bg='#2a2a2a')
+        preview_row.pack(fill='x', padx=12, pady=(4,12))
+        self.preview_min = tk.Canvas(
+            preview_row, width=self.CANVAS_W//2, height=self.CANVAS_H//2,
+            bg='black', bd=1, relief='sunken'
+        )
+        self.preview_min.pack(side='left', padx=6)
+        self.preview_max = tk.Canvas(
+            preview_row, width=self.CANVAS_W//2, height=self.CANVAS_H//2,
+            bg='black', bd=1, relief='sunken'
+        )
+        self.preview_max.pack(side='left', padx=6)
 
-        # Save button
-        BlueButton(self, "Save", command=self.save, x=0, y=0)
+        # finalize scrollable area
+        self._loaded = True
 
     def load(self, info_path):
         self.asset_path = info_path
         if not info_path:
             return
-
         if not os.path.exists(info_path):
             with open(info_path, 'w') as f:
                 json.dump({}, f)
-
         with open(info_path, 'r') as f:
             data = json.load(f)
-
-        # load size settings
         ss = data.get("size_settings", {})
-        scale_pct = ss.get("scale_percentage", 100)
-        self.scale_range.set(scale_pct, scale_pct)
-        var_pct = ss.get("variability_percentage", 0)
-        self.variability_range.set(var_pct, var_pct)
-
-        # load z_threshold
-        zt = data.get('z_threshold')
-
-        # load image
+        self.scale_range.set(ss.get("scale_percentage", 100), ss.get("scale_percentage", 100))
+        self.variability_range.set(ss.get("variability_percentage", 0), ss.get("variability_percentage", 0))
+        zt = data.get('z_threshold', None)
+        self.flipability_var.set(ss.get("flipability", False))
         base_dir = os.path.dirname(info_path)
         img_p = os.path.join(base_dir, "default", "0.png")
-        if os.path.isfile(img_p):
-            self._orig_img = Image.open(img_p).convert('RGBA')
-        else:
-            self._orig_img = None
-
+        self._orig_img = Image.open(img_p).convert('RGBA') if os.path.isfile(img_p) else None
         if self._orig_img:
             bw, bh = self._orig_img.size
-            # update threshold bounds
             self.threshold_range.min_bound = 0
             self.threshold_range.max_bound = bh
-            if zt is not None and scale_pct != 0:
-                disp_val = int(zt / (scale_pct / 100.0))
-            else:
-                disp_val = int((bh * 4 / 5) / (scale_pct / 100.0))
-            self.threshold_range.set(disp_val, disp_val)
-
-            # prepare fit image
-            fit_scale = min(self.CANVAS_W / bw, self.CANVAS_H / bh)
-            disp = (int(bw * fit_scale), int(bh * fit_scale))
-            self._fit_img = self._orig_img.resize(disp, Image.LANCZOS)
+            disp = int((zt or (bh*4/5))/(self.scale_range.get()[1]/100.0)) if bh else 0
+            self.threshold_range.set(disp, disp)
+            fit_scale = min(self.CANVAS_W/bw, self.CANVAS_H/bh)
+            self._fit_img = self._orig_img.resize((int(bw*fit_scale), int(bh*fit_scale)), Image.LANCZOS)
         else:
             self._fit_img = None
-
         self._rescale()
+        self._loaded = True
 
     def _rescale(self):
-        # main preview
-        self.preview.delete("all")
-        if self._fit_img:
-            _, base_pct = self.scale_range.get()
-            scale = base_pct / 100.0
-            self._draw_to_canvas(self.preview, scale)
-            # draw threshold line
-            orig_h = getattr(self._orig_img, 'height', 0)
-            if orig_h > 0:
-                _, thr = self.threshold_range.get()
-                displayed_h = self._fit_img.height * scale
-                cw = int(self.preview['width'])
-                ch = int(self.preview['height'])
-                y_offset = (ch - displayed_h) / 2
-                frac = 1.0 - (thr / orig_h)
-                line_y = y_offset + displayed_h * frac
-                self.preview.create_line(0, line_y, cw, line_y, fill='red', width=2)
-
-        # min/max previews
-        self.preview_min.delete("all")
-        self.preview_max.delete("all")
-        if self._fit_img:
-            _, base_pct = self.scale_range.get()
-            _, var_pct = self.variability_range.get()
-            min_scale = max(0, (base_pct - var_pct) / 100.0)
-            max_scale = (base_pct + var_pct) / 100.0
-            self._draw_to_canvas(self.preview_min, min_scale)
-            self._draw_to_canvas(self.preview_max, max_scale)
-
-    def _draw_to_canvas(self, canvas, scale):
-        canvas.delete("all")
-        w, h = self._fit_img.size
-        sw, sh = int(w * scale), int(h * scale)
-        if sw <= 0 or sh <= 0:
+        # clear and redraw previews
+        for canvas in (self.preview, self.preview_min, self.preview_max):
+            canvas.delete('all')
+        if not self._fit_img:
             return
-        scaled = self._fit_img.resize((sw, sh), Image.LANCZOS)
-        cw = int(canvas['width'])
-        ch = int(canvas['height'])
-        x = (cw - sw) // 2
-        y = (ch - sh) // 2
-        tk_img = ImageTk.PhotoImage(scaled)
-        canvas.create_image(x, y, anchor='nw', image=tk_img)
-        setattr(self, f'_tk_{id(canvas)}', tk_img)
+        # main preview
+        base_pct = self.scale_range.get()[1]
+        self._draw(self.preview, base_pct/100.0)
+        # threshold line
+        thr = self.threshold_range.get()[1]
+        orig_h = getattr(self._orig_img, 'height', 0)
+        if orig_h:
+            disp_h = self._fit_img.height*(base_pct/100.0)
+            yoff = (self.CANVAS_H - disp_h)/2
+            frac = 1.0 - thr/orig_h
+            y = yoff + disp_h*frac
+            self.preview.create_line(0, y, self.CANVAS_W, y, fill='red', width=2)
+        # min/max previews
+        var_pct = self.variability_range.get()[1]
+        for cvs, pct in ((self.preview_min, max(0,(base_pct-var_pct)/100.0)),
+                         (self.preview_max, (base_pct+var_pct)/100.0)):
+            self._draw(cvs, pct)
+
+    def _draw(self, cvs, scale):
+        w, h = self._fit_img.size
+        sw, sh = int(w*scale), int(h*scale)
+        if sw<=0 or sh<=0:
+            return
+        img = self._fit_img.resize((sw, sh), Image.LANCZOS)
+        tk_img = ImageTk.PhotoImage(img)
+        x = (int(cvs['width'])-sw)//2
+        y = (int(cvs['height'])-sh)//2
+        cvs.create_image(x, y, anchor='nw', image=tk_img)
+        setattr(self, f'_img_{id(cvs)}', tk_img)
+
+    def _autosave(self):
+        if self._loaded:
+            self.save()
 
     def save(self):
         if not self.asset_path:
-            messagebox.showerror("Error", "No asset selected.")
             return
-
-        with open(self.asset_path, 'r') as f:
-            data = json.load(f)
-
-        # save z_threshold multiplied by scale percent
-        _, base_pct = self.scale_range.get()
-        _, thr = self.threshold_range.get()
-        z_val = int(thr * (base_pct / 100.0))
-        data['z_threshold'] = z_val
-
-        # save size settings
+        try:
+            with open(self.asset_path, 'r') as f:
+                data = json.load(f)
+        except Exception:
+            data = {}
+        base_pct = self.scale_range.get()[1]
+        thr = self.threshold_range.get()[1]
+        data['z_threshold'] = int(thr*(base_pct/100.0))
         data['size_settings'] = {
             'scale_percentage': base_pct,
             'variability_percentage': self.variability_range.get()[1],
+            'flipability': self.flipability_var.get()
         }
-
         with open(self.asset_path, 'w') as f:
             json.dump(data, f, indent=4)
-
-        messagebox.showinfo("Saved", "Size and z-threshold settings saved.")

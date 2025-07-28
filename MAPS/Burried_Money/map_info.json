@@ -1,3 +1,36 @@
 {
-  "map_layers": []
+  "map_layers": [
+    {
+      "level": 0,
+      "name": "layer_0",
+      "radius": 0,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
+    },
+    {
+      "level": 1,
+      "name": "layer_1",
+      "radius": 0,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
+    },
+    {
+      "level": 2,
+      "name": "layer_2",
+      "radius": 0,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
+    },
+    {
+      "level": 3,
+      "name": "layer_3",
+      "radius": 0,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
+    }
+  ]
 }

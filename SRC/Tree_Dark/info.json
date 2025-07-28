@@ -13,10 +13,11 @@
         }
     },
     "impassable_area": "impassable_area.json",
-    "z_threshold": 5,
+    "z_threshold": 4,
     "size_settings": {
-        "scale_percentage": 64,
-        "variability_percentage": 0
+        "scale_percentage": 57,
+        "variability_percentage": 0,
+        "flipability": true
     },
     "visited_tabs": [
         "Passability",
@@ -30,12 +31,12 @@
     "min_child_depth": 3,
     "max_child_depth": 4,
     "tags": [
+        "rest",
+        "boundary",
         "tree",
         "Tree",
-        "nature",
-        "boundary",
         "impassable",
-        "rest",
+        "nature",
         "default"
     ],
     "rnd_spawn_min": 300,

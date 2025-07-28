@@ -58,9 +58,9 @@
             "volume": 50
         }
     },
-    "z_threshold": 11,
+    "z_threshold": 13,
     "size_settings": {
-        "scale_percentage": 49,
+        "scale_percentage": 44,
         "variability_percentage": 0
     },
     "visited_tabs": [
@@ -70,14 +70,14 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 686,
     "tags": [
-        "backward",
+        "right",
         "default",
         "player",
-        "left",
-        "forward",
+        "start",
         "passable",
-        "right",
-        "start"
+        "forward",
+        "backward",
+        "left"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -100,7 +100,7 @@
         },
         {
             "has_light_source": true,
-            "light_intensity": 87,
+            "light_intensity": 94,
             "light_color": [
                 255,
                 255,
