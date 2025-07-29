@@ -2,8 +2,9 @@ import os
 import json
 import shutil
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 from PIL import Image, ImageTk
+
 from pages.basic_info import BasicInfoPage
 from pages.size import SizePage
 from pages.Animations import AnimationsPage
@@ -16,7 +17,6 @@ from pages.blend_page import BlendModePage
 from pages.edit_raw_json import EditRawJsonPage
 from pages.shading import ShadingPage
 from pages.lighting import LightingPage
-from tkinter import simpledialog  
 
 ASSET_DIR = "SRC"
 
@@ -29,10 +29,27 @@ class AssetOrganizerApp(tk.Toplevel):
         except tk.TclError:
             self.attributes('-zoomed', True)
 
+        # ─── Styles ────────────────────────────────────────────────────────────
         style = ttk.Style(self)
-        for w in ('TLabel','TButton','TCheckbutton','TEntry','TMenubutton','TSpinbox','TScale'):
-            style.configure(w, foreground='black')
+        style.theme_use('clam')
+        style.configure('TFrame', background='#1e1e1e')
+        style.configure('TLabel', background='#1e1e1e', foreground='white')
+        style.configure('TButton',
+                        background='#007BFF', foreground='white',
+                        relief='flat', borderwidth=0,
+                        font=('Segoe UI',11,'bold'), padding=6)
+        style.map('TButton', background=[('active','#0056b3')])
+        style.layout('Vertical.TScrollbar', [])
+        style.layout('Horizontal.TScrollbar', [])
+        style.configure('TNotebook', background='#1e1e1e', borderwidth=0)
+        style.configure('TNotebook.Tab',
+                        background='#2a2a2a', foreground='white',
+                        font=('Segoe UI',11,'bold'), padding=[10,5])
+        style.map('TNotebook.Tab',
+                  background=[('selected','#007BFF')],
+                  foreground=[('selected','white')])
 
+        self.configure(background='#1e1e1e')
         self.assets = self._scan_assets()
         self.current_asset = None
         self.pages = {}
@@ -41,191 +58,140 @@ class AssetOrganizerApp(tk.Toplevel):
         paned = ttk.Panedwindow(self, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True)
 
-        # ─── Left pane ─────────────────────────
-        left = ttk.Frame(paned, width=120)
+        # ─── Left Pane ─────────────────────────────────────────────────────────
+        left = ttk.Frame(paned, width=220)
+        left.pack_propagate(False)
         paned.add(left, weight=0)
 
-        top_btns = ttk.Frame(left)
-        top_btns.pack(fill=tk.X, pady=(8, 4), padx=5)
-        tk.Button(top_btns, text="Switch to Map Manager", bg="#D9534F", fg="white",
-                  font=("Segoe UI", 11, "bold"), command=self._open_asset_manager)\
-            .pack(fill=tk.X, pady=(0, 4))
-        tk.Button(top_btns, text="New Asset", bg="#007BFF", fg="white",
-                  font=("Segoe UI", 11, "bold"), command=self._new_asset)\
-            .pack(fill=tk.X, pady=(0, 6))
+        top_btns = tk.Frame(left, bg='#1e1e1e')
+        top_btns.pack(fill=tk.X, pady=(8,4), padx=5)
+        tk.Button(top_btns, text="Switch to Map Manager",
+                  bg="#007BFF", fg="white",
+                  font=("Segoe UI",11,"bold"),
+                  relief='flat', borderwidth=0,
+                  command=self._open_asset_manager).pack(fill=tk.X, pady=(0,4))
+        tk.Button(top_btns, text="New Asset",
+                  bg="#007BFF", fg="white",
+                  font=("Segoe UI",11,"bold"),
+                  relief='flat', borderwidth=0,
+                  command=self._new_asset).pack(fill=tk.X)
 
-        self.asset_frame = tk.Canvas(left, borderwidth=0, highlightthickness=0, width=120)
-        self.asset_scroll = ttk.Scrollbar(left, orient="vertical", command=self.asset_frame.yview)
-        self.asset_frame.configure(yscrollcommand=self.asset_scroll.set)
-        self.asset_frame.pack(side="left", fill="both", expand=True)
-        self.asset_scroll.pack(side="right", fill="y")
+        # Scrollable asset list (mouse-wheel only)
+        list_container = tk.Frame(left, bg='#1e1e1e')
+        list_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=(4,8))
+        self.asset_canvas = tk.Canvas(list_container, bg='#2a2a2a', highlightthickness=0)
+        self.asset_canvas.pack(fill=tk.BOTH, expand=True)
+        self.asset_canvas.bind('<Enter>', lambda e: self.asset_canvas.bind_all('<MouseWheel>', self._on_mousewheel_assets))
+        self.asset_canvas.bind('<Leave>', lambda e: self.asset_canvas.unbind_all('<MouseWheel>'))
 
-        self.asset_inner = ttk.Frame(self.asset_frame)
-        self.asset_frame.create_window((0, 0), window=self.asset_inner, anchor="nw")
-        self.asset_inner.bind("<Configure>",
-            lambda e: self.asset_frame.configure(scrollregion=self.asset_frame.bbox("all")))
-        self.asset_frame.bind_all("<MouseWheel>", self._on_mousewheel_assets)
+        self.asset_inner = tk.Frame(self.asset_canvas, bg='#2a2a2a')
+        win = self.asset_canvas.create_window((0,0), window=self.asset_inner, anchor='nw')
+        self.asset_inner.bind('<Configure>',
+                              lambda e: self.asset_canvas.configure(scrollregion=self.asset_canvas.bbox('all')))
+        self.asset_canvas.bind('<Configure>',
+                               lambda e: self.asset_canvas.itemconfig(win, width=e.width))
 
         self.asset_buttons = {}
 
-        # ─── Editor pane (always reserved) ─────────────────────────
-        self.editor_frame = ttk.Frame(paned)
-        paned.add(self.editor_frame, weight=1)
+        # ─── Editor Pane ───────────────────────────────────────────────────────
+        editor = ttk.Frame(paned)
+        paned.add(editor, weight=1)
+        # ensure this frame really fills all available space:
+        editor.pack_propagate(False)
 
-        canvas = tk.Canvas(self.editor_frame)
-        scrollbar = ttk.Scrollbar(self.editor_frame, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        scrollable_frame = ttk.Frame(canvas)
-        scroll_window = canvas.create_window(
-            (0, 0), window=scrollable_frame, anchor="nw", width=canvas.winfo_width()
-        )
-        def _resize_canvas(event):
-            canvas.itemconfig(scroll_window, width=event.width)
-        canvas.bind("<Configure>", _resize_canvas)
-        scrollable_frame.bind("<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        self.notebook = ttk.Notebook(scrollable_frame)
+        # Put the Notebook straight into 'editor' so it always fills its height:
+        self.notebook = ttk.Notebook(editor)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
-        def add_page(cls, title):
+        # add each tab exactly as before
+        for cls, title in [
+            (BasicInfoPage, 'Basic Info'),
+            (SizePage, 'Sizing'),
+            (PassabilityPage, 'Passability'),
+            (SpacingThresholdPage, 'Spacing'),
+            (AnimationsPage, 'Animations'),
+            (ChildAssetsPage, 'Child Assets'),
+            (TagsPage, 'Tags'),
+            (LightingPage, 'Lighting'),
+            (ShadingPage, 'Shading'),
+            (EditRawJsonPage, 'JSON')
+        ]:
             if cls is AnimationsPage:
-                page = cls(self.notebook, asset_folder=os.path.join(ASSET_DIR, self.current_asset or ""))
+                page = cls(self.notebook, asset_folder=os.path.join(ASSET_DIR, self.current_asset or ''))
                 self.animations_tab = page
             else:
                 page = cls(self.notebook)
-            self._add_tab(page, title)
+            self.notebook.add(page, text=title)
+            self.pages[title] = page
 
-        add_page(BasicInfoPage,         "Basic Info")
-        add_page(SizePage,              "Sizing")
-        add_page(PassabilityPage,       "Passability")
-        add_page(SpacingThresholdPage,  "Spacing")
-        add_page(AnimationsPage,        "Animations")
-        add_page(ChildAssetsPage,       "Region-Based Child Assets")
-        add_page(TagsPage,              "Tags")
-        add_page(BlendModePage,         "Blending")
-        add_page(LightingPage,          "Lighting")
-        add_page(ShadingPage,           "Shading")
-        add_page(EditRawJsonPage,       "JSON")
-
+        # finally populate the asset list, etc.
         self._refresh_asset_list()
 
+
+
     def _on_mousewheel_assets(self, event):
-        self.asset_frame.yview_scroll(int(-1*(event.delta/120)), "units")
-
-    def _add_tab(self, page, title):
-        self.notebook.add(page, text=title)
-        self.pages[title] = page
-
+        """Scroll the asset list when the mouse wheel is used over it."""
+        self.asset_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        
+    def _on_editor_scroll(self, event):
+        self.notebook.event_generate('<MouseWheel>', delta=event.delta)
 
     def _scan_assets(self):
         if not os.path.isdir(ASSET_DIR):
             return []
-        return [d for d in sorted(os.listdir(ASSET_DIR)) if os.path.isdir(os.path.join(ASSET_DIR, d))]
+        return [d for d in sorted(os.listdir(ASSET_DIR))
+                if os.path.isdir(os.path.join(ASSET_DIR, d))]
 
     def _refresh_asset_list(self):
-        self.assets = self._scan_assets()
-        for widget in self.asset_inner.winfo_children():
-            widget.destroy()
+        for w in self.asset_inner.winfo_children():
+            w.destroy()
         self.asset_buttons.clear()
-
-        for name in self.assets:
-            image_path = os.path.join(ASSET_DIR, name, "default", "0.png")
+        for name in self._scan_assets():
+            img_path = os.path.join(ASSET_DIR, name, 'default', '0.png')
             photo = None
-            if os.path.exists(image_path):
+            if os.path.exists(img_path):
                 try:
-                    img = Image.open(image_path)
-                    img.thumbnail((24, 24))
+                    img = Image.open(img_path)
+                    img.thumbnail((24,24))
                     photo = ImageTk.PhotoImage(img)
                 except:
                     pass
-            btn = tk.Button(self.asset_inner, text=name, image=photo, compound="left", anchor="w",
-                            width=180, command=lambda n=name: self._select_asset_by_name(n))
+            btn = tk.Button(self.asset_inner, text=name, image=photo, compound='left',
+                            bg='#2a2a2a', fg='white', font=('Segoe UI',11),
+                            relief='flat', borderwidth=0,
+                            command=lambda n=name: self._select(n))
             btn.image = photo
-            btn.pack(fill="x", padx=4, pady=1)
+            btn.pack(fill='x', padx=4, pady=1)
+            btn.bind('<Enter>', lambda e, b=btn: b.configure(bg='#444'))
+            btn.bind('<Leave>', lambda e, b=btn, n=name: b.configure(
+                bg=('#17A2B8' if n==self.current_asset else '#2a2a2a')))
             self.asset_buttons[name] = btn
 
-    def _select_asset_by_name(self, name):
+    def _select(self, name):
         self.current_asset = name
-        path = self._asset_json_path()
+        for n, b in self.asset_buttons.items():
+            b.configure(bg='#2a2a2a', font=('Segoe UI',11))
+        self.asset_buttons[name].configure(bg='#17A2B8', font=('Segoe UI',11,'bold'))
 
-        # ← no more `paned.add(self.editor_frame, …)` here
-
-        # highlight button
-        for btn in self.asset_buttons.values():
-            btn.configure(bg="#f0f0f0")
-        self.asset_buttons[name].configure(bg="#CCE5FF")
-
-        # update animations tab, etc…
-        if hasattr(self, "animations_tab"):
+        if hasattr(self, 'animations_tab'):
             self.animations_tab.asset_folder = os.path.join(ASSET_DIR, name)
             self.animations_tab._load_existing()
 
-        # load each page
         for page in self.pages.values():
-            page.load(path)
+            page.load(os.path.join(ASSET_DIR, name, 'info.json'))
 
-        # switch to Basic Info
-        self.notebook.select(self.pages["Basic Info"])
-
-
-
-    def _asset_json_path(self):
-        if not self.current_asset:
-            return None
-        return os.path.join(ASSET_DIR, self.current_asset, "info.json")
-
-    def _copy_asset_name(self):
-        if not self.current_asset:
-            return
-        self.clipboard_clear()
-        self.clipboard_append(self.current_asset)
-
-    def _duplicate_asset(self):
-        if not self.current_asset:
-            return
-        src = self.current_asset
-        src_folder = os.path.join(ASSET_DIR, src)
-        i = 1
-        while True:
-            dst = f"{src}_{i}"
-            dst_folder = os.path.join(ASSET_DIR, dst)
-            if not os.path.exists(dst_folder):
-                shutil.copytree(src_folder, dst_folder)
-                break
-            i += 1
-        self._refresh_asset_list()
-        messagebox.showinfo("Duplicated", f"{src} → {dst}")
-
-    def _delete_asset(self):
-        if not self.current_asset:
-            return
-        name = self.current_asset
-        if not messagebox.askyesno("Delete", f"Really delete '{name}'?"):
-            return
-        shutil.rmtree(os.path.join(ASSET_DIR, name))
-        self._refresh_asset_list()
-
-    def _open_asset_manager(self):
-        from map_manager_main import MapManagerApp
-        MapManagerApp()
-        self.destroy()
+        self.notebook.select(self.pages['Basic Info'])
 
     def _new_asset(self):
-        name = simpledialog.askstring("New Asset", "Enter a name for the new asset:")
+        name = simpledialog.askstring('New Asset','Enter a name:')
         if not name or not name.strip():
             return
-        name = name.strip()
-        folder = os.path.join(ASSET_DIR, name)
+        folder = os.path.join(ASSET_DIR, name.strip())
         if os.path.exists(folder):
-            messagebox.showerror("Error", f"Asset '{name}' already exists.")
+            messagebox.showerror('Error', f"Asset '{name}' exists.")
             return
-
         os.makedirs(folder)
-        default_json = {
+        default = {
             "impassable_area": None,
             "asset_name": name,
             "asset_type": "Object",
@@ -235,11 +201,16 @@ class AssetOrganizerApp(tk.Toplevel):
             "min_child_depth": 0,
             "max_child_depth": 2
         }
-        with open(os.path.join(folder, "info.json"), "w") as f:
-            json.dump(default_json, f, indent=4)
-
+        with open(os.path.join(folder,'info.json'),'w') as f:
+            json.dump(default, f, indent=4)
         self._refresh_asset_list()
-        self._select_asset_by_name(name)
+        self._select(name)
 
-if __name__ == "__main__":
+    def _open_asset_manager(self):
+        from map_manager_main import MapManagerApp
+        MapManagerApp()
+        self.destroy()
+
+
+if __name__ == '__main__':
     AssetOrganizerApp().mainloop()

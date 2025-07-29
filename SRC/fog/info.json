@@ -19,15 +19,16 @@
         }
     },
     "tags": [
-        "default",
-        "passable"
+        "passable",
+        "default"
     ],
     "has_spacing": true,
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 0,
-    "z_threshold": -1000,
+    "z_threshold": 0,
     "size_settings": {
-        "scale_percentage": 300,
-        "variability_percentage": 0
+        "scale_percentage": 150,
+        "variability_percentage": 0,
+        "flipability": true
     }
 }

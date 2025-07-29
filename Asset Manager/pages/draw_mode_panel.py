@@ -2,11 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageDraw, ImageFilter
 import numpy as np
+from pages.range import Range
 
 
 class DrawModePanel(tk.Frame):
     def __init__(self, parent, frames, scale, anchor):
-        super().__init__(parent)
+        super().__init__(parent, bg="#1e1e1e")
         self.frames = frames
         self.scale = scale
         self.anchor = anchor
@@ -24,12 +25,21 @@ class DrawModePanel(tk.Frame):
         self._bind_events()
 
     def _build_ui(self):
-        self.canvas = tk.Canvas(self, bg='black')
+        self.canvas = tk.Canvas(self, bg="#000000", highlightthickness=0)
         self.canvas.pack(fill='both', expand=True)
 
-        self.slider_frame = ttk.Frame(self)
-        self.slider_frame.pack(fill='x', pady=6)
-        self._add_slider('brush_size', 1, max(self.disp_w, self.disp_h) // 2, self.BRUSH_RADIUS)
+        self.slider_frame = ttk.Frame(self, style="Dark.TFrame")
+        self.slider_frame.pack(fill='x', padx=10, pady=(6, 10))
+
+        ttk.Style().configure("Dark.TFrame", background="#1e1e1e")
+        ttk.Style().configure("Dark.TLabel", background="#1e1e1e", foreground="#FFFFFF", font=("Segoe UI", 12))
+
+        ttk.Label(self.slider_frame, text="Brush Size:", style="Dark.TLabel").pack(side='left', padx=(0, 8))
+
+        self.brush_range = Range(self.slider_frame, min_bound=1, max_bound=max(self.disp_w, self.disp_h) // 2,
+                                 set_min=self.BRUSH_RADIUS, set_max=self.BRUSH_RADIUS, force_fixed=True)
+        self.brush_range.pack(side='left', fill='x', expand=True)
+        self.brush_range.var_max.trace_add("write", self._on_brush_change)
 
     def _prepare_images(self):
         self.base_img = self.frames[0].resize((self.disp_w, self.disp_h), Image.LANCZOS)
@@ -44,17 +54,9 @@ class DrawModePanel(tk.Frame):
         self.canvas.bind("<Button-1>", self._on_draw)
         self.canvas.bind("<Motion>", self._show_brush_cursor)
 
-    def _add_slider(self, name, mn, mx, val):
-        ttk.Label(self.slider_frame, text="Brush Size:").pack(side='left')
-        var = tk.IntVar(value=val)
-
-        def on_change(v):
-            self.BRUSH_RADIUS = int(v)
-            self._refresh_draw_preview()
-
-        s = tk.Scale(self.slider_frame, from_=mn, to=mx, orient='horizontal',
-                     variable=var, command=on_change)
-        s.pack(side='left', fill='x', expand=True, padx=5)
+    def _on_brush_change(self, *_):
+        self.BRUSH_RADIUS = self.brush_range.get_max()
+        self._refresh_draw_preview()
 
     def _on_draw(self, event):
         x, y = event.x, event.y

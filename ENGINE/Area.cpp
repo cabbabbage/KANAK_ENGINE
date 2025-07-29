@@ -1,4 +1,5 @@
 #include "area.hpp"
+#include "cache_manager.hpp"
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <random>
@@ -6,6 +7,9 @@
 #include <algorithm>
 #include <array>
 #include <stdexcept>
+#include <filesystem>
+#include <sstream>
+#include <SDL.h>
 
 #define M_PI 3.14159265358979323846
 
@@ -45,6 +49,7 @@ Area::Area(const std::string& name, int cx, int cy, int w, int h,
     pos_X = (minx + maxx) / 2;
     pos_Y = maxy;
     update_geometry_data();
+
 }
 
 Area::Area(const std::string& name, const std::string& json_path, float scale)
@@ -59,6 +64,7 @@ Area::Area(const std::string& name, const std::string& json_path, float scale)
 
     nlohmann::json j;
     in >> j;
+
     auto& pts_json = j.at("points");
     auto& dim_json = j.at("original_dimensions");
     if (!pts_json.is_array() || !dim_json.is_array() || dim_json.size() != 2)
@@ -89,6 +95,14 @@ Area::Area(const std::string& name, const std::string& json_path, float scale)
 
     pos_X = pivot_x;
     pos_Y = pivot_y;
+
+    int dx = j.value("offset_x", 0);
+    int dy = -j.value("offset_y", 0);
+
+    if (dx != 0 || dy != 0) {
+        apply_offset(dx, dy);
+    }
+
     update_geometry_data();
 }
 
@@ -194,18 +208,26 @@ void Area::union_with(const Area& other) {
 
 bool Area::contains_point(const Point& pt) const {
     bool inside = false;
-    int x = pt.first, y = pt.second;
-    size_t n = points.size();
+    const double x = pt.first;
+    const double y = pt.second;
+    const size_t n = points.size();
     if (n < 3) return false;
+    
     for (size_t i = 0, j = n - 1; i < n; j = i++) {
-        auto [xi, yi] = points[i];
-        auto [xj, yj] = points[j];
-        bool intersect = ((yi > y) != (yj > y)) &&
-                         (x < (xj - xi) * ((y - yi) / float(yj - yi + 1e-9f)) + xi);
-        if (intersect) inside = !inside;
+        double xi = points[i].first;
+        double yi = points[i].second;
+        double xj = points[j].first;
+        double yj = points[j].second;
+
+        // Check if edge crosses horizontal ray at 'y'
+        bool crossing = ((yi > y) != (yj > y)) &&
+                        (x < xi + (y - yi) * (xj - xi) / (yj - yi));
+        if (crossing) inside = !inside;
     }
+
     return inside;
 }
+
 
 bool Area::intersects(const Area& other) const {
     auto [a0, a1, a2, a3] = get_bounds();
@@ -236,7 +258,7 @@ Area::Point Area::random_point_within() const {
     return {0, 0};
 }
 
-Area::Point Area::get_center() const{
+Area::Point Area::get_center() const {
     return {center_x, center_y};
 }
 
@@ -244,4 +266,53 @@ double Area::get_size() const {
     return area_size;
 }
 
+SDL_Texture* Area::get_texture() const {
+    return texture_;
+}
 
+
+
+void Area::create_area_texture(SDL_Renderer* renderer) {
+    if (!renderer || points.size() < 3) return;
+
+    auto [minx, miny, maxx, maxy] = get_bounds();
+    int w = maxx - minx + 1;
+    int h = maxy - miny + 1;
+
+    SDL_Texture* target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+                                            SDL_TEXTUREACCESS_TARGET, w, h);
+    if (!target) return;
+
+    SDL_Texture* prev_target = SDL_GetRenderTarget(renderer);
+    SDL_SetRenderTarget(renderer, target);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);  // Clear with transparent
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);  // Area outline color
+
+    std::vector<SDL_Point> line_points;
+    for (const auto& p : points) {
+        line_points.push_back(SDL_Point{ p.first - minx, p.second - miny });
+    }
+    line_points.push_back(line_points.front());  // Close the loop
+
+    SDL_RenderDrawLines(renderer, line_points.data(), static_cast<int>(line_points.size()));
+
+    SDL_SetRenderTarget(renderer, prev_target);
+
+    texture_ = target;
+    SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
+}
+
+
+void Area::flip_horizontal() {
+    if (points.empty()) return;
+
+    int cx = center_x;
+    for (auto& [x, y] : points) {
+        x = 2 * cx - x;
+    }
+
+    update_geometry_data();
+}

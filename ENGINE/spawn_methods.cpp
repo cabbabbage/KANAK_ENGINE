@@ -90,8 +90,7 @@ Asset* SpawnMethods::spawn_(const std::string& name,
             Area childArea = *childInfo->area_ptr;
             childArea.align(raw->pos_X, raw->pos_Y);
 
-            // move area down by 15 pixels
-            childArea.apply_offset(0, 15);
+
 
             auto [cx, cy] = childArea.get_center();
             std::cout << "[SpawnMethods]  Child area aligned to center ("

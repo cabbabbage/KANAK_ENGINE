@@ -1,160 +1,186 @@
+# === File: pages/spacing.py ===
 import os
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox
-from pages.button import BlueButton
 from pages.range import Range
 from pages.area_ui import AreaUI
 
-
-class SpacingThresholdPage(ttk.Frame):
+class SpacingThresholdPage(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-
-        FONT = ('Segoe UI', 14)
-        FONT_BOLD = ('Segoe UI', 18, 'bold')
-        MAIN_COLOR = "#005f73"
-        SECONDARY_COLOR = "#ee9b00"
-
         self.asset_path = None
         self.area_file = "spacing_area.json"
+        self._loaded = False
+
+        # Page background
+        self.configure(bg='#1e1e1e')
+
+        # Title header
+        title = tk.Label(
+            self, text="Spacing Threshold",
+            font=("Segoe UI", 20, "bold"),
+            fg="#005f73", bg='#1e1e1e'
+        )
+        title.pack(fill=tk.X, pady=(10, 20))
+
+        # Scrollable content area
+        canvas = tk.Canvas(self, bg='#2a2a2a', highlightthickness=0)
+        scroll_frame = tk.Frame(canvas, bg='#2a2a2a')
+        window_id = canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
+        scroll_frame.bind(
+            '<Configure>',
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+        )
+        canvas.bind(
+            '<Configure>',
+            lambda e: canvas.itemconfig(window_id, width=e.width)
+        )
+        def _scroll(evt):
+            canvas.yview_scroll(int(-1*(evt.delta/120)), 'units')
+        scroll_frame.bind('<Enter>', lambda e: canvas.bind_all('<MouseWheel>', _scroll))
+        scroll_frame.bind('<Leave>', lambda e: canvas.unbind_all('<MouseWheel>'))
+        canvas.pack(fill=tk.BOTH, expand=True)
+
+        # Section: Options
+        hdr_opts = tk.Label(
+            scroll_frame, text="Options",
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr_opts.pack(anchor='w', padx=12, pady=(10, 4))
+        ttk.Style().configure('S.TCheckbutton', font=("Segoe UI", 12), background='#2a2a2a', foreground='#FFFFFF')
         self.has_spacing_var = tk.BooleanVar(value=True)
+        chk = ttk.Checkbutton(
+            scroll_frame, text="Has Spacing",
+            variable=self.has_spacing_var,
+            style='S.TCheckbutton',
+            command=self._on_toggle
+        )
+        chk.pack(anchor='w', padx=12, pady=6)
 
-        style = ttk.Style(self)
-        style.configure('Main.TButton', font=FONT, padding=6,
-                        background=MAIN_COLOR, foreground='black')
-        style.map('Main.TButton', background=[('active', SECONDARY_COLOR)])
-        style.configure('Large.TLabel', font=FONT)
-        style.configure('LargeBold.TLabel', font=FONT_BOLD,
-                        foreground=SECONDARY_COLOR)
+        # Section: Forbidden Spawn Region
+        hdr_area = tk.Label(
+            scroll_frame, text="Forbidden Spawn Region", 
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr_area.pack(anchor='w', padx=12, pady=(10, 4))
+        self.area_ui = AreaUI(
+            scroll_frame,
+            json_path=self.area_file,
+            autosave_callback=self._autosave
+        )
+        self.area_ui.pack(fill=tk.X, padx=12, pady=(0, 8))
 
-        for c in range(3):
-            self.columnconfigure(c, weight=1)
+        # Section: Distance Controls
+        hdr_dist = tk.Label(
+            scroll_frame, text="Minimum Distances", 
+            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        )
+        hdr_dist.pack(anchor='w', padx=12, pady=(10, 4))
 
-        ttk.Label(self, text="Spacing Threshold", style='LargeBold.TLabel')\
-            .grid(row=0, column=0, columnspan=3, pady=(10, 20))
+        tk.Label(
+            scroll_frame, text="Min Distance From Same Type:",
+            font=("Segoe UI", 12), fg="#FFFFFF", bg='#2a2a2a'
+        ).pack(anchor='w', padx=12, pady=(2, 0))
+        self.min_dist_range = Range(
+            scroll_frame, min_bound=0, max_bound=2000,
+            set_min=0, set_max=0, force_fixed=True
+        )
+        self.min_dist_range.pack(fill='x', padx=12, pady=6)
 
-        # Has spacing checkbox
-        ttk.Checkbutton(self, text="Has Spacing", variable=self.has_spacing_var,
-                        command=self._on_toggle, style='Large.TCheckbutton')\
-            .grid(row=1, column=0, columnspan=3, sticky="w", padx=12, pady=6)
+        tk.Label(
+            scroll_frame, text="Min Distance From All Assets:",
+            font=("Segoe UI", 12), fg="#FFFFFF", bg='#2a2a2a'
+        ).pack(anchor='w', padx=12, pady=(6, 0))
+        self.min_dist_all_range = Range(
+            scroll_frame, min_bound=0, max_bound=2000,
+            set_min=0, set_max=0, force_fixed=True
+        )
+        self.min_dist_all_range.pack(fill='x', padx=12, pady=(0, 10))
 
-        ttk.Label(self, text="Forbidden Spawn Region:", style='Large.TLabel')\
-            .grid(row=2, column=0, sticky='e', padx=12, pady=6)
+        # Bind autosave on range change
+        for rw in (self.min_dist_range, self.min_dist_all_range):
+            rw.var_min.trace_add("write", lambda *_: self._autosave())
+            rw.var_max.trace_add("write", lambda *_: self._autosave())
 
-        self.area_ui = AreaUI(self, self.area_file, "Spacing Area")
-        self.area_ui.grid(row=3, column=0, columnspan=3, padx=12, pady=6)
-
-        # Min Distance from same type
-        ttk.Label(self, text="Min Distance From Same Type:", style='Large.TLabel')\
-            .grid(row=4, column=0, sticky='e', padx=12, pady=6)
-        self.min_dist_range = Range(self, min_bound=0, max_bound=2000,
-                                    set_min=0, set_max=0, force_fixed=True)
-        self.min_dist_range.grid(row=4, column=1, columnspan=2,
-                                 sticky='we', padx=12, pady=6)
-
-        # Min Distance from all assets
-        ttk.Label(self, text="Min Distance From All Assets:", style='Large.TLabel')\
-            .grid(row=5, column=0, sticky='e', padx=12, pady=6)
-        self.min_dist_all_range = Range(self, min_bound=0, max_bound=2000,
-                                        set_min=0, set_max=0, force_fixed=True)
-        self.min_dist_all_range.grid(row=5, column=1, columnspan=2,
-                                     sticky='we', padx=12, pady=6)
-
-        BlueButton(self, "Save", command=self.save, x=0, y=0)
+        # Finalize
+        self._loaded = True
+        self._on_toggle()
 
     def _on_toggle(self):
+        if not self._loaded:
+            return
         has_spacing = self.has_spacing_var.get()
-        state = "normal" if has_spacing else "disabled"
+        # Enable/disable area and ranges
+        state = 'normal' if has_spacing else 'disabled'
         self.area_ui.btn_configure.config(state=state)
-        self.area_ui.area_label.config(
-            text="(none)" if not has_spacing else (
-                "(configured)" if self.area_ui.area_data else "(none)"
-            )
-        )
-
-        if has_spacing:
-            self.min_dist_range.enable()
-            self.min_dist_all_range.enable()
-        else:
-            self.min_dist_range.disable()
-            self.min_dist_all_range.disable()
-
+        self.min_dist_range.enable() if has_spacing else self.min_dist_range.disable()
+        self.min_dist_all_range.enable() if has_spacing else self.min_dist_all_range.disable()
+        # Update area label
+        label = '(configured)' if has_spacing and self.area_ui.area_data else '(none)'
+        self.area_ui.area_label.config(text=label)
+        # Redraw or clear preview
         if has_spacing and self.area_ui.area_data:
             self.area_ui._draw_preview()
         else:
-            self.area_ui.preview_canvas.delete("all")
+            self.area_ui.preview_canvas.delete('all')
+        self._autosave()
 
     def load(self, info_path):
         self.asset_path = info_path
         if not info_path:
             return
-
-        asset_dir = os.path.dirname(info_path)
-
         try:
             with open(info_path, 'r') as f:
-                data = json.load(f)
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not load info.json:\n{e}")
-            return
-
-        has_spacing = data.get("has_spacing", True)
-        self.has_spacing_var.set(has_spacing)
-
-        spacing_area_file = data.get("spacing_area", self.area_file)
-        spacing_json_path = os.path.join(asset_dir, spacing_area_file)
-        self.area_ui.json_path = spacing_json_path
-
-        frames_path = os.path.join(asset_dir, "default")
-        if os.path.isdir(frames_path):
-            self.area_ui.frames_source = frames_path
-
+                info = json.load(f)
+        except Exception:
+            info = {}
+        self._loaded = False
+        self.has_spacing_var.set(info.get('has_spacing', True))
+        # Load area JSON
+        asset_dir = os.path.dirname(info_path)
+        json_path = os.path.join(asset_dir, info.get('spacing_area', self.area_file))
+        self.area_ui.json_path = json_path
+        if os.path.isdir(os.path.join(asset_dir, 'default')):
+            self.area_ui.frames_source = os.path.join(asset_dir, 'default')
         self.area_ui._load_area_json()
-        self.area_ui._draw_preview()
-
-        same = data.get("min_same_type_distance", 0)
-        self.min_dist_range.set(same, same)
-
-        all_ = data.get("min_distance_all", 0)
-        self.min_dist_all_range.set(all_, all_)
-
+        # Load distances
+        same = info.get('min_same_type_distance', 0)
+        all_ = info.get('min_distance_all', 0)
+        if isinstance(same, list):
+            self.min_dist_range.set(*same)
+        else:
+            self.min_dist_range.set(same, same)
+        if isinstance(all_, list):
+            self.min_dist_all_range.set(*all_)
+        else:
+            self.min_dist_all_range.set(all_, all_)
+        self._loaded = True
         self._on_toggle()
 
-    def save(self):
-        if not self.asset_path:
-            messagebox.showerror("Error", "No asset selected.")
+    def _autosave(self):
+        if not self._loaded or not self.asset_path:
             return
-
-        has_spacing = self.has_spacing_var.get()
-
-        if has_spacing and not self.area_ui.area_data:
-            messagebox.showerror("Error", "Draw a forbidden region before saving.")
-            return
-
+        try:
+            with open(self.asset_path, 'r') as f:
+                info = json.load(f)
+        except Exception:
+            info = {}
+        info['has_spacing'] = self.has_spacing_var.get()
         asset_dir = os.path.dirname(self.asset_path)
-        spacing_json_path = os.path.join(asset_dir, self.area_file)
-
-        with open(self.asset_path, 'r') as f:
-            info = json.load(f)
-
-        info["has_spacing"] = has_spacing
-        if has_spacing:
-            with open(spacing_json_path, 'w') as f:
-                json.dump(self.area_ui.area_data, f, indent=2)
-
-            info["spacing_area"] = self.area_file
+        if self.has_spacing_var.get():
+            if not self.area_ui.area_data:
+                return
+            with open(os.path.join(asset_dir, self.area_file), 'w') as f:
+                json.dump(self.area_ui.area_data, f, indent=4)
+            info['spacing_area'] = self.area_file
             s_min, s_max = self.min_dist_range.get()
-            info["min_same_type_distance"] = s_min if s_min == s_max else [s_min, s_max]
-
+            info['min_same_type_distance'] = s_min if s_min == s_max else [s_min, s_max]
             a_min, a_max = self.min_dist_all_range.get()
-            info["min_distance_all"] = a_min if a_min == a_max else [a_min, a_max]
+            info['min_distance_all'] = a_min if a_min == a_max else [a_min, a_max]
         else:
-            info["spacing_area"] = None
-            info["min_same_type_distance"] = 0
-            info["min_distance_all"] = 0
-
+            info['spacing_area'] = None
+            info['min_same_type_distance'] = 0
+            info['min_distance_all'] = 0
         with open(self.asset_path, 'w') as f:
-            json.dump(info, f, indent=2)
-
-        messagebox.showinfo("Saved", "Spacing threshold saved.")
+            json.dump(info, f, indent=4)

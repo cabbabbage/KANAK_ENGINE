@@ -17,10 +17,11 @@
       "volume": 50
     }
   },
-  "z_threshold": 5,
+  "z_threshold": 2,
   "size_settings": {
-    "scale_percentage": 64,
-    "variability_percentage": 0
+    "scale_percentage": 57,
+    "variability_percentage": 0,
+    "flipability": true
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 21,
@@ -49,5 +50,8 @@
     "jitter_min": null,
     "jitter_max": null,
     "flicker": null
-  }
+  },
+  "has_spacing": true,
+  "min_distance_all": 0,
+  "anti_tags": []
 }

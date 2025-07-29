@@ -1,0 +1,35 @@
+{
+  "min_opacity": 50,
+  "max_opacity": 255,
+  "radius": 1920,
+  "intensity": 255,
+  "orbit_radius": 150,
+  "update_interval": 3,
+  "mult": 0.4,
+  "base_color": [
+    255,
+    255,
+    255,
+    255
+  ],
+  "keys": [
+    [
+      0.0,
+      [
+        255,
+        255,
+        255,
+        255
+      ]
+    ],
+    [
+      180.0,
+      [
+        255,
+        255,
+        255,
+        255
+      ]
+    ]
+  ]
+}

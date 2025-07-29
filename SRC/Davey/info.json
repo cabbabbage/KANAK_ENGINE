@@ -1,130 +1,124 @@
 {
-    "impassable_area": "impassable_area.json",
-    "asset_name": "Davey",
-    "asset_type": "Player",
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        },
-        "right": {
-            "frames_path": "right",
-            "speed": 1.0,
-            "on_end": "right",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        },
-        "backward": {
-            "frames_path": "backward",
-            "speed": 1.0,
-            "on_end": "backward",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        },
-        "forward": {
-            "frames_path": "forward",
-            "speed": 1.0,
-            "on_end": "forward",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        },
-        "left": {
-            "frames_path": "left",
-            "speed": 1.0,
-            "on_end": "left",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        },
-        "start": {
-            "frames_path": "start",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
+  "impassable_area": null,
+  "asset_name": "Davey",
+  "asset_type": "Player",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "lock_until_done": false
     },
-    "z_threshold": 11,
-    "size_settings": {
-        "scale_percentage": 49,
-        "variability_percentage": 0
+    "right": {
+      "frames_path": "right",
+      "on_end": "right",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "lock_until_done": false
     },
-    "visited_tabs": [
-        "Passability",
-        "Spacing"
-    ],
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 686,
-    "tags": [
-        "backward",
-        "default",
-        "player",
-        "left",
-        "forward",
-        "passable",
-        "right",
-        "start"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "lighting_info": [
-        {
-            "has_light_source": true,
-            "light_intensity": 100,
-            "light_color": [
-                202,
-                255,
-                255
-            ],
-            "radius": 687,
-            "fall_off": 100,
-            "jitter_min": 0,
-            "jitter_max": 0,
-            "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
-        },
-        {
-            "has_light_source": true,
-            "light_intensity": 87,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 426,
-            "fall_off": 100,
-            "jitter_min": 0,
-            "jitter_max": 0,
-            "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
-        }
-    ],
-    "shading_info": {
-        "has_shading": false,
-        "has_base_shadow": null,
-        "base_shadow_intensity": null,
-        "has_gradient_shadow": null,
-        "number_of_gradient_shadows": null,
-        "gradient_shadow_intensity": null,
-        "has_casted_shadows": null,
-        "number_of_casted_shadows": null,
-        "cast_shadow_intensity": null
+    "backward": {
+      "frames_path": "backward",
+      "on_end": "backward",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "lock_until_done": false
     },
-    "has_spacing": true
+    "forward": {
+      "frames_path": "forward",
+      "on_end": "forward",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "lock_until_done": false
+    },
+    "left": {
+      "frames_path": "left",
+      "on_end": "left",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "lock_until_done": false
+    }
+  },
+  "z_threshold": 10,
+  "size_settings": {
+    "scale_percentage": 45,
+    "variability_percentage": 0,
+    "flipability": false
+  },
+  "visited_tabs": [
+    "Passability",
+    "Spacing"
+  ],
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 686,
+  "tags": [
+    "player",
+    "forward",
+    "left",
+    "right",
+    "passable",
+    "start",
+    "backward",
+    "default"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 100,
+      "light_color": [
+        202,
+        255,
+        255
+      ],
+      "radius": 687,
+      "fall_off": 100,
+      "jitter_min": 0,
+      "jitter_max": 0,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flicker": false
+    },
+    {
+      "has_light_source": true,
+      "light_intensity": 94,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 426,
+      "fall_off": 100,
+      "jitter_min": 0,
+      "jitter_max": 0,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flicker": false
+    }
+  ],
+  "shading_info": {
+    "has_shading": false,
+    "has_base_shadow": null,
+    "base_shadow_intensity": null,
+    "has_gradient_shadow": null,
+    "number_of_gradient_shadows": null,
+    "gradient_shadow_intensity": null,
+    "has_casted_shadows": null,
+    "number_of_casted_shadows": null,
+    "cast_shadow_intensity": null
+  },
+  "has_spacing": true,
+  "min_distance_all": 0,
+  "anti_tags": []
 }

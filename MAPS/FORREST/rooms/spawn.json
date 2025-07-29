@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 1300,
-  "max_width": 1300,
+  "min_width": 1380,
+  "max_width": 1380,
   "curvyness": 1,
   "assets": [
     {
@@ -35,7 +35,7 @@
     {
       "name": "Stump",
       "min_number": -54,
-      "max_number": 20,
+      "max_number": 1717,
       "position": "Random",
       "exact_position": null,
       "tag": false,

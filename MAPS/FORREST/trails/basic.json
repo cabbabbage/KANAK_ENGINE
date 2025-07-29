@@ -1,14 +1,14 @@
 {
   "name": "basic",
-  "min_width": 700,
-  "max_width": 700,
+  "min_width": 702,
+  "max_width": 702,
   "curvyness": 3,
   "assets": [
     {
       "name": "candle",
       "min_number": 1,
       "max_number": 1,
-      "position": "Center",
+      "position": "Intersection",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,

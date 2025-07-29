@@ -1,12 +1,9 @@
-// Assets.hpp
-#ifndef ASSETS_HPP
-#define ASSETS_HPP
+#pragma once
 
-#include "asset.hpp"
-#include "area.hpp"
 #include <vector>
 #include <unordered_set>
-#include <SDL.h>
+#include "asset.hpp"
+#include "active_assets_manager.hpp"
 
 class Assets {
 public:
@@ -17,29 +14,24 @@ public:
            int screen_center_x,
            int screen_center_y);
 
-    void update(const std::unordered_set<SDL_Keycode>& keys, int screen_center_x, int screen_center_y);
-    void sort_assets_by_distance_to_screen_center(int cx, int cy);
-    void add_active(Asset* a);
-    void remove_active(Asset* a);
-    void resort_active_asset(Asset* a);
-    void activate(Asset* asset);
+    void update(const std::unordered_set<SDL_Keycode>& keys,
+                int screen_center_x,
+                int screen_center_y);
 
-    std::vector<Asset*> active_assets;
     Asset* player;
-    int visible_count;
-    std::vector<Asset> all;
+    std::vector<Asset*>& active_assets;
+    std::vector<Asset*>& closest_assets;
+    std::vector<Asset>      all;
 private:
-
-    std::vector<Asset*> closest_assets;
-    int dx = 0, dy = 0;
-    int last_activat_update = 0;
-    int update_interval = 25;
-    int screen_width;
-    int screen_height;
-
-    void update_closest();
     void update_direction_movement(int offset_x, int offset_y);
     bool check_collision(const Area& a, const Area& b);
-};
 
-#endif // ASSETS_HPP
+    ActiveAssetsManager activeManager;
+
+    int                     screen_width;
+    int                     screen_height;
+    int                     dx;
+    int                     dy;
+    int                     last_activat_update;
+    int                     update_interval;
+};

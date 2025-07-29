@@ -178,5 +178,7 @@
     640,
     375
   ],
-  "type": "draw"
+  "type": "draw",
+  "offset_x": 0,
+  "offset_y": 0
 }

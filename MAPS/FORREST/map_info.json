@@ -2,14 +2,6 @@
   "map_name": "FORREST",
   "map_assets": "map_assets.json",
   "map_boundary": "map_boundary.json",
-  "trails": [
-    {
-      "trail_path": "basic.json"
-    },
-    {
-      "trail_path": "brick.json"
-    }
-  ],
   "map_layers": [
     {
       "level": 0,
@@ -29,53 +21,73 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 2901,
-      "min_rooms": 2,
-      "max_rooms": 4,
+      "radius": 2949,
+      "min_rooms": 3,
+      "max_rooms": 3,
       "rooms": [
         {
-          "name": "random",
-          "min_instances": 1,
-          "max_instances": 3,
+          "name": "KEY",
+          "min_instances": 0,
+          "max_instances": 1,
           "required_children": []
         },
         {
-          "name": "bar",
+          "name": "wood",
           "min_instances": 0,
-          "max_instances": 2,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "flower",
+          "min_instances": 0,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "manmade",
           "min_instances": 0,
-          "max_instances": 2,
+          "max_instances": 1,
           "required_children": []
         },
         {
-          "name": "Grave_Yard",
-          "min_instances": 1,
-          "max_instances": 2,
-          "required_children": []
+          "name": "odd",
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": [
+            "Grave_Yard"
+          ]
         }
       ]
     },
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 7143,
-      "min_rooms": 2,
-      "max_rooms": 7,
+      "radius": 6758,
+      "min_rooms": 7,
+      "max_rooms": 9,
       "rooms": [
         {
           "name": "bar",
-          "min_instances": 2,
-          "max_instances": 7,
+          "min_instances": 0,
+          "max_instances": 3,
           "required_children": []
         },
         {
-          "name": "Grave_Yard",
+          "name": "library",
           "min_instances": 0,
-          "max_instances": 4,
+          "max_instances": 3,
+          "required_children": []
+        },
+        {
+          "name": "KEY",
+          "min_instances": 0,
+          "max_instances": 3,
+          "required_children": []
+        },
+        {
+          "name": "Portal",
+          "min_instances": 0,
+          "max_instances": 3,
           "required_children": []
         }
       ]
@@ -83,18 +95,34 @@
     {
       "level": 3,
       "name": "layer_3",
-      "radius": 10765,
-      "min_rooms": 10,
-      "max_rooms": 11,
+      "radius": 9947,
+      "min_rooms": 0,
+      "max_rooms": 13,
       "rooms": [
         {
-          "name": "fountain",
-          "min_instances": 10,
-          "max_instances": 12,
+          "name": "flower",
+          "min_instances": 0,
+          "max_instances": 14,
           "required_children": []
         }
       ]
+    },
+    {
+      "level": 4,
+      "name": "layer_4",
+      "radius": 11447,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
+    },
+    {
+      "level": 5,
+      "name": "layer_5",
+      "radius": 11447,
+      "min_rooms": 0,
+      "max_rooms": 0,
+      "rooms": []
     }
   ],
-  "map_radius": 13515.28137423857
+  "map_radius": 12947.032346864937
 }

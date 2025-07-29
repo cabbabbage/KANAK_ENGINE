@@ -12,10 +12,11 @@
     }
   },
   "impassable_area": null,
-  "z_threshold": 4,
+  "z_threshold": 2,
   "size_settings": {
-    "scale_percentage": 12,
-    "variability_percentage": 0
+    "scale_percentage": 11,
+    "variability_percentage": 0,
+    "flipability": true
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 511,
@@ -32,5 +33,7 @@
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
-  "has_spacing": true
+  "has_spacing": true,
+  "min_distance_all": 0,
+  "anti_tags": []
 }

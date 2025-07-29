@@ -5,7 +5,6 @@ backward,False,
 left,False,
 right,False,
 rest, False,
-start, False,
 collision,True,is_collidable
 interaction,True,is_interactable
 hit,True,is_attackable

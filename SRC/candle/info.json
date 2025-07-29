@@ -1,69 +1,88 @@
 {
-    "impassable_area": null,
-    "asset_name": "candle",
-    "asset_type": "Object",
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 0,
-    "max_child_depth": 2,
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": true,
-            "audio_path": "",
-            "volume": 50
-        }
+  "impassable_area": null,
+  "asset_name": "candle",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "event_data": [],
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "tags": [
+    "light",
+    "barrel_child",
+    "default",
+    "man-made",
+    "orange",
+    "passable"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "z_threshold": 5,
+  "size_settings": {
+    "scale_percentage": 5,
+    "variability_percentage": 0,
+    "flipability": true
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 200,
+  "blend_mode": "SDL_BLENDMODE_BLEND",
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 70,
+      "light_color": [
+        255,
+        140,
+        85
+      ],
+      "radius": 483,
+      "fall_off": 100,
+      "jitter_min": 16,
+      "jitter_max": 18,
+      "offset_x": 0,
+      "offset_y": -30,
+      "flicker": true
     },
-    "tags": [
-        "light",
-        "barrel_child",
-        "orange",
-        "passable",
-        "default",
-        "man-made"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "z_threshold": 5,
-    "size_settings": {
-        "scale_percentage": 6,
-        "variability_percentage": 0
-    },
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 200,
-    "blend_mode": "SDL_BLENDMODE_BLEND",
-    "lighting_info": [
-        {
-            "has_light_source": true,
-            "light_intensity": 70,
-            "light_color": [
-                255,
-                140,
-                85
-            ],
-            "radius": 483,
-            "fall_off": 100,
-            "jitter_min": 16,
-            "jitter_max": 18,
-            "offset_x": 0,
-            "offset_y": -30,
-            "flicker": true
-        }
-    ],
-    "shading_info": {
-        "has_shading": false,
-        "has_base_shadow": null,
-        "base_shadow_intensity": null,
-        "has_gradient_shadow": null,
-        "number_of_gradient_shadows": null,
-        "gradient_shadow_intensity": null,
-        "has_casted_shadows": null,
-        "number_of_casted_shadows": null,
-        "cast_shadow_intensity": null
-    },
-    "anti_tags": []
+    {
+      "has_light_source": true,
+      "light_intensity": 0,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 0,
+      "fall_off": 0,
+      "jitter_min": 0,
+      "jitter_max": 0,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flicker": false
+    }
+  ],
+  "shading_info": {
+    "has_shading": false,
+    "has_base_shadow": null,
+    "base_shadow_intensity": null,
+    "has_gradient_shadow": null,
+    "number_of_gradient_shadows": null,
+    "gradient_shadow_intensity": null,
+    "has_casted_shadows": null,
+    "number_of_casted_shadows": null,
+    "cast_shadow_intensity": null
+  },
+  "anti_tags": [],
+  "has_spacing": true,
+  "min_distance_all": 0
 }

@@ -3,12 +3,14 @@
 #include <vector>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <SDL.h>
 
 class Area {
 public:
     using Point = std::pair<int, int>;
 
-    // Explicit constructors (no default constructor)
+    // Constructors
     Area(const std::string& name);
     Area(const std::string& name, const std::vector<Point>& pts);
     Area(const std::string& name, int cx, int cy, int w, int h,
@@ -31,9 +33,15 @@ public:
     double get_area() const;
     Point random_point_within() const;
     Point get_center() const;
+    double get_size() const;
+
     // Metadata
     const std::string& get_name() const { return area_name_; }
-    double get_size() const;
+
+    // Rendering
+    void create_area_texture(SDL_Renderer* renderer);  // must be called after Area creation
+    SDL_Texture* get_texture() const;
+    void flip_horizontal();
 
 private:
     std::vector<Point> points;
@@ -44,6 +52,8 @@ private:
     int center_x = 0;
     int center_y = 0;
     double area_size = 0.0;
+
+    SDL_Texture* texture_ = nullptr;
 
     void update_geometry_data();
     void generate_circle(int cx, int cy, int radius,

@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from pages.draw_mode_panel import DrawModePanel
 from pages.mask_mode_panel import MaskModePanel
-
+from pages.range import Range
 
 def union_mask_from_frames(frames):
     arrs = [np.array(frame.split()[-1]) > 0 for frame in frames]
@@ -20,7 +20,6 @@ class BoundaryConfigurator(tk.Toplevel):
         self.callback = callback
         self.state('zoomed')
 
-        # Load PNG frames
         files = sorted(f for f in os.listdir(base_folder) if f.lower().endswith('.png'))
         self.frames = [Image.open(os.path.join(base_folder, f)).convert('RGBA') for f in files]
         if not self.frames:
@@ -28,52 +27,48 @@ class BoundaryConfigurator(tk.Toplevel):
             return
 
         self.orig_w, self.orig_h = self.frames[0].size
-
-        # Compute bottom-center anchor of opaque region
-        mask_full = union_mask_from_frames(self.frames)
-        arr = np.array(mask_full) > 0
-        rows, cols = np.nonzero(arr)
-        if rows.size:
-            min_c, max_c = cols.min(), cols.max()
-            max_r = rows.max()
-        else:
-            min_c, max_c, max_r = 0, self.orig_w - 1, self.orig_h - 1
-        anchor_x = (min_c + max_c) / 2.0
-        anchor_y = float(max_r)
-        self.anchor = (anchor_x, anchor_y)
-
-        # Zoom setup
+        self.anchor = (self.orig_w / 2.0, float(self.orig_h))
         self.scale = 0.2
         self.zoom_var = tk.DoubleVar(value=self.scale)
-
         self.mode_frame = None
         self.current_mode = None
 
         self._build_ui()
 
     def _build_ui(self):
+        self.configure(bg="#1e1e1e")
+        ctrl = ttk.Frame(self, style="Dark.TFrame")
+        ctrl.grid(row=0, column=0, sticky='ew', pady=(10, 10), padx=10)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        ctrl = ttk.Frame(self)
-        ctrl.grid(row=0, column=0, sticky='ew', pady=5)
+        ttk.Style().configure("Dark.TFrame", background="#1e1e1e")
+        ttk.Style().configure("Dark.TLabel", background="#1e1e1e", foreground="#FFFFFF", font=("Segoe UI", 12))
+        ttk.Style().configure("DarkHeader.TLabel", background="#1e1e1e", foreground="#DDDDDD", font=("Segoe UI", 20, "bold"))
+        ttk.Style().configure("Dark.TButton", background="#007BFF", foreground="white", font=("Segoe UI", 13, "bold"))
+
+        ttk.Label(ctrl, text="Boundary Configurator", style="DarkHeader.TLabel")\
+            .pack(side="left", padx=(0, 30))
+
         for mode in ('draw', 'mask'):
-            ttk.Button(ctrl, text=mode.title(), command=lambda m=mode: self.select_mode(m))\
-                .pack(side='left', padx=10)
-        ttk.Label(ctrl, text="Zoom:").pack(side='left', padx=(20, 0))
-        tk.Scale(ctrl, from_=0.05, to=2.0, resolution=0.05,
-                 variable=self.zoom_var, orient='horizontal',
-                 command=self._on_zoom_change, length=300).pack(side='left', padx=5)
+            ttk.Button(ctrl, text=mode.title(), style="Dark.TButton", command=lambda m=mode: self.select_mode(m))\
+                .pack(side='left', padx=(0, 8))
 
-        self.mode_container = tk.Frame(self)
-        self.mode_container.grid(row=1, column=0, sticky='nsew')
+        ttk.Label(ctrl, text="Zoom:", style="Dark.TLabel").pack(side='left', padx=(20, 4))
+        zoom_slider = Range(ctrl, min_bound=5, max_bound=200, set_min=int(self.scale * 100), set_max=int(self.scale * 100), force_fixed=True)
+        zoom_slider.pack(side='left', fill='x', expand=True)
+        zoom_slider.var_max.trace_add("write", lambda *_: self._on_zoom_slider_change(zoom_slider))
 
-        ttk.Button(self, text="Next", command=self.finish).grid(row=2, column=0, pady=10)
+        self.mode_container = tk.Frame(self, bg="#2a2a2a")
+        self.mode_container.grid(row=1, column=0, sticky='nsew', padx=10, pady=(0, 10))
+
+        next_btn = tk.Button(self, text="Next", bg="#28a745", fg="white", font=("Segoe UI", 13, "bold"), width=18, command=self.finish)
+        next_btn.grid(row=2, column=0, pady=(0, 20))
 
         self.select_mode('draw')
 
-    def _on_zoom_change(self, _=None):
-        self.scale = self.zoom_var.get()
+    def _on_zoom_slider_change(self, slider):
+        self.scale = slider.get_max() / 100.0
         if self.mode_frame and hasattr(self.mode_frame, 'update_zoom'):
             self.mode_frame.update_zoom(self.scale)
 
@@ -118,7 +113,6 @@ class BoundaryConfigurator(tk.Toplevel):
             "type": self.current_mode
         }
 
-
         try:
             self.callback(data)
             if hasattr(self.master, "save"):
@@ -134,11 +128,11 @@ class BoundaryConfigurator(tk.Toplevel):
         a, b = pts[0], pts[-1]
 
         def point_line_dist(p):
-            num = (p[0] - a[0])*(b[0] - a[0]) + (p[1] - a[1])*(b[1] - a[1])
-            den = (b[0] - a[0])**2 + (b[1] - a[1])**2 + 1e-9
+            num = (p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])
+            den = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2 + 1e-9
             t = max(0, min(1, num / den))
-            proj = (a[0] + t*(b[0] - a[0]), a[1] + t*(b[1] - a[1]))
-            return ((p[0] - proj[0])**2 + (p[1] - proj[1])**2)**0.5
+            proj = (a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]))
+            return ((p[0] - proj[0]) ** 2 + (p[1] - proj[1]) ** 2) ** 0.5
 
         max_d, idx = 0, -1
         for i, p in enumerate(pts[1:-1], start=1):

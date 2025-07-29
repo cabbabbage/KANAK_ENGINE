@@ -18,31 +18,32 @@
       "volume": 50
     }
   },
-  "z_threshold": 4,
+  "z_threshold": 3,
   "size_settings": {
-    "scale_percentage": 34,
-    "variability_percentage": 0.0
+    "scale_percentage": 30,
+    "variability_percentage": 0,
+    "flipability": true
   },
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 675,
+  "min_same_type_distance": 2000,
   "tags": [
-    "black",
-    "center",
     "default",
-    "large",
+    "tall",
     "light",
+    "center",
+    "still",
     "man-made",
     "metal",
-    "passable",
-    "still",
-    "tall"
+    "large",
+    "black",
+    "passable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
   "lighting_info": [
     {
       "has_light_source": true,
-      "light_intensity": 30,
+      "light_intensity": 100,
       "light_color": [
         255,
         255,
@@ -58,7 +59,7 @@
     },
     {
       "has_light_source": true,
-      "light_intensity": 81,
+      "light_intensity": 100,
       "light_color": [
         255,
         255,
@@ -85,5 +86,6 @@
     "cast_shadow_intensity": null
   },
   "has_spacing": true,
-  "anti_tags": []
+  "anti_tags": [],
+  "min_distance_all": 82
 }

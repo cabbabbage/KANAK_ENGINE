@@ -12,13 +12,14 @@
     }
   },
   "impassable_area": "impassable_area.json",
-  "z_threshold": 9,
+  "z_threshold": 3,
   "size_settings": {
-    "scale_percentage": 75,
-    "variability_percentage": 20
+    "scale_percentage": 67,
+    "variability_percentage": 20,
+    "flipability": true
   },
   "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 194,
+  "min_same_type_distance": 643,
   "visited_tabs": [
     "Passability",
     "Spacing"
@@ -29,9 +30,9 @@
   "min_child_depth": 0,
   "max_child_depth": 2,
   "tags": [
-    "impassable",
+    "center",
     "rock",
-    "center"
+    "impassable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -39,5 +40,7 @@
   "child_assets": [
     "child_assets_1.json",
     "child_assets_2.json"
-  ]
+  ],
+  "min_distance_all": 95,
+  "anti_tags": []
 }

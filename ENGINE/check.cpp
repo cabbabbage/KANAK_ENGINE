@@ -130,23 +130,28 @@ bool Check::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
 {
     if (!info || !info->spacing_area) return false;
 
-    std::unique_ptr<Area> test_area_ptr = std::make_unique<Area>(*info->spacing_area);
-    test_area_ptr->align(test_pos_X, test_pos_Y);
+    Area test_area = *info->spacing_area;
+    auto [tminx, tminy, tmaxx, tmaxy] = test_area.get_bounds();
+    int th = tmaxy - tminy + 1;
+    test_area.align(test_pos_X, test_pos_Y - th / 2);
 
     for (Asset* other : closest_assets) {
         if (!other || !other->info) continue;
 
-        std::unique_ptr<Area> other_area_ptr;
+        Area other_area = (other->info->has_spacing_area && other->info->spacing_area)
+            ? *other->info->spacing_area
+            : Area("fallback", other->pos_X, other->pos_Y,
+                   1, 1, "Square", 0,
+                   std::numeric_limits<int>::max(),
+                   std::numeric_limits<int>::max());
+
         if (other->info->has_spacing_area && other->info->spacing_area) {
-            other_area_ptr = std::make_unique<Area>(other->get_global_spacing_area());
-        } else {
-            other_area_ptr = std::make_unique<Area>("fallback", other->pos_X, other->pos_Y,
-                                                    1, 1, "Square", 0,
-                                                    std::numeric_limits<int>::max(),
-                                                    std::numeric_limits<int>::max());
+            auto [ominx, ominy, omaxx, omaxy] = other_area.get_bounds();
+            int oh = omaxy - ominy + 1;
+            other_area.align(other->pos_X, other->pos_Y - oh / 2);
         }
 
-        if (test_area_ptr->intersects(*other_area_ptr)) {
+        if (test_area.intersects(other_area)) {
             if (debug_) std::cout << "[Check] Overlap found between test area and asset: "
                                   << other->info->name << "\n";
             return true;
@@ -155,6 +160,8 @@ bool Check::check_spacing_overlap(const std::shared_ptr<AssetInfo>& info,
 
     return false;
 }
+
+
 
 bool Check::check_min_distance_all(const std::shared_ptr<AssetInfo>& info,
                                    const Point& pos,

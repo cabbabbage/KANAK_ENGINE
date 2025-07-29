@@ -5,7 +5,7 @@
   "min_height": 2082,
   "max_height": 2500,
   "edge_smoothness": 100,
-  "geometry": "Circle",
+  "geometry": "Square",
   "is_spawn": false,
   "is_boss": true,
   "inherits_map_assets": true,
@@ -81,13 +81,13 @@
       {
         "name": "Barrel",
         "tag": false,
-        "percent": 2,
+        "percent": 1,
         "color": "#e08b50"
       },
       {
         "name": "null",
         "tag": false,
-        "percent": 98,
+        "percent": 99,
         "color": "#123602"
       }
     ]

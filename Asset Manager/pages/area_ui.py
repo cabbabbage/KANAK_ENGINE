@@ -4,15 +4,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from pages.boundary import BoundaryConfigurator
 from pages.button import BlueButton
+from pages.range import Range
 from PIL import Image, ImageTk, ImageDraw
 
-
 class AreaUI(ttk.Frame):
-    def __init__(self, parent, json_path, label_text="Area:", scale=0.5):
+    def __init__(self, parent, json_path, label_text="Area:", scale=0.5, autosave_callback=None):
         super().__init__(parent)
         self.json_path = json_path
         self.label_text = label_text
         self.scale = scale
+        self.autosave_callback = autosave_callback  # ✅ Trigger parent autosave
 
         self.frames_source = None
         self.area_data = None
@@ -37,8 +38,20 @@ class AreaUI(ttk.Frame):
         self.preview_canvas = tk.Canvas(self, bg='black', bd=2, relief='sunken')
         self.preview_canvas.grid(row=1, column=0, sticky='nsew', padx=12, pady=12)
 
+        self.offset_x_range = Range(self, min_bound=-1000, max_bound=1000, set_min=0, set_max=0, force_fixed=True, label="Offset X")
+        self.offset_x_range.grid(row=2, column=0, sticky='we', padx=12, pady=(2, 0))
+        self.offset_x_range.var_max.trace_add("write", lambda *_: self._update_offset('offset_x'))
+
+        self.offset_y_range = Range(self, min_bound=-1000, max_bound=1000, set_min=0, set_max=0, force_fixed=True, label="Offset Y")
+        self.offset_y_range.grid(row=3, column=0, sticky='we', padx=12, pady=(2, 10))
+        self.offset_y_range.var_max.trace_add("write", lambda *_: self._update_offset('offset_y'))
+
         self._load_area_json()
         self._draw_preview()
+
+    def _trigger_autosave(self):
+        if self.autosave_callback:
+            self.autosave_callback()
 
     def _load_area_json(self):
         if not os.path.isfile(self.json_path):
@@ -55,6 +68,11 @@ class AreaUI(ttk.Frame):
             self.area_data = None
             self.area_label.config(text="(invalid)")
 
+        ox = self.area_data.get("offset_x", 0)
+        oy = self.area_data.get("offset_y", 0)
+        self.offset_x_range.set(ox, ox)
+        self.offset_y_range.set(oy, oy)
+
     def _configure_area(self):
         if not self.frames_source:
             messagebox.showerror("Error", "Set frames_source before configuring.")
@@ -65,13 +83,30 @@ class AreaUI(ttk.Frame):
         if isinstance(geo, list):
             geo = {'points': geo}
         self.area_data = geo
+
+        ox, oy = self.offset_x_range.get()
+        self.area_data["offset_x"] = ox
+        self.area_data["offset_y"] = oy
+
         self.area_label.config(text="(configured)")
+        self._save_json()
+        self._draw_preview()
+        self._trigger_autosave()
+
+    def _update_offset(self, key):
+        if not self.area_data:
+            return
+        val = self.offset_x_range.get()[0] if key == 'offset_x' else self.offset_y_range.get()[0]
+        self.area_data[key] = val
+        self._save_json()
+        self._trigger_autosave()
+
+    def _save_json(self):
         try:
             with open(self.json_path, "w") as f:
-                json.dump(geo, f, indent=2)
+                json.dump(self.area_data, f, indent=2)
         except Exception as e:
             print(f"[AreaUI] Failed to write json: {e}")
-        self._draw_preview()
 
     def _draw_preview(self):
         if not self.area_data:
@@ -89,8 +124,11 @@ class AreaUI(ttk.Frame):
         draw = ImageDraw.Draw(overlay)
 
         anchor_x, anchor_y = self.area_data.get("anchor_point_in_image", [0, 0])
+        offset_x = self.area_data.get("offset_x", 0)
+        offset_y = self.area_data.get("offset_y", 0)
+
         points = [
-            (int((x + anchor_x) * self.scale), int((y + anchor_y) * self.scale))
+            (int((x + anchor_x + offset_x) * self.scale), int((y + anchor_y + offset_y) * self.scale))
             for x, y in self.area_data.get("points", [])
         ]
 
@@ -99,13 +137,12 @@ class AreaUI(ttk.Frame):
             if 0 <= dx < disp[0] and 0 <= dy < disp[1]:
                 draw.ellipse((dx - r, dy - r, dx + r, dy + r), fill=(255, 0, 0, 180))
 
-        # Draw a dot at the bottom-center non-transparent pixel
         full_width, full_height = img.size
         px = img.load()
         x_center = full_width // 2
         for y in reversed(range(full_height)):
             r, g, b, a = px[x_center, y]
-            if a > 10:  # Some threshold to avoid semi-transparent garbage
+            if a > 10:
                 scaled_x = int(x_center * self.scale)
                 scaled_y = int(y * self.scale)
                 draw.ellipse(

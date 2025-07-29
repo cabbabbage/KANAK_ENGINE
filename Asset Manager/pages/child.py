@@ -1,181 +1,152 @@
+# === File: pages/child_assets.py ===
 import os
 import json
 import copy
 import tkinter as tk
-from tkinter import ttk, messagebox
-from pages.boundary import BoundaryConfigurator
+from tkinter import messagebox
+from pages.area_ui import AreaUI
 from pages.assets_editor import AssetEditor
-from pages.range import Range
 
-SRC_DIR = "SRC"
-
-class ChildAssetsPage(ttk.Frame):
+class ChildAssetsPage(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        self.child_frames = []
         self.asset_path = None
+        self.child_frames = []
+        self._loaded = False
 
-        self.FONT = ('Segoe UI', 14)
-        self.FONT_BOLD = ('Segoe UI', 18, 'bold')
+        # Page background
+        self.configure(bg='#1e1e1e')
 
-        ttk.Label(self, text="Child Asset Regions", font=self.FONT_BOLD).pack(pady=(10, 10))
-
-        self.container = ttk.Frame(self)
-        self.container.pack(fill=tk.BOTH, expand=True)
-
-        self.scroll_canvas = tk.Canvas(self.container)
-        self.scroll_frame = ttk.Frame(self.scroll_canvas)
-        self.scrollbar = ttk.Scrollbar(self.container, orient="vertical", command=self.scroll_canvas.yview)
-        self.scroll_canvas.configure(yscrollcommand=self.scrollbar.set)
-
-        self.scroll_canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
-        self.scroll_frame.bind(
-            "<Configure>",
-            lambda e: self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all"))
+        # Header with title and Add button
+        header = tk.Frame(self, bg='#1e1e1e')
+        header.pack(fill=tk.X, pady=(10, 20))
+        title = tk.Label(
+            header, text="Child Asset Regions",
+            font=("Segoe UI", 20, "bold"),
+            fg="#005f73", bg='#1e1e1e'
         )
+        title.pack(side=tk.LEFT, padx=12)
+        add_btn = tk.Button(
+            header, text="Add New Region",
+            bg="#28a745", fg="white",
+            font=("Segoe UI", 13, "bold"), width=20,
+            command=self._add_child_region
+        )
+        add_btn.pack(side=tk.RIGHT, padx=12)
 
-        self.scroll_canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
-
-        btn_frame = ttk.Frame(self)
-        btn_frame.pack(fill=tk.X, pady=12)
-        ttk.Button(btn_frame, text="Add Region", command=self._add_child_region).pack(side=tk.LEFT, padx=10)
-        ttk.Button(btn_frame, text="Save", command=self.save).pack(side=tk.LEFT, padx=10)
+        # Scrollable area
+        self.canvas = tk.Canvas(self, bg='#2a2a2a', highlightthickness=0)
+        self.scroll_frame = tk.Frame(self.canvas, bg='#2a2a2a')
+        window_id = self.canvas.create_window((0, 0), window=self.scroll_frame, anchor='nw')
+        # update scrollregion
+        self.scroll_frame.bind(
+            '<Configure>',
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox('all'))
+        )
+        # span full width
+        self.canvas.bind(
+            '<Configure>',
+            lambda e: self.canvas.itemconfig(window_id, width=e.width)
+        )
+        # mousewheel on hover
+        def _scroll(evt):
+            self.canvas.yview_scroll(int(-1*(evt.delta/120)), 'units')
+        self.scroll_frame.bind('<Enter>', lambda e: self.canvas.bind_all('<MouseWheel>', _scroll))
+        self.scroll_frame.bind('<Leave>', lambda e: self.canvas.unbind_all('<MouseWheel>'))
+        self.canvas.pack(fill=tk.BOTH, expand=True)
 
     def _add_child_region(self, entry_data=None):
         idx = len(self.child_frames)
-        frame = ttk.LabelFrame(self.scroll_frame, text=f"Region {idx+1}", padding=10)
-        frame.grid(row=idx, column=0, pady=10, sticky="ew")
+        # Container frame styled dark
+        frame = tk.LabelFrame(
+            self.scroll_frame,
+            text=f"Region {idx+1}",
+            bg='#2a2a2a', fg='#DDDDDD', font=("Segoe UI", 13, "bold"),
+            bd=1, relief='solid', padx=10, pady=10
+        )
+        frame.grid(row=idx, column=0, pady=10, sticky="ew", padx=12)
         frame.columnconfigure(1, weight=1)
 
         json_path = entry_data.get("json_path") if entry_data else None
         z_offset = entry_data.get("z_offset", 0) if entry_data else 0
+        area_data = ({k: copy.deepcopy(v) for k, v in entry_data.items()
+                      if k not in ("json_path", "z_offset", "assets")}
+                     if isinstance(entry_data, dict) else None)
 
-        if isinstance(entry_data, dict):
-            area_data = {k: copy.deepcopy(v)
-                        for k, v in entry_data.items()
-                        if k not in ("json_path", "z_offset", "assets")}
-        else:
-            area_data = None
-
-        ttk.Label(frame, text="Z Offset:").grid(row=0, column=0, sticky="w")
+        # Z Offset
+        tk.Label(
+            frame, text="Z Offset:", bg='#2a2a2a', fg='#FFFFFF', font=("Segoe UI", 12)
+        ).grid(row=0, column=0, sticky="w")
         z_var = tk.IntVar(value=z_offset)
-        ttk.Spinbox(frame, from_=-9999, to=9999, textvariable=z_var, width=10).grid(
-            row=0, column=1, sticky="w", padx=6
+        tk.Spinbox(
+            frame, from_=-9999, to=9999,
+            textvariable=z_var, width=10,
+            font=("Segoe UI", 12)
+        ).grid(row=0, column=1, sticky="w", padx=6)
+
+        # AreaUI
+        region_file = json_path or f"child_assets_{idx + 1}.json"
+        full_path = os.path.join(os.path.dirname(self.asset_path or ''), region_file)
+
+        area_ui = AreaUI(
+            frame, full_path,
+            label_text="Area Region:",
+            autosave_callback=self.save
         )
+        area_ui.frames_source = os.path.join(os.path.dirname(self.asset_path or ''), "default")
+        area_ui.grid(row=1, column=0, columnspan=4, sticky="ew", padx=6, pady=4)
+        area_ui._load_area_json()
+        area_ui._draw_preview()
 
-        area_label = ttk.Label(frame, text="(none)" if not area_data else "Area defined")
-        area_label.grid(row=1, column=0, columnspan=2, sticky="w")
-
-        # Buttons container (top-right)
-        btn_frame = ttk.Frame(frame)
-        btn_frame.grid(row=0, column=2, rowspan=2, sticky="ne", padx=4)
-
-        def delete_this_region():
-            self._delete_region(entry)
-
-        delete_btn = tk.Button(
-            btn_frame,
-            text="Delete",
-            bg="#FF4C4C",  # Red
-            fg="black",
-            font=("Segoe UI", 10, "bold"),
-            width=15,
-            command=delete_this_region
-        )
-        delete_btn.pack(pady=(0, 6))
-
-        def edit_area():
-            if not self.asset_path:
-                messagebox.showerror("Error", "No parent asset path defined.")
-                return
-            base_folder = os.path.join(os.path.dirname(self.asset_path), "default")
-            if not os.path.isdir(base_folder):
-                messagebox.showerror("Error", f"Parent frame folder does not exist: {base_folder}")
-                return
-
-            def save_callback(new_area):
-                entry['area_data'] = new_area
-                entry['area_edited'] = True
-                entry['area_label'].config(text="Area defined")
-
-            editor = BoundaryConfigurator(self.winfo_toplevel(), base_folder, save_callback)
-            editor.grab_set()
-
-        edit_btn = tk.Button(
-            btn_frame,
-            text="Edit Area",
-            bg="#FFD700",  # Yellow
-            fg="black",
-            font=("Segoe UI", 10, "bold"),
-            width=15,
-            command=edit_area
-        )
-        edit_btn.pack()
-
+        # AssetEditor
         asset_list = entry_data.get("assets", []) if isinstance(entry_data, dict) else []
         asset_editor = AssetEditor(
             frame,
             lambda: asset_list,
-            lambda v: asset_list.clear() or asset_list.extend(v),
-            lambda: None
+            lambda v: (asset_list.clear() or asset_list.extend(v)),
+            save_callback=self.save
         )
-        asset_editor.grid(row=2, column=0, columnspan=3, sticky="ew", pady=10)
+        asset_editor.grid(row=2, column=0, columnspan=4, sticky="ew", pady=10)
         asset_editor.load_assets()
 
+        # Build entry dict
         entry = {
             "frame": frame,
             "z_var": z_var,
-            "json_path": json_path,
-            "area_label": area_label,
+            "json_path": region_file,
+            "area_ui": area_ui,
             "asset_editor": asset_editor,
             "area_data": area_data,
-            "original_area_data": copy.deepcopy(area_data) if isinstance(area_data, dict) else None,
+            "original_area_data": copy.deepcopy(area_data) if area_data else None,
             "area_edited": False
         }
 
-        self.child_frames.append(entry)
+        # Delete button now references entry safely
+        delete_btn = tk.Button(
+            frame, text="X",
+            command=lambda e=entry: self._delete_region(e),
+            bg="#D9534F", fg="white",
+            font=("Segoe UI", 12, "bold"), width=3
+        )
+        delete_btn.grid(row=0, column=3, padx=4)
 
+        self.child_frames.append(entry)
+        if self._loaded:
+            self.save()
 
     def _delete_region(self, entry):
-        confirm = messagebox.askyesno("Delete Region", "Are you sure you want to delete this region?")
-        if not confirm:
-            return
-
         json_path = entry.get("json_path")
         if json_path:
-            full_path = os.path.join(os.path.dirname(self.asset_path), json_path)
+            full_path = os.path.join(os.path.dirname(self.asset_path or ''), json_path)
             try:
                 if os.path.isfile(full_path):
                     os.remove(full_path)
-                    print(f"[ChildAssetsPage] Deleted child asset JSON: {full_path}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to delete file '{full_path}': {e}")
 
         self.child_frames.remove(entry)
         entry["frame"].destroy()
-        self._update_info_json()
-
-
-    def _update_info_json(self):
-        try:
-            with open(self.asset_path, 'r') as f:
-                data = json.load(f)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load parent info.json: {e}")
-            return
-
-        new_paths = []
-        for entry in self.child_frames:
-            if entry["json_path"]:
-                new_paths.append(entry["json_path"])
-
-        data["child_assets"] = new_paths
-        try:
-            with open(self.asset_path, 'w') as f:
-                json.dump(data, f, indent=2)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to update info.json: {e}")
+        self.save()
 
     def load(self, info_path):
         self.asset_path = info_path
@@ -184,24 +155,24 @@ class ChildAssetsPage(ttk.Frame):
         self.child_frames.clear()
 
         try:
-            data = json.load(open(info_path))
+            with open(info_path, 'r') as f:
+                data = json.load(f)
             for item in data.get("child_assets", []):
-                if isinstance(item, dict):
-                    path = item.get("json_path")
-                else:
-                    path = item
+                path = item.get("json_path") if isinstance(item, dict) else item
                 full = os.path.join(os.path.dirname(info_path), path)
                 if not os.path.exists(full):
                     continue
-                with open(full) as f:
-                    child = json.load(f)
+                with open(full, 'r') as cf:
+                    child = json.load(cf)
                 child["json_path"] = path
                 self._add_child_region(child)
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load child assets: {e}")
 
+        self._loaded = True
+
     def save(self):
-        if not self.asset_path:
+        if not self.asset_path or not self._loaded:
             return
 
         base_folder = os.path.dirname(self.asset_path)
@@ -213,10 +184,7 @@ class ChildAssetsPage(ttk.Frame):
             filename = f"child_assets_{idx + 1}.json"
             full_path = os.path.join(base_folder, filename)
 
-            data = {
-                "z_offset": z_offset,
-                "assets": assets
-            }
+            data = {"z_offset": z_offset, "assets": assets}
 
             if entry["area_edited"] and isinstance(entry["area_data"], dict) and entry["area_data"]:
                 data.update(entry["area_data"])
@@ -232,7 +200,8 @@ class ChildAssetsPage(ttk.Frame):
                 messagebox.showerror("Error", f"Failed to save {filename}: {e}")
 
         try:
-            parent = json.load(open(self.asset_path))
+            with open(self.asset_path, 'r') as f:
+                parent = json.load(f)
         except:
             parent = {}
 
@@ -241,6 +210,5 @@ class ChildAssetsPage(ttk.Frame):
         try:
             with open(self.asset_path, 'w') as f:
                 json.dump(parent, f, indent=2)
-            messagebox.showinfo("Saved", "Child asset regions saved.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to update parent info.json: {e}")
