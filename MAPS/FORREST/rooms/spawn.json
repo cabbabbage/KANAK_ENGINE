@@ -8,7 +8,7 @@
       "name": "Davey",
       "min_number": 1,
       "max_number": 1,
-      "position": "Random",
+      "position": "Center",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,

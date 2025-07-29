@@ -1,3 +1,4 @@
+// === File: generate_map_light.cpp ===
 #include "generate_map_light.hpp"
 #include "cache_manager.hpp"
 #include <cmath>
@@ -114,7 +115,6 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
     build_texture();
 }
 
-
 void Generate_Map_Light::update() {
     ++frame_counter_;
     if (frame_counter_ % update_interval_ != 0) return;
@@ -132,13 +132,28 @@ void Generate_Map_Light::update() {
     pos_x_ = center_x_ + static_cast<int>(orbit_radius * std::cos(angle_));
     pos_y_ = center_y_ + static_cast<int>(orbit_radius * std::sin(angle_));
 
-    float norm = std::fabs(std::cos(angle_));
-    float fade = compute_opacity_from_horizon(norm);
-    Uint8 alpha = static_cast<Uint8>(min_opacity_ + (max_opacity_ - min_opacity_) * fade);
+    float height_ratio = 1.0f - ((std::sin(angle_) + 1.0f) * 0.5f);
+    height_ratio = std::clamp(height_ratio, 0.0f, 1.0f);
+
+    Uint8 alpha = static_cast<Uint8>(
+        min_opacity_ + (max_opacity_ - min_opacity_) * height_ratio
+    );
 
     SDL_Color new_color = compute_color_from_horizon();
     new_color.a = alpha;
     current_color_ = new_color;
+
+    // Inverse interpolation for light_brightness
+    if (current_color_.a >= light_source_off_at) {
+        light_brightness = 0;
+    } else if (current_color_.a <= min_opacity_) {
+        light_brightness = 255;
+    } else {
+        float range = float(light_source_off_at - min_opacity_);
+        float value = float(light_source_off_at - current_color_.a);
+        float ratio = value / range;
+        light_brightness = static_cast<int>(ratio * 255.0f);
+    }
 }
 
 std::pair<int, int> Generate_Map_Light::get_position() const {
@@ -230,7 +245,6 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
         }
     }
 
-    // Wraparound interpolation from last to first key
     const auto& k_last = key_colors_.back();
     const auto& k_first = key_colors_.front();
     float range = 360.0f - k_last.degree + k_first.degree;
@@ -245,3 +259,4 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
     result.a = lerp(k_last.color.a, k_first.color.a, t);
     return result;
 }
+

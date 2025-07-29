@@ -62,7 +62,7 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 7191,
+      "radius": 6758,
       "min_rooms": 7,
       "max_rooms": 9,
       "rooms": [
@@ -95,7 +95,7 @@
     {
       "level": 3,
       "name": "layer_3",
-      "radius": 10813,
+      "radius": 9947,
       "min_rooms": 0,
       "max_rooms": 13,
       "rooms": [
@@ -110,7 +110,7 @@
     {
       "level": 4,
       "name": "layer_4",
-      "radius": 12313,
+      "radius": 11447,
       "min_rooms": 0,
       "max_rooms": 0,
       "rooms": []
@@ -118,11 +118,11 @@
     {
       "level": 5,
       "name": "layer_5",
-      "radius": 12313,
+      "radius": 11447,
       "min_rooms": 0,
       "max_rooms": 0,
       "rooms": []
     }
   ],
-  "map_radius": 13813.28137423857
+  "map_radius": 12947.032346864937
 }

@@ -7,19 +7,19 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "white",
         "flowers",
-        "leafy",
+        "passable",
         "pretty",
         "plant",
-        "default",
-        "meadow",
-        "still",
-        "cover",
+        "leafy",
         "ground",
+        "small",
         "nature",
-        "passable",
-        "small"
+        "white",
+        "meadow",
+        "cover",
+        "still",
+        "default"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -52,9 +52,9 @@
         "number_of_casted_shadows": null,
         "cast_shadow_intensity": null
     },
-    "z_threshold": 5,
+    "z_threshold": 6,
     "size_settings": {
-        "scale_percentage": 5,
+        "scale_percentage": 6,
         "variability_percentage": 0,
         "flipability": true
     },

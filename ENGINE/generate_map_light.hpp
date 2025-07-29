@@ -21,6 +21,9 @@ public:
     std::pair<int, int> get_position() const;
     SDL_Texture* get_texture() const;
     SDL_Color current_color_;
+    int light_brightness = 255;
+    int light_source_off_at = 150; 
+
 private:
     void build_texture();
     float compute_opacity_from_horizon(float norm) const;

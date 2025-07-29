@@ -19,24 +19,24 @@
         }
     },
     "tags": [
-        "blue",
         "flowers",
-        "leafy",
+        "passable",
         "pretty",
         "plant",
-        "default",
-        "meadow",
-        "still",
-        "cover",
+        "blue",
+        "leafy",
+        "small",
         "nature",
-        "passable",
-        "small"
+        "meadow",
+        "cover",
+        "still",
+        "default"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "z_threshold": 33,
+    "z_threshold": 39,
     "size_settings": {
-        "scale_percentage": 5,
+        "scale_percentage": 6,
         "variability_percentage": 0,
         "flipability": true
     },

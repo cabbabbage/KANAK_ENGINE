@@ -7,11 +7,11 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "impassable",
         "spawn",
-        "default"
+        "default",
+        "impassable"
     ],
-    "z_threshold": 4,
+    "z_threshold": 1,
     "size_settings": {
         "scale_percentage": 57,
         "variability_percentage": 0,
@@ -22,21 +22,12 @@
     "animations": {
         "default": {
             "frames_path": "default",
-            "speed": 1.0,
             "on_end": "default",
             "event_data": [],
             "randomize": true,
             "audio_path": "",
-            "volume": 50
-        },
-        "spawn": {
-            "frames_path": "spawn",
-            "speed": 1.0,
-            "on_end": "default",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
+            "volume": 50,
+            "lock_until_done": false
         }
     },
     "impassable_area": "impassable_area.json",
@@ -63,5 +54,8 @@
         "jitter_max": null,
         "flicker": null
     },
-    "child_assets": []
+    "child_assets": [],
+    "has_spacing": true,
+    "min_distance_all": 0,
+    "anti_tags": []
 }

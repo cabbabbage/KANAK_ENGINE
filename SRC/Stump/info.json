@@ -16,7 +16,7 @@
   "size_settings": {
     "scale_percentage": 26,
     "variability_percentage": 0,
-    "flipability": true
+    "flipability": false
   },
   "visited_tabs": [
     "Passability",
@@ -25,14 +25,14 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 427,
   "tags": [
-    "medium",
+    "wood",
+    "still",
     "nature",
     "brown",
-    "meadow",
-    "still",
-    "default",
     "impassable",
-    "wood"
+    "meadow",
+    "medium",
+    "default"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -58,8 +58,7 @@
     "white"
   ],
   "child_assets": [
-    "child_assets_1.json",
-    "child_assets_2.json"
+    "child_assets_1.json"
   ],
   "min_distance_all": 0
 }

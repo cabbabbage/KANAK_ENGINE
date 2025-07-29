@@ -18,6 +18,9 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
     : parent(parent_),
       info(std::move(info_)),
       current_animation(),
+      current_frame_index(0),
+      static_frame(false),
+      active(false),
       pos_X(start_pos_X),
       pos_Y(start_pos_Y),
       z_index(0),
@@ -31,6 +34,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
       depth(depth_)
 {
     set_z_index();
+    player_speed_mult = 10;
     // pick initial animation frame
     auto it = info->animations.find("start");
     if (it == info->animations.end())
@@ -44,8 +48,6 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
             std::mt19937 g{std::random_device{}()};
             std::uniform_int_distribution<int> d(0, int(it->second.frames.size()) - 1);
             current_frame_index = d(g);
-        } else {
-            current_frame_index = 0;
         }
     }
 }
@@ -53,29 +55,23 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
 void Asset::finalize_setup(SDL_Renderer* renderer) {
     if (!info || !renderer) return;
 
-    // If no animation chosen yet, pick a fallback
     if (current_animation.empty() ||
         info->animations[current_animation].frames.empty())
     {
         auto it = info->animations.find("start");
-        if (it == info->animations.end()) it = info->animations.find("default");
+        if (it == info->animations.end())
+            it = info->animations.find("default");
         if (it == info->animations.end())
             it = info->animations.begin();
 
         if (it != info->animations.end() && !it->second.frames.empty()) {
-            // Queue and immediately apply fallback
-            change_animation(it->first);
-            current_animation = next_animation;
-            info->animations[current_animation].change(current_frame_index, static_frame);
-            next_animation.clear();
-
-            if (info->animations[current_animation].randomize &&
-                info->animations[current_animation].frames.size() > 1)
-            {
+            current_animation = it->first;
+            Animation &anim = it->second;
+            static_frame = (anim.frames.size() == 1);
+            anim.change(current_frame_index, static_frame);
+            if (anim.randomize && anim.frames.size() > 1) {
                 std::mt19937 rng{std::random_device{}()};
-                std::uniform_int_distribution<int> dist(
-                    0, int(info->animations[current_animation].frames.size()) - 1
-                );
+                std::uniform_int_distribution<int> dist(0, int(anim.frames.size()) - 1);
                 current_frame_index = dist(rng);
             }
         }
@@ -87,93 +83,58 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
 
     if (!children.empty()) {
         std::cout << "[Asset] \"" << info->name
-                  << "\" at (" << pos_X << ", " << pos_Y << ") has "
-                  << children.size() << " child(ren):\n";
+                  << "\" at (" << pos_X << ", " << pos_Y
+                  << ") has " << children.size() << " child(ren):\n";
         for (auto& child : children) {
             if (child.info) {
                 std::cout << "    - \"" << child.info->name
-                          << "\" at (" << child.pos_X << ", " << child.pos_Y << ")\n";
+                          << "\" at (" << child.pos_X << ", "
+                          << child.pos_Y << ")\n";
             }
         }
     }
+
     set_flip();
 }
 
+// === Added missing set_position implementation ===
 void Asset::set_position(int x, int y) {
     pos_X = x;
     pos_Y = y;
     set_z_index();
 }
 
-
 void Asset::update() {
     if (!info) return;
 
-    auto it = info->animations.find(current_animation);
-    if (it == info->animations.end()) return;
-
-    Animation& anim = it->second;
-
-    // Immediate queued-change if not locked
-    if (!next_animation.empty() && !anim.lock_until_done) {
+    // Apply any queued animation change first
+    if (!next_animation.empty()) {
         auto nit = info->animations.find(next_animation);
         if (nit != info->animations.end()) {
             current_animation = next_animation;
-            Animation& newAnim = nit->second;
-            newAnim.change(current_frame_index, static_frame);
+            Animation &anim = nit->second;
+            static_frame = (anim.frames.size() == 1);
+            current_frame_index = 0;
         }
         next_animation.clear();
-        it = info->animations.find(current_animation);
-        anim = it->second;
     }
 
-    // Advance frame or handle auto-transition
+    auto it = info->animations.find(current_animation);
+    if (it == info->animations.end()) return;
+    Animation &anim = it->second;
+
+    // Advance frame if not marked static
     if (!static_frame) {
-        bool end_reached = false;
         std::string auto_transition;
-
-        if (next_animation == "reverse") {
-            --current_frame_index;
-            if (current_frame_index <= 0) {
-                end_reached = true;
-                current_frame_index = 0;
-            }
-        } else {
-            bool advanced = anim.advance(current_frame_index, auto_transition);
-            end_reached = !advanced;
-        }
-
-        if (end_reached) {
-            if (next_animation == "freeze_on_last") {
-                anim.freeze();
-                static_frame = true;
-                next_animation.clear();
-            } else if (next_animation == "terminate") {
-                this->~Asset();
-                return;
-            } else if (next_animation == "reverse") {
-                int last = static_cast<int>(anim.frames.size()) - 1;
-                if (current_frame_index == 0) {
-                    current_frame_index = std::min(last, 1);
-                } else {
-                    current_frame_index = std::max(0, last - 1);
-                }
-                // keep next_animation as "reverse" for continuous flip
-            } else if (!next_animation.empty() && info->animations.count(next_animation)) {
-                if (!anim.lock_until_done) {
-                    auto & nxt = info->animations[next_animation];
-                    current_animation = next_animation;
-                    nxt.change(current_frame_index, static_frame);
-                    next_animation.clear();
-                }
-            } else if (!auto_transition.empty() && info->animations.count(auto_transition)) {
-                auto & at = info->animations[auto_transition];
-                current_animation = auto_transition;
-                at.change(current_frame_index, static_frame);
-            }
+        bool advanced = anim.advance(current_frame_index, auto_transition);
+        if (!advanced && !auto_transition.empty() &&
+            info->animations.count(auto_transition))
+        {
+            next_animation = auto_transition;
         }
     }
 
+    // Recurse into children
     for (auto& c : children) {
         c.update();
     }
@@ -181,7 +142,7 @@ void Asset::update() {
 
 void Asset::change_animation(const std::string& name) {
     if (!info || name.empty()) return;
-    if (name == current_animation && name != "reverse") return;
+    if (name == current_animation) return;
     next_animation = name;
 }
 

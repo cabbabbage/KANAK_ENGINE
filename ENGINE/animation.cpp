@@ -1,3 +1,5 @@
+// === File: animation.cpp ===
+
 #include "Animation.hpp"
 #include "cache_manager.hpp"
 #include <SDL_image.h>
@@ -70,19 +72,15 @@ void Animation::load(const std::string& trigger,
                 std::cerr << "[Animation] Failed to load or scale: " << f << "\n";
                 continue;
             }
-
             SDL_SetSurfaceBlendMode(scaled, blendmode);
-
             if (i == 0) {
                 original_canvas_width  = orig_w;
                 original_canvas_height = orig_h;
                 scaled_sprite_w = new_w;
                 scaled_sprite_h = new_h;
             }
-
             surfaces.push_back(scaled);
         }
-
         cache.save_surface_sequence(cache_folder, surfaces);
 
         nlohmann::json new_meta;
@@ -96,7 +94,8 @@ void Animation::load(const std::string& trigger,
 
     on_end           = anim_json.value("on_end", "");
     randomize        = anim_json.value("randomize", false);
-    loop             = (on_end == trigger);
+    // Ensure animations loop by default; override via JSON "loop" property if present
+    loop             = anim_json.value("loop", true);
     lock_until_done  = anim_json.value("lock_until_done", false);
 
     for (SDL_Surface* surf : surfaces) {
@@ -124,7 +123,9 @@ bool Animation::advance(int& index, std::string& next_animation_name) const {
     if (frozen || frames.empty()) return false;
 
     ++index;
-    if (index < static_cast<int>(frames.size())) return true;
+    if (index < static_cast<int>(frames.size())) {
+        return true;
+    }
 
     if (loop) {
         index = 0;

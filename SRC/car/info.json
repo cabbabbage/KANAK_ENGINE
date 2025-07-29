@@ -19,21 +19,21 @@
     }
   },
   "tags": [
-    "car",
+    "large",
     "metal",
     "grey",
     "black",
-    "impassable",
-    "default",
     "center",
     "man-made",
-    "large"
+    "car",
+    "impassable",
+    "default"
   ],
-  "z_threshold": 3,
+  "z_threshold": 0,
   "size_settings": {
     "scale_percentage": 29,
     "variability_percentage": 0,
-    "flipability": false
+    "flipability": true
   },
   "has_spacing": true,
   "spacing_area": "spacing_area.json",

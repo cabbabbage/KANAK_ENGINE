@@ -5,7 +5,7 @@
   "min_height": 2082,
   "max_height": 2500,
   "edge_smoothness": 100,
-  "geometry": "Circle",
+  "geometry": "Square",
   "is_spawn": false,
   "is_boss": true,
   "inherits_map_assets": true,

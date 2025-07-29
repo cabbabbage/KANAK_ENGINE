@@ -37,15 +37,15 @@
     "volume"
   ],
   "tags": [
-    "wood",
     "collision",
+    "wood",
     "default",
     "impassable"
   ],
   "impassable_area": "impassable_area.json",
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 557,
-  "z_threshold": 3,
+  "z_threshold": 2,
   "size_settings": {
     "scale_percentage": 11,
     "variability_percentage": 0,
