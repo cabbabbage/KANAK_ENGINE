@@ -28,11 +28,11 @@
     "Spacing"
   ],
   "tags": [
-    "bone",
+    "passable",
     "white",
     "scary",
-    "passable",
-    "ground"
+    "ground",
+    "bone"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

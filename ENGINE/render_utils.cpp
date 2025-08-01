@@ -130,9 +130,16 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset, int playerX, int playerY
     trapSettings_.screen_y = p.y;
 
     struct EdgeScales { float L,R,T,B; };
-    const EdgeScales top{0.96f, 0.96f, 0.96f, 0.91f},
-                    mid{0.93f, 0.93f, 0.93f, 0.91f},
-                    bot{0.88f, 0.88f, 0.88f, 0.91f};
+    // Original values (commented out):
+    // const EdgeScales top{0.96f, 0.96f, 0.96f, 0.91f},
+    //                  mid{0.93f, 0.93f, 0.93f, 0.91f},
+    //                  bot{0.88f, 0.88f, 0.88f, 0.91f};
+
+    // Uniform values for testing (all set to 1.0f):
+    const EdgeScales top{1.0f, 1.0f, 1.0f, 1.0f},
+                    mid{1.0f, 1.0f, 1.0f, 1.0f},
+                    bot{1.0f, 1.0f, 1.0f, 1.0f};
+
 
     auto lerp = [](float a,float b,float t){return a+(b-a)*t;};
     auto lerpE = [&](auto A, auto B, float t){
@@ -182,6 +189,43 @@ void RenderUtils::renderAssetTrapezoid(SDL_Texture* tex) const {
     int idx[]={0,1,2,2,3,0};
     SDL_RenderGeometry(renderer_,tex,V,4,idx,6);
 }
+
+
+// === File: RenderUtils.hpp (additions needed) ===
+// Add inside the class declaration:
+// SDL_FPoint trapezoid_[4];
+// void renderTrapezoid(SDL_Texture* tex, const SDL_FPoint quad[4]);
+
+// === File: RenderUtils.cpp (add to end of file) ===
+
+// === File: render_utils.cpp ===
+RenderUtils::TrapezoidGeometry RenderUtils::getTrapezoidGeometry(SDL_Texture* tex, const SDL_FPoint quad[4]) const {
+    TrapezoidGeometry geom;
+
+    geom.vertices[0].position = quad[0];
+    geom.vertices[1].position = quad[1];
+    geom.vertices[2].position = quad[2];
+    geom.vertices[3].position = quad[3];
+
+    geom.vertices[0].tex_coord = {0, 0};
+    geom.vertices[1].tex_coord = {1, 0};
+    geom.vertices[2].tex_coord = {1, 1};
+    geom.vertices[3].tex_coord = {0, 1};
+
+    for (int i = 0; i < 4; ++i)
+        geom.vertices[i].color = SDL_Color{255, 255, 255, 255};
+
+    geom.indices[0] = 0;
+    geom.indices[1] = 1;
+    geom.indices[2] = 2;
+    geom.indices[3] = 2;
+    geom.indices[4] = 3;
+    geom.indices[5] = 0;
+
+    return geom;
+}
+
+
 
 void RenderUtils::renderMinimap() const {
     if (!minimapTexture_) return;

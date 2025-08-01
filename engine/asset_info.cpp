@@ -214,6 +214,7 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
     duplicatable = data.value("duplicatable", false);
     duplication_interval_min = data.value("duplication_interval_min", 0);
     duplication_interval_max = data.value("duplication_interval_max", 0);
+    update_radius = data.value("update_radius", 1000);
 
     std::mt19937 rng{ std::random_device{}() };
     if (min_child_depth <= max_child_depth) {
@@ -255,6 +256,7 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
         light.flicker    = linfo.value("flicker", false);
         light.offset_x   = linfo.value("offset_x", 0);
         light.offset_y   = linfo.value("offset_y", 0);
+
         light.color      = { 0, 0, 0, 255 };
         if (linfo.contains("light_color") &&
             linfo["light_color"].is_array() &&
@@ -277,6 +279,7 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
             LightSource light;
             light.intensity  = l.value("light_intensity", 0);
             light.radius     = l.value("radius", 100);
+            light.orbit_radius     = l.value("orbit_radius", 0);
             light.fall_off   = l.value("fall_off", 0);
             light.jitter_min = l.value("jitter_min", 0);
             light.jitter_max = l.value("jitter_max", 0);

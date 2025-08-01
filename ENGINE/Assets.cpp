@@ -19,7 +19,7 @@ Assets::Assets(std::vector<Asset>&& loaded,
       dx(0),
       dy(0),
       last_activat_update(0),
-      update_interval(5)
+      update_interval(20)
 {
     std::cout << "[Assets] Initializing Assets manager...\n";
 
@@ -48,10 +48,11 @@ Assets::Assets(std::vector<Asset>&& loaded,
             break;
         }
     }
-
+    set_static_lights();
     activeManager.initialize(all, player, screen_center_x, screen_center_y);
     std::cout << "[Assets] Initialization complete. Total assets: "
               << all.size() << "\n";
+
 }
 
 void Assets::update_direction_movement(int offset_x, int offset_y) {
@@ -176,4 +177,58 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
 
 bool Assets::check_collision(const Area& a, const Area& b) {
     return a.intersects(b);
+}
+
+
+void Assets::set_static_lights()
+{
+        std::cout << "Starting static light gen \n";
+    // For each owner asset that defines light sources...
+    for (auto& owner : all) {
+        if (!owner.info) continue;
+
+        const auto& infos = owner.info->lights;
+        const auto& texs  = owner.light_textures;
+        size_t cnt = std::min(infos.size(), texs.size());
+
+        for (size_t i = 0; i < cnt; ++i) {
+            const auto& li = infos[i];
+            SDL_Texture* tex = texs[i];
+            if (!tex || li.radius <= 0) continue;
+
+            // Compute global position of this light
+            int world_x = owner.pos_X + li.offset_x;
+            int world_y = owner.pos_Y + li.offset_y;
+            int lw = 0, lh = 0;
+            SDL_QueryTexture(tex, nullptr, nullptr, &lw, &lh);
+            
+            owner.add_static_light_source(                        tex,
+                        world_x,
+                        world_y,
+                        lw,
+                        lh,
+                        li.radius);
+
+
+            // Distribute this light to any shaded asset within radius
+            for (auto& target : all) {
+                if (!target.info || !target.info->has_shading) 
+                    continue;
+
+                int dx = world_x - target.pos_X;
+                int dy = world_y - target.pos_Y;
+                if (dx*dx + dy*dy <= li.radius * li.radius) {
+                    target.add_static_light_source(
+                        tex,
+                        world_x,
+                        world_y,
+                        lw,
+                        lh,
+                        li.radius
+                    );
+                }
+            }
+        }
+    }
+    std::cout << "[Assets] Static Light Gen Complete\n";
 }

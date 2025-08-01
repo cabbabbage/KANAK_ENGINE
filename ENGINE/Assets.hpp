@@ -23,6 +23,7 @@ public:
     std::vector<Asset*>& closest_assets;
     std::vector<Asset>      all;
 private:
+    void set_static_lights();
     void update_direction_movement(int offset_x, int offset_y);
     bool check_collision(const Area& a, const Area& b);
 

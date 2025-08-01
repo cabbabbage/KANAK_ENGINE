@@ -22,8 +22,10 @@ public:
     SDL_Texture* get_texture() const;
     SDL_Color current_color_;
     int light_brightness = 255;
-    int light_source_off_at = 150; 
-
+    int light_source_off_at = 180; 
+    float get_angle() const;
+    int get_update_interval();
+    int get_update_index();
 private:
     void build_texture();
     float compute_opacity_from_horizon(float norm) const;

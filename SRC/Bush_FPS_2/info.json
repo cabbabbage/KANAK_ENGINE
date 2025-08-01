@@ -1,41 +1,43 @@
 {
-    "asset_name": "Bush_FPS_2",
-    "asset_type": "Background",
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "default",
-            "randomize": true,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "impassable_area": "impassable_area.json",
-    "z_threshold": 3,
-    "size_settings": {
-        "scale_percentage": 13,
-        "variability_percentage": 0,
-        "flipability": true
-    },
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 557,
-    "visited_tabs": [
-        "Passability",
-        "Spacing"
-    ],
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 0,
-    "max_child_depth": 2,
-    "tags": [
-        "passable",
-        "moving",
-        "bush",
-        "nature"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "has_spacing": true
+  "asset_name": "Bush_FPS_2",
+  "asset_type": "Background",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "default",
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": null,
+  "z_threshold": 115,
+  "size_settings": {
+    "scale_percentage": 13,
+    "variability_percentage": 0,
+    "flipability": true
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 557,
+  "visited_tabs": [
+    "Passability",
+    "Spacing"
+  ],
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 0,
+  "max_child_depth": 2,
+  "tags": [
+    "passable",
+    "bush",
+    "nature",
+    "moving"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "has_spacing": true,
+  "min_distance_all": 0,
+  "anti_tags": []
 }

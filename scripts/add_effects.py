@@ -162,7 +162,7 @@ def step_8_reapply_alpha(img, alpha, save_path):
 
 def apply_effects(image_path, strength=60):
     img, alpha = step_1_load_image(image_path)
-    img = step_7_shadow_gradient(img, 100)
+    #img = step_7_shadow_gradient(img, 100)
     img = step_2_smooth_mean_shift(img, 30)
     skeleton = step_3_edge_thin(img)
     img = step_4_subtract_edges(img, skeleton, 30)

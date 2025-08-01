@@ -140,6 +140,10 @@ void Asset::update() {
     }
 }
 
+
+
+
+
 void Asset::change_animation(const std::string& name) {
     if (!info || name.empty()) return;
     if (name == current_animation) return;
@@ -216,4 +220,57 @@ void Asset::set_flip() {
     std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<int> dist(0, 1);
     flipped = (dist(rng) == 1);
+}
+
+
+void Asset::set_last_mask(SDL_Texture* tex) {
+    if (last_mask) SDL_DestroyTexture(last_mask);
+    last_mask = tex;  // assume last_mask is an SDL_Texture* member
+}
+
+int Asset::get_shading_group(){
+    return shading_group;
+}
+
+void Asset::set_shading_group(int x){
+    shading_group = x;
+    shading_group_set = true;
+}
+
+SDL_Texture* Asset::get_last_mask(){
+    return last_mask;
+}
+
+bool Asset::is_shading_group_set(){
+    return shading_group_set;
+}
+
+
+
+// In Asset.cpp, implement:
+void Asset::add_static_light_source(SDL_Texture* texture,
+                                    int world_x_,
+                                    int world_y_,
+                                    int width,
+                                    int height,
+                                    int radius)
+{
+
+
+        StaticLightSource ls;
+        ls.texture  = texture;
+        ls.world_x = world_x_;           // light’s position relative to this asset
+        ls.world_y = world_y_;
+        ls.width    = width;
+        ls.height   = height;
+        static_light_sources.push_back(ls);
+    
+}
+
+
+SDL_Texture* Asset::get_current_mask() const {
+    auto it = info->animations.find(current_animation);
+    if (it != info->animations.end())
+        return it->second.get_mask(current_frame_index);
+    return nullptr;
 }

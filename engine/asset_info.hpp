@@ -26,6 +26,7 @@ struct LightSource {
     bool flicker;
     int offset_x;
     int offset_y;
+    int orbit_radius;
     SDL_Color color;
 };
 
@@ -97,6 +98,7 @@ public:
 
     std::vector<std::string> child_json_paths;
     std::vector<ChildInfo> children;
+    int update_radius;
 private:
     void get_area_textures(SDL_Renderer* renderer);
 

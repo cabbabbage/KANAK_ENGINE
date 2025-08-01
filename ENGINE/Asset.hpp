@@ -10,14 +10,24 @@
 #include "area.hpp"
 #include "asset_info.hpp"
 #include "asset_library.hpp"
-
 #include "asset_spawn_planner.hpp"
 
-
+struct StaticLightSource {
+    SDL_Texture* texture;
+    int world_x;
+    int world_y;
+    int width;
+    int height;
+    int radius;
+};
 
 class Asset {
 public:
+    // existing members
     std::vector<SDL_Texture*> light_textures;
+
+    // new static lights
+    std::vector<StaticLightSource> static_light_sources;
 
     Asset(std::shared_ptr<AssetInfo> info,
           const Area& spawn_area,
@@ -27,7 +37,6 @@ public:
           Asset* parent = nullptr);
 
     void finalize_setup(SDL_Renderer* renderer);
-
     void set_position(int x, int y);
     void update();
     void change_animation(const std::string& name);
@@ -37,8 +46,15 @@ public:
 
     std::string get_current_animation() const;
     std::string get_type() const;
-    
     void add_child(Asset child);
+
+
+    void add_static_light_source(SDL_Texture* texture,
+                                 int world_x,
+                                 int world_y,
+                                 int width,
+                                 int height,
+                                 int radius);
 
     Asset* parent = nullptr;
     std::shared_ptr<AssetInfo> info;
@@ -60,14 +76,25 @@ public:
     int depth = 0;
     void set_z_offset(int z);
     bool flipped;
+    void set_last_mask(SDL_Texture* tex);
+    int get_shading_group();
+    SDL_Texture* get_last_mask();
+    void set_shading_group(int x);
+    bool is_shading_group_set();
+    SDL_Texture* get_current_mask() const; 
 private:
+    int shading_group;
+    bool shading_group_set = false;
     void set_flip();
     std::string next_animation;
     void set_z_index();
-
+    SDL_Texture* last_mask = nullptr;
     int current_frame_index = 0;
     bool static_frame = true;
     std::unordered_map<std::string, std::vector<SDL_Texture*>> custom_frames;
 };
+
+
+
 
 #endif // ASSET_HPP

@@ -115,6 +115,11 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
     build_texture();
 }
 
+float Generate_Map_Light::get_angle() const {
+    return angle_;
+}
+
+
 void Generate_Map_Light::update() {
     ++frame_counter_;
     if (frame_counter_ % update_interval_ != 0) return;
@@ -260,3 +265,10 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
     return result;
 }
 
+int Generate_Map_Light::get_update_interval(){
+    return update_interval_;
+}
+
+int Generate_Map_Light::get_update_index() {
+    return frame_counter_ % update_interval_;
+}
