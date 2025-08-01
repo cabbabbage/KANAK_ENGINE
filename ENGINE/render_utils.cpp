@@ -165,7 +165,7 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset, int playerX, int playerY
     trapSettings_.topScaleX = (S.L+S.R)*0.5f;
     trapSettings_.topScaleY = (S.T+S.B)*0.5f;
 
-    float c = std::pow(asset->gradient_opacity,1.2f);
+    float c = std::pow(asset->alpha_percentage,1.2f);
     int d = static_cast<int>(255*c);
     if(asset->info->type=="Player") d=std::min(255,d*3);
     trapSettings_.color={Uint8(d),Uint8(d),Uint8(d),255};

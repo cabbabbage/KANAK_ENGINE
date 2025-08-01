@@ -28,7 +28,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
       player_speed_mult(10),
       is_lit(info->has_light_source),
       is_shaded(info->has_shading),
-      gradient_opacity(1.0),
+      alpha_percentage(1.0),
       has_base_shadow(false),
       spawn_area_local(spawn_area),
       depth(depth_)
@@ -93,7 +93,7 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
             }
         }
     }
-
+    has_shading = info->has_shading;
     set_flip();
 }
 
@@ -245,32 +245,21 @@ bool Asset::is_shading_group_set(){
     return shading_group_set;
 }
 
+void Asset::add_static_light_source(LightSource* light, int world_x, int world_y) {
+    if (!light) return;
 
-
-// In Asset.cpp, implement:
-void Asset::add_static_light_source(SDL_Texture* texture,
-                                    int world_x_,
-                                    int world_y_,
-                                    int width,
-                                    int height,
-                                    int radius)
-{
-
-
-        StaticLightSource ls;
-        ls.texture  = texture;
-        ls.world_x = world_x_;           // light’s position relative to this asset
-        ls.world_y = world_y_;
-        ls.width    = width;
-        ls.height   = height;
-        static_light_sources.push_back(ls);
-    
+    StaticLight sl;
+    sl.source = light;
+    sl.offset_x = world_x - pos_X;
+    sl.offset_y = world_y - pos_Y;
+    static_lights.push_back(sl);
 }
 
 
-SDL_Texture* Asset::get_current_mask() const {
-    auto it = info->animations.find(current_animation);
-    if (it != info->animations.end())
-        return it->second.get_mask(current_frame_index);
-    return nullptr;
+void Asset::set_render_player_light(bool value) {
+    render_player_light = value;
+}
+
+bool Asset::get_render_player_light() const {
+    return render_player_light;
 }

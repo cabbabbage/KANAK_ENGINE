@@ -21,8 +21,9 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
 
     for (Asset& asset : game_assets->all) {
         if (!asset.info || asset.info->type != "Background") {
-            asset.gradient_opacity = 1.0;
+            asset.alpha_percentage = 1.0;
             asset.has_base_shadow = false;
+            asset.gradient_shadow = true;
             continue;
         }
 
@@ -38,8 +39,9 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
         }
 
         if (is_inside) {
-            asset.gradient_opacity = 1.0;
+            asset.alpha_percentage = 1.0;
             asset.has_base_shadow = false;
+            asset.gradient_shadow = true;
         } else {
             double minDist = std::numeric_limits<double>::infinity();
 
@@ -66,19 +68,19 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                 }
             }
 
-            double opacity = 0.0;
+            double alpha = 0.0;
 
             if (minDist <= fade_start_distance) {
-                opacity = 1.0;
+                alpha = 1.0;
             } else if (minDist >= fade_end_distance) {
-                opacity = 0.0;
+                alpha = 0.0;
             } else {
                 double t = (minDist - fade_start_distance) / (fade_end_distance - fade_start_distance);
-                opacity = std::pow(1.0 - t, 2.0); // quadratic falloff
+                alpha = std::pow(1.0 - t, 2.0); // quadratic falloff
             }
 
-            asset.gradient_opacity = opacity;
-            asset.has_base_shadow = (opacity < 1.0);
+            asset.alpha_percentage = alpha;
+            asset.has_shading = (alpha < 0.4);
         }
 
         ++count;
@@ -86,7 +88,7 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
         oss << "[Shadow] "
             << std::left << std::setw(20) << asset.info->name
             << " pos=(" << std::setw(4) << x << "," << std::setw(4) << y << ")"
-            << " opacity=" << std::setw(6) << std::fixed << std::setprecision(3) << asset.gradient_opacity;
+            << " alpha=" << std::setw(6) << std::fixed << std::setprecision(3) << asset.alpha_percentage;
 
         double percent = 100.0 * count / total;
         oss << "   [" << std::setw(5) << std::fixed << std::setprecision(1)

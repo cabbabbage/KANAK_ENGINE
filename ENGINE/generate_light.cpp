@@ -19,14 +19,18 @@ using json = nlohmann::json;
 GenerateLight::GenerateLight(SDL_Renderer* renderer)
     : renderer_(renderer) {}
 
-SDL_Texture* GenerateLight::generate(const AssetInfo* asset_info,
+// === Modified portion of generate_light.cpp ===
+
+// === Modified version of generate_light.cpp ===
+
+SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
+                                     const std::string& asset_name,
                                      const LightSource& light,
                                      std::size_t light_index)
 {
-    if (!renderer_ || !asset_info)
-        return nullptr;
+    if (!renderer) return nullptr;
 
-    const std::string cache_root = "cache/" + asset_info->name + "/lights";
+    const std::string cache_root = "cache/" + asset_name + "/lights";
     const std::string folder     = cache_root + "/" + std::to_string(light_index);
     const std::string meta_file  = folder + "/metadata.json";
     const std::string img_file   = folder + "/light.bmp";
@@ -38,10 +42,11 @@ SDL_Texture* GenerateLight::generate(const AssetInfo* asset_info,
             meta.value("intensity", -1) == light.intensity &&
             meta["color"][0].get<int>() == light.color.r &&
             meta["color"][1].get<int>() == light.color.g &&
-            meta["color"][2].get<int>() == light.color.b)
+            meta["color"][2].get<int>() == light.color.b &&
+            meta.value("flare", -1)     == light.flare)
         {
             if (SDL_Surface* surf = CacheManager::load_surface(img_file)) {
-                SDL_Texture* tex = CacheManager::surface_to_texture(renderer_, surf);
+                SDL_Texture* tex = CacheManager::surface_to_texture(renderer, surf);
                 SDL_FreeSurface(surf);
                 if (tex) return tex;
             }
@@ -51,29 +56,32 @@ SDL_Texture* GenerateLight::generate(const AssetInfo* asset_info,
     fs::remove_all(folder);
     fs::create_directories(folder);
 
-    const int radius = light.radius;
-    const int falloff = std::clamp(light.fall_off, 0, 100);
-    const SDL_Color color = light.color;
+    const int radius    = light.radius;
+    const int falloff   = std::clamp(light.fall_off, 0, 100);
+    const SDL_Color& color = light.color;
     const int intensity = std::clamp(light.intensity, 0, 255);
-    const int size = radius * 2;
+    const int size      = radius * 2;
+    const int flare     = std::clamp(light.flare, 0, 100);
 
-    SDL_Texture* texture = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
                                              SDL_TEXTUREACCESS_TARGET, size, size);
     if (!texture) return nullptr;
 
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderTarget(renderer_, texture);
-    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
-    SDL_RenderClear(renderer_);
+    SDL_SetRenderTarget(renderer, texture);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
 
-    float white_core_ratio = std::pow(1.0f - falloff / 100.0f, 2.0f);
+    float white_core_ratio  = std::pow(1.0f - falloff / 100.0f, 2.0f);
     float white_core_radius = radius * white_core_ratio;
 
     std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> angle_dist(0, 2 * M_PI);
-    std::uniform_real_distribution<float> spread_dist(0.2f, 0.6f);
-    std::uniform_int_distribution<int> ray_count_dist(4, 7);
-    int ray_count = ray_count_dist(rng);
+
+    int ray_count = 1 + int(flare * 0.1f);
+    float min_spread = 0.1f + flare / 300.0f;
+    float max_spread = 0.4f + flare / 200.0f;
+    std::uniform_real_distribution<float> spread_dist(min_spread, max_spread);
 
     std::vector<std::pair<float, float>> rays;
     for (int i = 0; i < ray_count; ++i)
@@ -97,14 +105,14 @@ SDL_Texture* GenerateLight::generate(const AssetInfo* asset_info,
 
                 float angle = std::atan2(dy, dx);
                 float ray_boost = 1.0f;
-                for (auto& pr : rays) {
+                for (const auto& pr : rays) {
                     float diff = std::fabs(angle - pr.first);
                     diff = std::fmod(diff + 2 * M_PI, 2 * M_PI);
                     if (diff > M_PI) diff = 2 * M_PI - diff;
                     if (diff < pr.second)
-                        ray_boost += (1.0f - diff / pr.second) * 0.05f;
+                        ray_boost += (1.0f - diff / pr.second) * (0.04f + flare / 3000.0f);
                 }
-                ray_boost = std::clamp(ray_boost, 1.0f, 1.1f);
+                ray_boost = std::clamp(ray_boost, 1.0f, 1.1f + flare / 500.0f);
 
                 float alpha_ratio = std::pow(1.0f - (dist / radius), 1.4f);
                 alpha_ratio = std::clamp(alpha_ratio * ray_boost, 0.0f, 1.0f);
@@ -129,24 +137,24 @@ SDL_Texture* GenerateLight::generate(const AssetInfo* asset_info,
                 accum_a += fc.a;
             }
 
-            SDL_SetRenderDrawColor(renderer_,
+            SDL_SetRenderDrawColor(renderer,
                 Uint8(accum_r / 4.0f),
                 Uint8(accum_g / 4.0f),
                 Uint8(accum_b / 4.0f),
                 Uint8(accum_a / 4.0f));
-            SDL_RenderDrawPoint(renderer_, x, y);
+            SDL_RenderDrawPoint(renderer, x, y);
         }
     }
 
-    SDL_SetRenderTarget(renderer_, nullptr);
+    SDL_SetRenderTarget(renderer, nullptr);
 
     int w, h;
     SDL_QueryTexture(texture, nullptr, nullptr, &w, &h);
     SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
     if (surf) {
-        SDL_SetRenderTarget(renderer_, texture);
-        SDL_RenderReadPixels(renderer_, nullptr, SDL_PIXELFORMAT_RGBA32, surf->pixels, surf->pitch);
-        SDL_SetRenderTarget(renderer_, nullptr);
+        SDL_SetRenderTarget(renderer, texture);
+        SDL_RenderReadPixels(renderer, nullptr, SDL_PIXELFORMAT_RGBA32, surf->pixels, surf->pitch);
+        SDL_SetRenderTarget(renderer, nullptr);
         CacheManager::save_surface_as_png(surf, img_file);
         SDL_FreeSurface(surf);
     }
@@ -155,7 +163,8 @@ SDL_Texture* GenerateLight::generate(const AssetInfo* asset_info,
     new_meta["radius"]    = light.radius;
     new_meta["fall_off"]  = light.fall_off;
     new_meta["intensity"] = light.intensity;
-    new_meta["color"]     = { light.color.r, light.color.g, light.color.b };
+    new_meta["color"]     = { color.r, color.g, color.b };
+    new_meta["flare"]     = flare;
     CacheManager::save_metadata(meta_file, new_meta);
 
     return texture;

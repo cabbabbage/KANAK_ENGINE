@@ -140,7 +140,6 @@ void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
     get_area_textures(renderer);
 }
 
-
 void AssetInfo::get_area_textures(SDL_Renderer* renderer) {
     if (!renderer) return;
 
@@ -196,7 +195,6 @@ void AssetInfo::get_area_textures(SDL_Renderer* renderer) {
     try_load_or_create(attack_area, "attack");
 }
 
-
 void AssetInfo::load_base_properties(const nlohmann::json& data) {
     type = data.value("asset_type", "Object");
     if (type == "Player") {
@@ -234,83 +232,64 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
 }
 
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
-    lights.clear();
     has_light_source = false;
+    light_sources.clear();
+    orbital_light_sources.clear();
 
     if (!data.contains("lighting_info"))
         return;
 
     const auto& linfo = data["lighting_info"];
 
-    // backward-compatible single light object
-    if (linfo.is_object()) {
-        if (!linfo.value("has_light_source", false)) return;
-        has_light_source = true;
+    auto parse_light = [](const nlohmann::json& l) -> std::optional<LightSource> {
+        if (!l.is_object() || !l.value("has_light_source", false))
+            return std::nullopt;
 
         LightSource light;
-        light.intensity  = linfo.value("light_intensity", 0);
-        light.radius     = linfo.value("radius", 100);
-        light.fall_off   = linfo.value("fall_off", 0);
-        light.jitter_min = linfo.value("jitter_min", 0);
-        light.jitter_max = linfo.value("jitter_max", 0);
-        light.flicker    = linfo.value("flicker", false);
-        light.offset_x   = linfo.value("offset_x", 0);
-        light.offset_y   = linfo.value("offset_y", 0);
+        light.intensity    = l.value("light_intensity", 0);
+        light.radius       = l.value("radius", 100);
+        light.orbit_radius = l.value("orbit_radius", 0);
+        light.fall_off     = l.value("fall_off", 0);
+        light.flare        = l.value("flare", 0);
+        light.flicker      = l.value("flicker", false);
+        light.offset_x     = l.value("offset_x", 0);
+        light.offset_y     = l.value("offset_y", 0);
+        light.color        = {0, 0, 0, 255};
 
-        light.color      = { 0, 0, 0, 255 };
-        if (linfo.contains("light_color") &&
-            linfo["light_color"].is_array() &&
-            linfo["light_color"].size() == 3)
+        if (l.contains("light_color") &&
+            l["light_color"].is_array() &&
+            l["light_color"].size() == 3)
         {
-            light.color.r = linfo["light_color"][0].get<int>();
-            light.color.g = linfo["light_color"][1].get<int>();
-            light.color.b = linfo["light_color"][2].get<int>();
+            light.color.r = l["light_color"][0].get<int>();
+            light.color.g = l["light_color"][1].get<int>();
+            light.color.b = l["light_color"][2].get<int>();
         }
 
-        lights.push_back(light);
+        return light;
+    };
+
+    if (linfo.is_object()) {
+        auto maybe = parse_light(linfo);
+        if (maybe.has_value()) {
+            has_light_source = true;
+            LightSource light = maybe.value();
+            if (light.orbit_radius > 0)
+                orbital_light_sources.push_back(light);
+            else
+                light_sources.push_back(light);
+        }
     }
-    // array of lights
     else if (linfo.is_array()) {
         for (const auto& l : linfo) {
-            if (!l.is_object() || !l.value("has_light_source", false))
-                continue;
-            has_light_source = true;
-
-            LightSource light;
-            light.intensity  = l.value("light_intensity", 0);
-            light.radius     = l.value("radius", 100);
-            light.orbit_radius     = l.value("orbit_radius", 0);
-            light.fall_off   = l.value("fall_off", 0);
-            light.jitter_min = l.value("jitter_min", 0);
-            light.jitter_max = l.value("jitter_max", 0);
-            light.flicker    = l.value("flicker", false);
-            light.offset_x   = l.value("offset_x", 0);
-            light.offset_y   = l.value("offset_y", 0);
-            light.color      = { 0, 0, 0, 255 };
-            if (l.contains("light_color") &&
-                l["light_color"].is_array() &&
-                l["light_color"].size() == 3)
-            {
-                light.color.r = l["light_color"][0].get<int>();
-                light.color.g = l["light_color"][1].get<int>();
-                light.color.b = l["light_color"][2].get<int>();
+            auto maybe = parse_light(l);
+            if (maybe.has_value()) {
+                has_light_source = true;
+                LightSource light = maybe.value();
+                if (light.orbit_radius > 0)
+                    orbital_light_sources.push_back(light);
+                else
+                    light_sources.push_back(light);
             }
-
-            lights.push_back(light);
-        }
-    }
-}
-
-void AssetInfo::generate_lights(SDL_Renderer* renderer) {
-    light_textures.clear();
-    if (!has_light_source) return;
-
-    GenerateLight gen(renderer);
-    for (std::size_t i = 0; i < lights.size(); ++i) {
-        SDL_Texture* tex = gen.generate(this, lights[i], i);
-        if (tex) {
-            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-            light_textures.push_back(tex);
         }
     }
 }
@@ -604,4 +583,25 @@ void AssetInfo::try_load_area(const nlohmann::json& data,
 
 bool AssetInfo::has_tag(const std::string& tag) const {
     return std::find(tags.begin(), tags.end(), tag) != tags.end();
+}
+
+void AssetInfo::generate_lights(SDL_Renderer* renderer) {
+    GenerateLight generator(renderer);
+
+    for (std::size_t i = 0; i < light_sources.size(); ++i) {
+        SDL_Texture* tex = generator.generate(renderer, name, light_sources[i], i);
+        if (tex) {
+            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+            light_sources[i].texture = tex;
+        }
+    }
+
+    std::size_t base_index = light_sources.size();
+    for (std::size_t i = 0; i < orbital_light_sources.size(); ++i) {
+        SDL_Texture* tex = generator.generate(renderer, name, orbital_light_sources[i], base_index + i);
+        if (tex) {
+            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+            orbital_light_sources[i].texture = tex;
+        }
+    }
 }

@@ -48,10 +48,11 @@ Assets::Assets(std::vector<Asset>&& loaded,
             break;
         }
     }
-    set_static_lights();
+
     activeManager.initialize(all, player, screen_center_x, screen_center_y);
     std::cout << "[Assets] Initialization complete. Total assets: "
               << all.size() << "\n";
+    set_static_sources();
 
 }
 
@@ -156,6 +157,7 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
                     asset->change_animation("interaction");
             }
         }
+        set_player_light_render();
     }
 
     // Always update animations after movement/interaction
@@ -179,56 +181,94 @@ bool Assets::check_collision(const Area& a, const Area& b) {
     return a.intersects(b);
 }
 
+void Assets::set_static_lights() {
+    std::cout << "Starting static light gen\n";
 
-void Assets::set_static_lights()
-{
-        std::cout << "Starting static light gen \n";
-    // For each owner asset that defines light sources...
     for (auto& owner : all) {
         if (!owner.info) continue;
 
-        const auto& infos = owner.info->lights;
-        const auto& texs  = owner.light_textures;
-        size_t cnt = std::min(infos.size(), texs.size());
+        for (LightSource& light : owner.info->light_sources) {
+            if (!light.texture || light.radius <= 0) continue;
 
-        for (size_t i = 0; i < cnt; ++i) {
-            const auto& li = infos[i];
-            SDL_Texture* tex = texs[i];
-            if (!tex || li.radius <= 0) continue;
+            int world_x = owner.pos_X + light.offset_x;
+            int world_y = owner.pos_Y + light.offset_y;
 
-            // Compute global position of this light
-            int world_x = owner.pos_X + li.offset_x;
-            int world_y = owner.pos_Y + li.offset_y;
-            int lw = 0, lh = 0;
-            SDL_QueryTexture(tex, nullptr, nullptr, &lw, &lh);
-            
-            owner.add_static_light_source(                        tex,
-                        world_x,
-                        world_y,
-                        lw,
-                        lh,
-                        li.radius);
-
-
-            // Distribute this light to any shaded asset within radius
-            for (auto& target : all) {
-                if (!target.info || !target.info->has_shading) 
+            // Distribute light to shaded assets within range
+            auto targets = get_all_in_range(world_x, world_y, light.radius);
+            for (Asset* target : targets) {
+                if (!target || !target->info || !target->info->has_shading)
                     continue;
 
-                int dx = world_x - target.pos_X;
-                int dy = world_y - target.pos_Y;
-                if (dx*dx + dy*dy <= li.radius * li.radius) {
-                    target.add_static_light_source(
-                        tex,
-                        world_x,
-                        world_y,
-                        lw,
-                        lh,
-                        li.radius
-                    );
-                }
+                target->add_static_light_source(&light, world_x, world_y);
             }
         }
     }
+
     std::cout << "[Assets] Static Light Gen Complete\n";
+}
+
+std::vector<Asset*> Assets::get_all_in_range(int cx, int cy, int radius) const {
+    std::vector<Asset*> result;
+    int r2 = radius * radius;
+
+    for (const auto& asset : all) {
+        if (!asset.info) continue;
+
+        int dx = asset.pos_X - cx;
+        int dy = asset.pos_Y - cy;
+
+        if ((dx * dx + dy * dy) <= r2) {
+            result.push_back(const_cast<Asset*>(&asset));
+        }
+    }
+
+    return result;
+}
+
+void Assets::set_static_sources() {
+    for (auto& owner : all) {
+        if (!owner.info) continue;
+
+        for (LightSource& light : owner.info->light_sources) {
+            int lx = owner.pos_X + light.offset_x;
+            int ly = owner.pos_Y + light.offset_y;
+
+            auto targets = get_all_in_range(lx, ly, light.radius);
+            for (Asset* target : targets) {
+                if (!target || !target->info || !target->info->has_shading)
+                    continue;
+
+                target->add_static_light_source(&light, lx, ly);
+            }
+        }
+    }
+}
+
+void Assets::set_player_light_render() {
+    if (!player || !player->info) return;
+
+    std::unordered_set<Asset*> current_in_light;
+
+    for (LightSource& light : player->info->light_sources) {
+        if (light.orbit_radius > 0) continue; // exclude orbital lights
+        int lx = player->pos_X + light.offset_x;
+        int ly = player->pos_Y + light.offset_y;
+
+        auto in_range = get_all_in_range(lx, ly, light.radius);
+        for (Asset* a : in_range) {
+            current_in_light.insert(a);
+        }
+    }
+
+    for (Asset* a : prev_player_light_assets) {
+        if (!current_in_light.count(a)) {
+            a->set_render_player_light(false);
+        }
+    }
+
+    for (Asset* a : current_in_light) {
+        a->set_render_player_light(true);
+    }
+
+    prev_player_light_assets.swap(current_in_light);
 }

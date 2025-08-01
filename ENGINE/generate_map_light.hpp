@@ -1,5 +1,3 @@
-// generate_map_light.hpp
-
 #pragma once
 
 #include <SDL.h>
@@ -26,6 +24,7 @@ public:
     float get_angle() const;
     int get_update_interval();
     int get_update_index();
+
 private:
     void build_texture();
     float compute_opacity_from_horizon(float norm) const;
@@ -34,13 +33,14 @@ private:
     struct KeyColor {
         float degree;
         SDL_Color color;
+
+        KeyColor(float d, SDL_Color c) : degree(d), color(c) {}
     };
 
     SDL_Renderer* renderer_;
     SDL_Texture* texture_;
 
     SDL_Color base_color_;
-
 
     int radius_ = 0;
     int intensity_ = 255;

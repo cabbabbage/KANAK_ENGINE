@@ -1,18 +1,17 @@
-// generate_light.hpp
+// === File: generate_light.hpp ===
+
 #pragma once
 
 #include <SDL.h>
-#include <cstddef>    // for std::size_t
-
-struct LightSource;
-class AssetInfo;
+#include <string>
+#include "light_source.hpp"
 
 class GenerateLight {
 public:
     explicit GenerateLight(SDL_Renderer* renderer);
 
-    // now takes 3 args: pointer to AssetInfo, the LightSource, and the light index
-    SDL_Texture* generate(const AssetInfo* asset_info,
+    SDL_Texture* generate(SDL_Renderer* renderer,
+                          const std::string& asset_name,
                           const LightSource& light,
                           std::size_t light_index);
 

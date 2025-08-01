@@ -73,28 +73,8 @@ void Animation::load(const std::string& trigger,
             continue;
         }
 
-        SDL_Texture* mask = SDL_CreateTexture(renderer,
-                                              SDL_PIXELFORMAT_RGBA8888,
-                                              SDL_TEXTUREACCESS_TARGET,
-                                              scaled->w, scaled->h);
-        SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderTarget(renderer, mask);
-
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderClear(renderer);
-
-        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureColorMod(tex, 0, 0, 0);
-        SDL_SetTextureAlphaMod(tex, 255);
-        SDL_Rect dst{0, 0, scaled->w, scaled->h};
-        SDL_RenderCopy(renderer, tex, nullptr, &dst);
-        SDL_SetTextureColorMod(tex, 255, 255, 255);
-
-        SDL_SetRenderTarget(renderer, nullptr);
-
         SDL_SetTextureBlendMode(tex, blendmode);
         frames.push_back(tex);
-        masks.push_back(mask);
 
         SDL_FreeSurface(scaled);
     }
@@ -107,11 +87,6 @@ void Animation::load(const std::string& trigger,
 SDL_Texture* Animation::get_frame(int index) const {
     if (index < 0 || index >= static_cast<int>(frames.size())) return nullptr;
     return frames[index];
-}
-
-SDL_Texture* Animation::get_mask(int index) const {
-    if (index < 0 || index >= static_cast<int>(masks.size())) return nullptr;
-    return masks[index];
 }
 
 bool Animation::advance(int& index, std::string& next_animation_name) const {
