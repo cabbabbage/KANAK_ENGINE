@@ -17,7 +17,7 @@
             "volume": 50
         }
     },
-    "z_threshold": 592,
+    "z_threshold": 14,
     "size_settings": {
         "scale_percentage": 57,
         "variability_percentage": 0,
@@ -50,11 +50,11 @@
                 255,
                 255
             ],
-            "radius": 1200,
-            "orbit_radius": 500,
+            "radius": 2000,
+            "orbit_radius": 600,
             "fall_off": 39,
             "jitter_min": 0,
-            "jitter_max": 0,
+            "flare": 0,
             "offset_x": 0,
             "offset_y": 0,
             "flicker": false

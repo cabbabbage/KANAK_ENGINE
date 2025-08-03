@@ -53,6 +53,8 @@ Assets::Assets(std::vector<Asset>&& loaded,
     std::cout << "[Assets] Initialization complete. Total assets: "
               << all.size() << "\n";
     set_static_sources();
+    std::cout << "[Assets] All static sources set.\n";
+
 
 }
 
@@ -86,10 +88,10 @@ void Assets::update_direction_movement(int offset_x, int offset_y) {
 void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
                     int screen_center_x,
                     int screen_center_y)
-{
+{   set_player_light_render();
     dx = 0;
     dy = 0;
-    activeManager.updateClosest(player);
+
 
     const std::string current_animation = player->get_current_animation();
 
@@ -157,7 +159,7 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
                     asset->change_animation("interaction");
             }
         }
-        set_player_light_render();
+
     }
 
     // Always update animations after movement/interaction
@@ -168,13 +170,18 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
     }
 
     if (dx != 0 || dy != 0) {
+
         if (++last_activat_update >= update_interval) {
             last_activat_update = 0;
             activeManager.updateVisibility(player,
                                            screen_center_x,
                                            screen_center_y);
         }
+        else{
+                activeManager.sortByZIndex();
+        }
     }
+
 }
 
 bool Assets::check_collision(const Area& a, const Area& b) {
@@ -250,13 +257,16 @@ void Assets::set_player_light_render() {
     std::unordered_set<Asset*> current_in_light;
 
     for (LightSource& light : player->info->light_sources) {
-        if (light.orbit_radius > 0) continue; // exclude orbital lights
+        if (light.orbit_radius > 0) continue;
+
         int lx = player->pos_X + light.offset_x;
         int ly = player->pos_Y + light.offset_y;
 
         auto in_range = get_all_in_range(lx, ly, light.radius);
         for (Asset* a : in_range) {
-            current_in_light.insert(a);
+            if (a && a != player && a->pos_Y <= player->pos_Y) {
+                current_in_light.insert(a);
+            }
         }
     }
 

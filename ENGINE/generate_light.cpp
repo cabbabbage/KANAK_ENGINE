@@ -1,5 +1,4 @@
-// generate_light.cpp
-
+// === File: generate_light.cpp ===
 #include "generate_light.hpp"
 #include "asset_info.hpp"
 #include "cache_manager.hpp"
@@ -12,16 +11,13 @@
 #include <cmath>
 #include <algorithm>
 #include <random>
+#include <iostream>
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 GenerateLight::GenerateLight(SDL_Renderer* renderer)
     : renderer_(renderer) {}
-
-// === Modified portion of generate_light.cpp ===
-
-// === Modified version of generate_light.cpp ===
 
 SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
                                      const std::string& asset_name,
@@ -56,12 +52,21 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     fs::remove_all(folder);
     fs::create_directories(folder);
 
-    const int radius    = light.radius;
-    const int falloff   = std::clamp(light.fall_off, 0, 100);
-    const SDL_Color& color = light.color;
-    const int intensity = std::clamp(light.intensity, 0, 255);
-    const int size      = radius * 2;
-    const int flare     = std::clamp(light.flare, 0, 100);
+    int radius    = light.radius;
+    int falloff   = std::clamp(light.fall_off, 0, 100);
+    SDL_Color color = light.color;
+    int intensity = std::clamp(light.intensity, 0, 255);
+    int flare     = std::clamp(light.flare, 0, 100);
+
+    const int max_dim = 4096;
+    float scale = 1.0f;
+
+    while (radius * 2 > max_dim) {
+        scale *= 0.5f;
+        radius = static_cast<int>(light.radius * scale);
+    }
+
+    const int size = radius * 2;
 
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
                                              SDL_TEXTUREACCESS_TARGET, size, size);
@@ -72,17 +77,17 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 
-    float white_core_ratio  = std::pow(1.0f - falloff / 100.0f, 2.0f);
+    float smoothness = std::clamp(falloff / 100.0f, 0.01f, 1.0f);  // 1.0 = softest fade
+    float gamma = 2.5f * (1.0f - smoothness) + 1.0f; // lower gamma = softer falloff
+    float white_core_ratio  = std::pow(smoothness, 2.5f);
     float white_core_radius = radius * white_core_ratio;
 
     std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> angle_dist(0, 2 * M_PI);
+    std::uniform_real_distribution<float> spread_dist(
+        0.1f + flare / 300.0f, 0.4f + flare / 200.0f);
 
     int ray_count = 1 + int(flare * 0.1f);
-    float min_spread = 0.1f + flare / 300.0f;
-    float max_spread = 0.4f + flare / 200.0f;
-    std::uniform_real_distribution<float> spread_dist(min_spread, max_spread);
-
     std::vector<std::pair<float, float>> rays;
     for (int i = 0; i < ray_count; ++i)
         rays.emplace_back(angle_dist(rng), spread_dist(rng));
@@ -114,7 +119,8 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
                 }
                 ray_boost = std::clamp(ray_boost, 1.0f, 1.1f + flare / 500.0f);
 
-                float alpha_ratio = std::pow(1.0f - (dist / radius), 1.4f);
+                float fade_ratio = std::clamp(1.0f - dist / float(radius), 0.0f, 1.0f);
+                float alpha_ratio = std::pow(fade_ratio, gamma);
                 alpha_ratio = std::clamp(alpha_ratio * ray_boost, 0.0f, 1.0f);
                 Uint8 alpha = static_cast<Uint8>(std::min(255.0f, intensity * alpha_ratio * 1.6f));
 
@@ -165,6 +171,7 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     new_meta["intensity"] = light.intensity;
     new_meta["color"]     = { color.r, color.g, color.b };
     new_meta["flare"]     = flare;
+    new_meta["scale"]     = scale;
     CacheManager::save_metadata(meta_file, new_meta);
 
     return texture;

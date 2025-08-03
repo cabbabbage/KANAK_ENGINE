@@ -27,6 +27,7 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
       pos_x_(0),
       pos_y_(0)
 {
+    std::cout << "[MapLight] Generated global light texture\n";
     min_opacity_ = 50;
     max_opacity_ = 255;
     radius_ = screen_width * 3;
@@ -149,7 +150,7 @@ void Generate_Map_Light::build_texture() {
     LightSource light;
     light.radius    = radius_;
     light.intensity = intensity_;
-    light.fall_off  = 60;
+    light.fall_off  = 100;
     light.flare     = 0;
     light.color     = base_color_;
 

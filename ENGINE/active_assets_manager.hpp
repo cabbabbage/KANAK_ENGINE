@@ -28,6 +28,8 @@ public:
 
     std::vector<Asset*>& getClosest() { return closest_assets_; }
     const std::vector<Asset*>& getClosest() const { return closest_assets_; }
+    void ActiveAssetsManager::sortByZIndex();
+
 
 private:
     using ChunkKey = std::int64_t;

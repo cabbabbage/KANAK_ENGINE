@@ -16,6 +16,7 @@ struct StaticLight {
     LightSource* source = nullptr;
     int offset_x = 0;
     int offset_y = 0;
+    double alpha_percentage = 1.0;
 };
 
 
@@ -76,14 +77,15 @@ public:
     int gradient_shadow;
     int depth = 0;
     bool has_shading; 
+
+    bool static_frame =true;
 private:
+    double calculate_static_alpha_percentage(int asset_y, int light_world_y);
     void set_flip();
     void set_z_index();
 
     std::string next_animation;
     int current_frame_index = 0;
-    bool static_frame = true;
-
     int shading_group = 0;
     bool shading_group_set = false;
     SDL_Texture* last_mask = nullptr;

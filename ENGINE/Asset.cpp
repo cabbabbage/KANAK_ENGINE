@@ -114,6 +114,7 @@ void Asset::update() {
             current_animation = next_animation;
             Animation &anim = nit->second;
             static_frame = (anim.frames.size() == 1);
+
             current_frame_index = 0;
         }
         next_animation.clear();
@@ -245,6 +246,7 @@ bool Asset::is_shading_group_set(){
     return shading_group_set;
 }
 
+// === Updated add_static_light_source using alpha calculation ===
 void Asset::add_static_light_source(LightSource* light, int world_x, int world_y) {
     if (!light) return;
 
@@ -252,8 +254,11 @@ void Asset::add_static_light_source(LightSource* light, int world_x, int world_y
     sl.source = light;
     sl.offset_x = world_x - pos_X;
     sl.offset_y = world_y - pos_Y;
+    sl.alpha_percentage = calculate_static_alpha_percentage(pos_Y, world_y);
+
     static_lights.push_back(sl);
 }
+
 
 
 void Asset::set_render_player_light(bool value) {
@@ -262,4 +267,19 @@ void Asset::set_render_player_light(bool value) {
 
 bool Asset::get_render_player_light() const {
     return render_player_light;
+}
+
+
+// === Helper to calculate static light alpha based on vertical distance ===
+double Asset::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
+    const int upper_threshold = 1;
+    const int lower_threshold = -3;
+    int dy = light_world_y - asset_y;
+
+    if (dy >= upper_threshold) return 1.0;
+    if (dy <= lower_threshold) return 0.5;
+
+    // Linear interpolation between 0.5 and 1.0
+    double t = static_cast<double>(dy - lower_threshold) / (upper_threshold - lower_threshold);
+    return 0.5 + 0.5 * std::clamp(t, 0.0, 1.0);
 }

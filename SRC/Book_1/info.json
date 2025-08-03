@@ -13,11 +13,11 @@
   },
   "impassable_area": null,
   "tags": [
+    "passable",
     "man-made",
-    "book",
-    "barrel_child",
     "library",
-    "passable"
+    "barrel_child",
+    "book"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

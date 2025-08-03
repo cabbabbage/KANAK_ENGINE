@@ -30,5 +30,9 @@
         "scale_percentage": 150,
         "variability_percentage": 0,
         "flipability": true
-    }
+    },
+    "min_distance_all": 0,
+    "anti_tags": [],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400
 }

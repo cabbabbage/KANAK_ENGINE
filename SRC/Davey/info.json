@@ -62,14 +62,14 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 686,
     "tags": [
-        "player",
-        "start",
         "passable",
-        "backward",
         "default",
         "right",
+        "start",
+        "forward",
+        "player",
         "left",
-        "forward"
+        "backward"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -85,8 +85,8 @@
             "radius": 286,
             "orbit_radius": 0,
             "fall_off": 100,
-            "jitter_min": 0,
-            "jitter_max": 0,
+            "jitter_min": 8,
+            "flare": 55,
             "offset_x": 0,
             "offset_y": 0,
             "flicker": false
@@ -100,10 +100,10 @@
                 255
             ],
             "radius": 989,
-            "orbit_radius": 548,
+            "orbit_radius": 250,
             "fall_off": 100,
             "jitter_min": 0,
-            "jitter_max": 0,
+            "flare": 0,
             "offset_x": 0,
             "offset_y": 0,
             "flicker": false

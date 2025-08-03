@@ -32,12 +32,12 @@ class LightSourceFrame(ttk.Frame):
         self.radius = Range(self, min_bound=10, max_bound=2000, label="Radius (px)")
         self.orbit_radius = Range(self, min_bound=0, max_bound=2000, label="Orbit Radius (px)")
         self.falloff = Range(self, min_bound=0, max_bound=100, label="Falloff (%)")
-        self.jitter_min = Range(self, min_bound=0, max_bound=20, label="Jitter Min (px)")
-        self.jitter_max = Range(self, min_bound=0, max_bound=20, label="Jitter Max (px)")
+        self.jitter_min = Range(self, min_bound=0, max_bound=20, label="Jitter Max (px)")
+        self.flare = Range(self, min_bound=0, max_bound=100, label="Flare (px)")
         self.offset_x = Range(self, min_bound=-2000, max_bound=2000, label="Offset X")
         self.offset_y = Range(self, min_bound=-2000, max_bound=2000, label="Offset Y")
 
-        for rng in (self.jitter_min, self.jitter_max, self.offset_x, self.offset_y):
+        for rng in (self.jitter_min, self.flare, self.offset_x, self.offset_y):
             rng.set_fixed()
 
         if data is None:
@@ -46,13 +46,13 @@ class LightSourceFrame(ttk.Frame):
             self.orbit_radius.set(0, 0)
             self.falloff.set(80, 80)
             self.jitter_min.set(0, 0)
-            self.jitter_max.set(0, 0)
+            self.flare.set(0, 0)
             self.offset_x.set(0, 0)
             self.offset_y.set(0, 0)
 
         for rng in (
             self.intensity, self.radius, self.orbit_radius, self.falloff,
-            self.jitter_min, self.jitter_max, self.offset_x, self.offset_y
+            self.jitter_min, self.flare, self.offset_x, self.offset_y
         ):
             rng.pack(fill=tk.X, padx=10, pady=4)
 
@@ -78,7 +78,7 @@ class LightSourceFrame(ttk.Frame):
     def _bind_autosave(self):
         for rng in (
             self.intensity, self.radius, self.orbit_radius, self.falloff,
-            self.jitter_min, self.jitter_max, self.offset_x, self.offset_y
+            self.jitter_min, self.flare, self.offset_x, self.offset_y
         ):
             rng.var_min.trace_add("write", lambda *a: self._autosave())
             rng.var_max.trace_add("write", lambda *a: self._autosave())
@@ -108,7 +108,7 @@ class LightSourceFrame(ttk.Frame):
         self.orbit_radius.set(data.get("orbit_radius", 0), data.get("orbit_radius", 0))
         self.falloff.set(data.get("fall_off", 100), data.get("fall_off", 100))
         self.jitter_min.set(data.get("jitter_min", 0), data.get("jitter_min", 0))
-        self.jitter_max.set(data.get("jitter_max", 0), data.get("jitter_max", 0))
+        self.flare.set(data.get("flare", 0), data.get("flare", 0))
         self.offset_x.set(data.get("offset_x", 0), data.get("offset_x", 0))
         self.offset_y.set(data.get("offset_y", 0), data.get("offset_y", 0))
         self.flicker_var.set(data.get("flicker", False))
@@ -126,7 +126,7 @@ class LightSourceFrame(ttk.Frame):
             "orbit_radius": self.orbit_radius.get_min(),
             "fall_off": self.falloff.get_min(),
             "jitter_min": self.jitter_min.get_min(),
-            "jitter_max": self.jitter_max.get_max(),
+            "flare": self.flare.get_max(),
             "offset_x": self.offset_x.get_min(),
             "offset_y": self.offset_y.get_min(),
             "flicker": self.flicker_var.get()

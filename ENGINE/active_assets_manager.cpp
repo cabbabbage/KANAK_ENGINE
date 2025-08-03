@@ -1,4 +1,4 @@
-// active_assets_manager.cpp
+// === File: active_assets_manager.cpp ===
 #include "active_assets_manager.hpp"
 #include <algorithm>
 #include <cmath>
@@ -48,6 +48,7 @@ void ActiveAssetsManager::updateClosest(Asset* player, size_t max_count)
         float dy = float(a->pos_Y - player->pos_Y);
         dist_pairs.emplace_back(dx*dx + dy*dy, a);
     }
+
     std::sort(dist_pairs.begin(), dist_pairs.end(),
               [](auto& A, auto& B){ return A.first < B.first; });
 
@@ -125,6 +126,14 @@ void ActiveAssetsManager::sortByDistance(int cx, int cy)
             activate(a);
         }
     }
+}
+
+void ActiveAssetsManager::sortByZIndex()
+{
+    std::sort(active_assets_.begin(), active_assets_.end(),
+              [](Asset* A, Asset* B) {
+                  return A->z_index < B->z_index;
+              });
 }
 
 void ActiveAssetsManager::buildStaticChunks()

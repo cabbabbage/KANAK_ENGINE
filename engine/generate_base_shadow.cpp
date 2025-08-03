@@ -7,7 +7,7 @@
 #include <sstream>
 
 static constexpr int fade_start_distance = 0;
-static constexpr int fade_end_distance = 1000; // 50 + 1200
+static constexpr int fade_end_distance = 800; // 50 + 1200
 
 GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
                                        const std::vector<Area>& zones,
@@ -80,7 +80,7 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
             }
 
             asset.alpha_percentage = alpha;
-            asset.has_shading = (alpha < 0.4);
+            asset.has_shading = (alpha > 0.3);
         }
 
         ++count;

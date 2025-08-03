@@ -44,39 +44,69 @@ void Animation::load(const std::string& trigger,
     }
     if (expected_frames == 0) return;
 
+    bool use_cache = false;
+    nlohmann::json meta;
+    if (cache.load_metadata(meta_file, meta)) {
+        if (meta.value("frame_count", -1) == expected_frames &&
+            meta.value("scale_factor", -1.0f) == scale_factor &&
+            meta.value("original_width", -1) == orig_w &&
+            meta.value("original_height", -1) == orig_h &&
+            meta.value("blend_mode", -1) == int(blendmode))
+        {
+            use_cache = true;
+        }
+    }
+
+    std::vector<SDL_Surface*> surfaces;
+    if (use_cache) {
+        use_cache = cache.load_surface_sequence(cache_folder, expected_frames, surfaces);
+    }
+
+    if (!use_cache) {
+        surfaces.clear();
+        for (int i = 0; i < expected_frames; ++i) {
+            std::string f = src_folder + "/" + std::to_string(i) + ".png";
+            int new_w = 0, new_h = 0;
+            SDL_Surface* scaled = cache.load_and_scale_surface(f, scale_factor, new_w, new_h);
+            if (!scaled) {
+                std::cerr << "[Animation] Failed to load or scale: " << f << "\n";
+                continue;
+            }
+            SDL_SetSurfaceBlendMode(scaled, blendmode);
+            if (i == 0) {
+                original_canvas_width  = orig_w;
+                original_canvas_height = orig_h;
+                scaled_sprite_w = new_w;
+                scaled_sprite_h = new_h;
+            }
+            surfaces.push_back(scaled);
+        }
+        cache.save_surface_sequence(cache_folder, surfaces);
+
+        nlohmann::json new_meta;
+        new_meta["frame_count"]     = expected_frames;
+        new_meta["scale_factor"]    = scale_factor;
+        new_meta["original_width"]  = orig_w;
+        new_meta["original_height"] = orig_h;
+        new_meta["blend_mode"]      = int(blendmode);
+        cache.save_metadata(meta_file, new_meta);
+    }
+
     on_end           = anim_json.value("on_end", "");
     randomize        = anim_json.value("randomize", false);
+    // Ensure animations loop by default; override via JSON "loop" property if present
     loop             = anim_json.value("loop", true);
     lock_until_done  = anim_json.value("lock_until_done", false);
 
-    for (int i = 0; i < expected_frames; ++i) {
-        std::string f = src_folder + "/" + std::to_string(i) + ".png";
-        int new_w = 0, new_h = 0;
-        SDL_Surface* scaled = cache.load_and_scale_surface(f, scale_factor, new_w, new_h);
-        if (!scaled) {
-            std::cerr << "[Animation] Failed to load or scale: " << f << "\n";
-            continue;
-        }
-        SDL_SetSurfaceBlendMode(scaled, blendmode);
-
-        if (i == 0) {
-            original_canvas_width  = orig_w;
-            original_canvas_height = orig_h;
-            scaled_sprite_w = new_w;
-            scaled_sprite_h = new_h;
-        }
-
-        SDL_Texture* tex = cache.surface_to_texture(renderer, scaled);
+    for (SDL_Surface* surf : surfaces) {
+        SDL_Texture* tex = cache.surface_to_texture(renderer, surf);
+        SDL_FreeSurface(surf);
         if (!tex) {
-            std::cerr << "[Animation] Failed to convert surface to texture at frame " << i << "\n";
-            SDL_FreeSurface(scaled);
+            std::cerr << "[Animation] Failed to create texture for '" << trigger << "'\n";
             continue;
         }
-
         SDL_SetTextureBlendMode(tex, blendmode);
         frames.push_back(tex);
-
-        SDL_FreeSurface(scaled);
     }
 
     if (trigger == "default" && !frames.empty()) {
@@ -91,10 +121,12 @@ SDL_Texture* Animation::get_frame(int index) const {
 
 bool Animation::advance(int& index, std::string& next_animation_name) const {
     if (frozen || frames.empty()) return false;
+
     ++index;
     if (index < static_cast<int>(frames.size())) {
         return true;
     }
+
     if (loop) {
         index = 0;
         return true;

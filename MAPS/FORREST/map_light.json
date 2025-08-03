@@ -1,10 +1,10 @@
 {
-  "min_opacity": 57,
+  "min_opacity": 1,
   "max_opacity": 255,
   "radius": 8000,
   "intensity": 255,
   "orbit_radius": 800,
-  "update_interval": 7,
+  "update_interval": 4,
   "mult": 1.0,
   "base_color": [
     255,

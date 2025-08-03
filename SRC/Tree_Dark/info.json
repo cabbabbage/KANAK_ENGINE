@@ -13,7 +13,7 @@
         }
     },
     "impassable_area": "impassable_area.json",
-    "z_threshold": 583,
+    "z_threshold": 9,
     "size_settings": {
         "scale_percentage": 57,
         "variability_percentage": 0,
@@ -31,13 +31,13 @@
     "min_child_depth": 3,
     "max_child_depth": 4,
     "tags": [
-        "boundary",
-        "nature",
-        "tree",
-        "default",
-        "rest",
         "impassable",
-        "Tree"
+        "boundary",
+        "rest",
+        "Tree",
+        "default",
+        "tree",
+        "nature"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -61,11 +61,11 @@
                 255,
                 255
             ],
-            "radius": 1200,
-            "orbit_radius": 500,
+            "radius": 2000,
+            "orbit_radius": 600,
             "fall_off": 48,
             "jitter_min": 0,
-            "jitter_max": 0,
+            "flare": 0,
             "offset_x": 0,
             "offset_y": 0,
             "flicker": false

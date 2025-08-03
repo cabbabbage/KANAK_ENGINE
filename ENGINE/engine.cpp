@@ -86,7 +86,6 @@ void Engine::init() {
     }
 
     util = RenderUtils(renderer, SCREEN_WIDTH, SCREEN_HEIGHT, minimap_texture_, map_path);
-    util.createMapLight();
     scene = new SceneRenderer(renderer, game_assets, util, SCREEN_WIDTH, SCREEN_HEIGHT, map_path);
     GenerateBaseShadow base(renderer, roomTrailAreas, game_assets);
     game_loop();
