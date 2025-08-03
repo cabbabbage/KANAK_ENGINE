@@ -55,7 +55,7 @@ Assets::Assets(std::vector<Asset>&& loaded,
     // now capture active_assets and closest_assets
     active_assets  = activeManager.getActive();
     closest_assets = activeManager.getClosest();
-
+    set_shading_groups();
     std::cout << "[Assets] Initialization complete. Total assets: "
               << all.size() << "\n";
 
@@ -148,9 +148,22 @@ void Assets::set_player_light_render() {
         int ly = player->pos_Y + light.offset_y;
 
         for (Asset* a : get_all_in_range(lx, ly, light.radius)) {
-            if (a && a != player && a->pos_Y <= player->pos_Y) {
+            if (a && a != player) {
                 a->set_render_player_light(true);
             }
         }
+    }
+}
+
+
+
+
+void Assets::set_shading_groups() {
+    int current_group = 0;
+    for (auto& a : all) {
+        if (!a.info || !a.has_shading) continue;
+        if (a.is_shading_group_set()) continue;
+        a.set_shading_group(current_group);
+        current_group = (current_group + 1) % num_groups_;
     }
 }

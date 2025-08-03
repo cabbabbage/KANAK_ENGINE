@@ -107,6 +107,7 @@ void Asset::set_position(int x, int y) {
 
 void Asset::update() {
     if (!info) return;
+    if (dead) return;
     // Apply any queued animation change first
     if (!next_animation.empty()) {
         if (next_animation == "freeze_on_last") {

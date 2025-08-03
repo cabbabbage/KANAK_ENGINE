@@ -23,19 +23,11 @@ SceneRenderer::SceneRenderer(SDL_Renderer* renderer,
       screen_width_(screen_width),
       screen_height_(screen_height),
       main_light_source_(renderer, screen_width/2, screen_height/2,
-                         screen_width, {255,255,255,255}, map_path),
-      num_groups_(1)
+                         screen_width, {255,255,255,255}, map_path)
+
 {}
 
-void SceneRenderer::update_shading_groups() {
-    int current_group = 0;
-    for (Asset* a : assets_->active_assets) {
-        if (!a || !a->info || !a->has_shading) continue;
-        if (a->is_shading_group_set()) continue;
-        a->set_shading_group(current_group);
-        current_group = (current_group + 1) % num_groups_;
-    }
-}
+
 void SceneRenderer::render_asset_lights_z() {
     if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
 
@@ -49,7 +41,7 @@ void SceneRenderer::render_asset_lights_z() {
         int main_sz   = screen_width_ * 3;
         SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
         Uint8 main_alpha = main_light_source_.current_color_.a;
-        z_lights.push_back({ main_tex, main_rect, Uint8(main_alpha * 0.8), SDL_FLIP_NONE });
+        z_lights.push_back({ main_tex, main_rect, Uint8(main_alpha), SDL_FLIP_NONE });
     }
 
     // asset‐specific lights
@@ -120,7 +112,7 @@ void SceneRenderer::render() {
     util_.updateCameraShake(px, py);
     if (debugging) std::cout << "[render] camera shake updated" << std::endl;
 
-    update_shading_groups();
+
     if (debugging) std::cout << "[render] shading groups updated" << std::endl;
 
     main_light_source_.update();
@@ -159,10 +151,13 @@ void SceneRenderer::render() {
         SDL_Rect bounds{ cp.x - bw/2, cp.y - bh, bw, bh };
 
         // apply blackening tint
-        float c = std::pow(a->alpha_percentage, 1.2f);
-        int d = static_cast<int>(255 * c);
-        if (a->info->type == "Player") d = std::min(255, d * 3);
+        float c = std::pow(a->alpha_percentage, 1.0f);
+        int d = (c >= 1.0f ? 255 : static_cast<int>(main_alpha * c));
+        if (a->info->type == "Player") {
+            d = std::min(255, d * 3);
+        }
         SDL_SetTextureColorMod(base, d, d, d);
+
 
         // draw base sprite with horizontal flip if needed
         SDL_RenderCopyEx(renderer_,
@@ -181,11 +176,12 @@ void SceneRenderer::render() {
         }
 
         // draw static lights, moving lights, orbital/main lights into mask
-        renderOwnedStaticLights(a, bounds, light_alpha);
+        //renderOwnedStaticLights(a, bounds, light_alpha);
 
         bool regen = (a->get_shading_group() == main_light_source_.get_update_index()) ||
                      (a->get_last_mask() == nullptr) ||
-                     (!a->static_frame);
+                     (!a->static_frame) ||
+                     (a->get_render_player_light());
         if (debugging) std::cout << "[render] regen_mask=" << regen << std::endl;
 
         if (regen) {
@@ -212,7 +208,7 @@ void SceneRenderer::render() {
             if (!a->info->orbital_light_sources.empty()) {
                 renderOrbitalLights(a, bounds, main_alpha);
             } else {
-                renderMainLight(main_tex, main_rect, bounds, main_alpha);
+                renderMainLight(a, main_tex, main_rect, bounds, main_alpha);
             }
 
             SDL_SetRenderTarget(renderer_, nullptr);
@@ -224,6 +220,7 @@ void SceneRenderer::render() {
         SDL_Texture* mask = a->get_last_mask();
         if (mask) {
             SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_MOD);
+
             SDL_RenderCopyEx(renderer_,
                              mask,
                              nullptr,
@@ -278,20 +275,8 @@ void SceneRenderer::renderOwnedStaticLights(Asset* a, const SDL_Rect& bounds, Ui
 }
 
 
-void SceneRenderer::renderReceivedStaticLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha) {
-    if (!a) return;
-    for (const auto& sl : a->static_lights) {
-        if (!sl.source || !sl.source->texture) continue;
-        SDL_Point p = util_.applyParallax(a->pos_X + sl.offset_x,
-                                          a->pos_Y + sl.offset_y);
-        int lw, lh;
-        SDL_QueryTexture(sl.source->texture, nullptr, nullptr, &lw, &lh);
-        SDL_Rect dst{ p.x - lw/2 - bounds.x, p.y - lh/2 - bounds.y, lw, lh };
-        SDL_SetTextureBlendMode(sl.source->texture, SDL_BLENDMODE_ADD);
-        SDL_SetTextureAlphaMod(sl.source->texture, alpha * sl.alpha_percentage);
-        SDL_RenderCopy(renderer_, sl.source->texture, nullptr, &dst);
-    }
-}
+
+
 
 void SceneRenderer::renderMovingLights(Asset* a,
                                        const SDL_Rect& bounds,
@@ -302,10 +287,14 @@ void SceneRenderer::renderMovingLights(Asset* a,
     for (const auto& light : p->info->light_sources) {
         if (!light.texture || light.orbit_radius > 0) continue;
 
-        int world_lx = p->pos_X + light.offset_x;
+        // mirror offset if player is flipped
+        int offX_player = p->flipped ? -light.offset_x : light.offset_x;
+        int base_x = p->pos_X + offX_player;
+        // if the asset receiving light is flipped, mirror the light over its center X
+        int world_lx = a->flipped ? (2 * a->pos_X - base_x) : base_x;
         int world_ly = p->pos_Y + light.offset_y - p->info->z_threshold;
 
-        // use helper to compute fade factor
+        // compute fade factor based on asset’s vertical position
         double factor = calculate_static_alpha_percentage(a->pos_Y, world_ly);
         Uint8 inten = static_cast<Uint8>(alpha * factor);
 
@@ -320,41 +309,109 @@ void SceneRenderer::renderMovingLights(Asset* a,
 
         SDL_SetTextureBlendMode(light.texture, SDL_BLENDMODE_ADD);
         SDL_SetTextureAlphaMod(light.texture, inten);
-        SDL_RenderCopy(renderer_, light.texture, nullptr, &dst);
+        SDL_RenderCopyEx(renderer_,
+                         light.texture,
+                         nullptr,
+                         &dst,
+                         0,
+                         nullptr,
+                         a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
         SDL_SetTextureAlphaMod(light.texture, 255);
     }
 }
 
 
-void SceneRenderer::renderOrbitalLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha) {
+
+void SceneRenderer::renderOrbitalLights(Asset* a,
+                                        const SDL_Rect& bounds,
+                                        Uint8 alpha) {
     if (!a || !a->info) return;
     float angle = main_light_source_.get_angle();
+    // flip orbit direction if asset is flipped
+    float dir = a->flipped ? -1.0f : 1.0f;
+
     for (const auto& light : a->info->orbital_light_sources) {
         if (!light.texture || light.orbit_radius <= 0) continue;
-        float lx = a->pos_X + std::cos(angle) * light.orbit_radius;
+
+        float lx = a->pos_X + std::cos(angle) * light.orbit_radius * dir;
         float ly = a->pos_Y + std::sin(angle) * light.orbit_radius;
-        SDL_Point p = util_.applyParallax(int(lx), int(ly));
+        SDL_Point p = util_.applyParallax(static_cast<int>(lx), static_cast<int>(ly));
+
         int lw, lh;
         SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
-        SDL_Rect dst{ p.x - lw/2 - bounds.x, p.y - lh/2 - bounds.y, lw, lh };
+        SDL_Rect dst {
+            p.x - lw/2 - bounds.x,
+            p.y - lh/2 - bounds.y,
+            lw, lh
+        };
+
         SDL_SetTextureBlendMode(light.texture, SDL_BLENDMODE_ADD);
         SDL_SetTextureAlphaMod(light.texture, alpha);
         SDL_RenderCopy(renderer_, light.texture, nullptr, &dst);
     }
 }
 
-void SceneRenderer::renderMainLight(SDL_Texture* tex,
+
+
+void SceneRenderer::renderReceivedStaticLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha) {
+    if (!a) return;
+    for (const auto& sl : a->static_lights) {
+        if (!sl.source || !sl.source->texture) continue;
+
+        int offX = a->flipped ? -sl.offset_x : sl.offset_x;
+        SDL_Point p = util_.applyParallax(a->pos_X + offX,
+                                          a->pos_Y + sl.offset_y);
+
+        int lw, lh;
+        SDL_QueryTexture(sl.source->texture, nullptr, nullptr, &lw, &lh);
+        SDL_Rect dst{
+            p.x - lw/2 - bounds.x,
+            p.y - lh/2 - bounds.y,
+            lw, lh
+        };
+
+        SDL_SetTextureBlendMode(sl.source->texture, SDL_BLENDMODE_ADD);
+        Uint8 mod_alpha = static_cast<Uint8>(alpha * sl.alpha_percentage);
+        SDL_SetTextureAlphaMod(sl.source->texture, mod_alpha);
+        SDL_RenderCopyEx(renderer_,
+                         sl.source->texture,
+                         nullptr,
+                         &dst,
+                         0,
+                         nullptr,
+                         a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+    }
+}
+
+
+
+
+void SceneRenderer::renderMainLight(Asset* a,
+                                    SDL_Texture* tex,
                                     const SDL_Rect& main_rect,
                                     const SDL_Rect& bounds,
                                     Uint8 alpha) {
-    if (!tex) return;
+    if (!a || !tex) return;
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_ADD);
     SDL_SetTextureAlphaMod(tex, alpha);
-    SDL_Rect dst{ main_rect.x - bounds.x,
-                  main_rect.y - bounds.y,
-                  main_rect.w, main_rect.h };
-    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+    SDL_Rect dst{
+        main_rect.x - bounds.x,
+        main_rect.y - bounds.y,
+        main_rect.w,
+        main_rect.h
+    };
+    SDL_RenderCopyEx(renderer_,
+                     tex,
+                     nullptr,
+                     &dst,
+                     0,
+                     nullptr,
+                     a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 }
+
+
+
+
 
 double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
     constexpr int FADE_ABOVE = 50;

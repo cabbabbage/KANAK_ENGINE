@@ -80,7 +80,10 @@ GenerateBaseShadow::GenerateBaseShadow(SDL_Renderer* renderer,
             }
 
             asset.alpha_percentage = alpha;
-            asset.has_shading = (alpha > 0.1);
+            bool active =  (alpha > 0.3);
+            asset.dead = !active;
+            asset.static_frame = !active;
+            asset.alpha_percentage = asset.alpha_percentage * 1.2;
         }
 
         ++count;

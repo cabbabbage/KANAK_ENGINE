@@ -151,7 +151,7 @@ void Generate_Map_Light::build_texture() {
     light.radius    = radius_;
     light.intensity = intensity_;
     light.fall_off  = 100;
-    light.flare     = 0;
+    light.flare     = 50;
     light.color     = base_color_;
 
     GenerateLight generator(renderer_);

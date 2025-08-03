@@ -4,7 +4,7 @@
   "radius": 8000,
   "intensity": 255,
   "orbit_radius": 800,
-  "update_interval": 4,
+  "update_interval": 20,
   "mult": 1.0,
   "base_color": [
     255,

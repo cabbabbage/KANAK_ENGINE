@@ -78,9 +78,10 @@ public:
     int gradient_shadow;
     int depth = 0;
     bool has_shading; 
-
+    bool dead =false;
     bool static_frame =true;
 private:
+
     double calculate_static_alpha_percentage(int asset_y, int light_world_y);
     void set_flip();
     void set_z_index();
