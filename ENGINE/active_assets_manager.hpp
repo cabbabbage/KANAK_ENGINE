@@ -29,7 +29,7 @@ public:
     std::vector<Asset*>& getClosest() { return closest_assets_; }
     const std::vector<Asset*>& getClosest() const { return closest_assets_; }
     void ActiveAssetsManager::sortByZIndex();
-
+    void updateDynamicChunks();
 
 private:
     using ChunkKey = std::int64_t;
@@ -50,7 +50,7 @@ private:
 
     void sortByDistance(int cx, int cy);
     void buildStaticChunks();
-    void updateDynamicChunks();
+
 
     inline ChunkKey makeKey(int cx, int cy) const {
         return (static_cast<ChunkKey>(cx) << 32) | static_cast<uint32_t>(cy);

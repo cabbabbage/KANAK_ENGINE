@@ -3,7 +3,7 @@
   "assets": [
     {
       "name": "candle",
-      "min_number": -7,
+      "min_number": 1,
       "max_number": 1,
       "position": "Random",
       "exact_position": null,

@@ -31,7 +31,10 @@ public:
     void renderLightDistorted(SDL_Texture* tex) const;
 
     void setAssetTrapezoid(const Asset* asset, int playerX, int playerY);
-    void renderAssetTrapezoid(SDL_Texture* tex) const;
+    // In render_utils.hpp, change the signature to:
+    void renderAssetTrapezoid(SDL_Texture* tex,
+                            SDL_BlendMode blendMode,
+                            bool flipped = false) const;
     RenderUtils::TrapezoidGeometry getTrapezoidGeometry(SDL_Texture* tex, const SDL_FPoint quad[4]) const;
 
     Generate_Map_Light* createMapLight();

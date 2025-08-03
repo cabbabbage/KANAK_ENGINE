@@ -24,7 +24,8 @@ public:
     void render();
 
 private:
-double player_shade_percent =1.0;
+    bool debugging = false;
+    double player_shade_percent =1.0;
     double calculate_static_alpha_percentage(int asset_y, int light_world_y);
     void update_shading_groups();
     void render_asset_lights_z();

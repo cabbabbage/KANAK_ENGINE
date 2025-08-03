@@ -1,47 +1,45 @@
-#ifndef ENGINE_HPP
-#define ENGINE_HPP
+// === File: engine.hpp ===
+#pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <unordered_set>
 #include <SDL.h>
-#include <SDL_image.h>
 #include "area.hpp"
-#include "Assets.hpp"
-#include "fade_textures.hpp"
-#include "generate_map_light.hpp"
+#include "asset.hpp"
+#include "active_assets_manager.hpp"
 #include "render_utils.hpp"
 #include "scene_renderer.hpp"
+#include "asset_loader.hpp"
+
+class Assets;
+class RenderUtils;
+class SceneRenderer;
 
 class Engine {
 public:
-    Engine(const std::string& map_path, SDL_Renderer* renderer, int screen_w, int screen_h);
+    Engine(const std::string& map_path,
+           SDL_Renderer* renderer,
+           int screen_w,
+           int screen_h);
     ~Engine();
 
     void init();
+    void game_loop();
 
 private:
-    void render_asset_with_trapezoid(SDL_Renderer* renderer, SDL_Texture* tex, int screen_x, int screen_y, int w, int h, float top_scale_x, float top_scale_y, SDL_Color color);
-    void generate_static_faded_areas();
-    void game_loop();
-    Generate_Map_Light* get_map_light();
-
-    std::string map_path;
-    SDL_Renderer* renderer;
-    Assets* game_assets = nullptr;
-    SDL_Texture* minimap_texture_ = nullptr;
-    SDL_Texture* overlay_texture = nullptr;
-    RenderUtils util;
-    SceneRenderer* scene = nullptr;
-
-    int SCREEN_WIDTH;
-    int SCREEN_HEIGHT;
-    float dusk_thresh = 30.0f;
-    int brightness_level = 0;
-    SDL_Color background_color;
-    std::vector<Area> roomTrailAreas;
-    std::unordered_map<SDL_Texture*, SDL_Rect> static_faded_areas;
-    Generate_Map_Light* map_light = nullptr;
+    std::string                              map_path;
+    SDL_Renderer*                            renderer;
+    const int                                SCREEN_WIDTH;
+    const int                                SCREEN_HEIGHT;
+    SDL_Color                                background_color;
+    SDL_Texture*                             overlay_texture;
+    SDL_Texture*                             minimap_texture_;
+    std::unique_ptr<AssetLoader>             loader_;
+    Assets*                                  game_assets;
+    RenderUtils                              util;
+    SceneRenderer*                           scene;
+    std::vector<Area>                        roomTrailAreas;
+    std::vector<std::pair<SDL_Texture*,Area>> static_faded_areas;
 };
-
-#endif // ENGINE_HPP

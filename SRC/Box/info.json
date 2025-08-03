@@ -12,7 +12,7 @@
     }
   },
   "impassable_area": "impassable_area.json",
-  "z_threshold": 3,
+  "z_threshold": 2,
   "size_settings": {
     "scale_percentage": 13,
     "variability_percentage": 0,
@@ -32,9 +32,9 @@
   "max_child_depth": 2,
   "tags": [
     "man-made",
-    "wood",
-    "impassable",
     "surface",
+    "impassable",
+    "wood",
     "parent"
   ],
   "rnd_spawn_min": 300,

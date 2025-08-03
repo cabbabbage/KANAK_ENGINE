@@ -74,7 +74,7 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
     scale_percentage       = ss.value("scale_percentage", 100.0f);
     variability_percentage = ss.value("variability_percentage", 0.0f);
     scale_factor           = scale_percentage / 100.0f;
-    flipable               = ss.value("flipable", false);
+    flipable               = ss.value("flipability", true);
 
     // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);

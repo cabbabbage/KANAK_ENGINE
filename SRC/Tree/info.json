@@ -11,7 +11,7 @@
     "spawn",
     "default"
   ],
-  "z_threshold": 8,
+  "z_threshold": 7,
   "size_settings": {
     "scale_percentage": 57,
     "variability_percentage": 0,

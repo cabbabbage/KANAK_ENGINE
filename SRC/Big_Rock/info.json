@@ -12,7 +12,7 @@
         }
     },
     "impassable_area": "impassable_area.json",
-    "z_threshold": 0,
+    "z_threshold": 7,
     "size_settings": {
         "scale_percentage": 68,
         "variability_percentage": 20,
@@ -30,8 +30,8 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "impassable",
         "rock",
+        "impassable",
         "boundary"
     ],
     "rnd_spawn_min": 300,

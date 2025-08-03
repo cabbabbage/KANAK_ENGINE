@@ -22,6 +22,7 @@ struct StaticLight {
 
 class Asset {
 public:
+    Area get_area(const std::string& name) const;
     Asset(std::shared_ptr<AssetInfo> info,
           const Area& spawn_area,
           int start_pos_X,

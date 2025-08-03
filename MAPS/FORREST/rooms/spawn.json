@@ -19,7 +19,7 @@
       "name": "candle",
       "min_number": 10,
       "max_number": 20,
-      "position": "Perimeter",
+      "position": "Entrance",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -33,9 +33,9 @@
       "sector_range_max": 360
     },
     {
-      "name": "Stump",
-      "min_number": -54,
-      "max_number": 1717,
+      "name": "Chest",
+      "min_number": 5,
+      "max_number": 20,
       "position": "Random",
       "exact_position": null,
       "tag": false,

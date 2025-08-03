@@ -4,7 +4,6 @@
   "animations": {
     "default": {
       "frames_path": "default",
-      "speed": 1.0,
       "on_end": "default",
       "event_data": [],
       "randomize": false,
@@ -14,7 +13,6 @@
     },
     "interaction": {
       "frames_path": "interaction",
-      "speed": 1.0,
       "on_end": "freeze_on_last",
       "event_data": [],
       "randomize": false,
@@ -26,7 +24,7 @@
   },
   "interaction_area": "interaction_area.json",
   "impassable_area": "impassable_area.json",
-  "z_threshold": 10,
+  "z_threshold": 7,
   "size_settings": {
     "scale_percentage": 41,
     "variability_percentage": 0,
@@ -38,14 +36,14 @@
     "Spacing"
   ],
   "tags": [
-    "loot",
-    "center",
-    "interaction",
     "wood",
-    "valuable",
+    "interaction",
     "impassable",
-    "man-made",
-    "default"
+    "default",
+    "center",
+    "loot",
+    "valuable",
+    "man-made"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

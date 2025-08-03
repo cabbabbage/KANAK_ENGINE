@@ -33,6 +33,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
       spawn_area_local(spawn_area),
       depth(depth_)
 {
+    set_flip();
     set_z_index();
     player_speed_mult = 10;
     // pick initial animation frame
@@ -94,7 +95,7 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
         }
     }
     has_shading = info->has_shading;
-    set_flip();
+
 }
 
 // === Added missing set_position implementation ===
@@ -106,18 +107,29 @@ void Asset::set_position(int x, int y) {
 
 void Asset::update() {
     if (!info) return;
-
     // Apply any queued animation change first
     if (!next_animation.empty()) {
-        auto nit = info->animations.find(next_animation);
-        if (nit != info->animations.end()) {
-            current_animation = next_animation;
-            Animation &anim = nit->second;
-            static_frame = (anim.frames.size() == 1);
-
-            current_frame_index = 0;
+        if (next_animation == "freeze_on_last") {
+            auto itf = info->animations.find(current_animation);
+            if (itf != info->animations.end()) {
+                Animation &currAnim = itf->second;
+                int lastIndex = static_cast<int>(currAnim.frames.size()) - 1;
+                if (current_frame_index == lastIndex) {
+                    static_frame = true;
+                    next_animation.clear();
+                }
+            }
         }
-        next_animation.clear();
+        else {
+            auto nit = info->animations.find(next_animation);
+            if (nit != info->animations.end()) {
+                current_animation = next_animation;
+                Animation &anim = nit->second;
+                static_frame = (static_cast<int>(anim.frames.size()) <= 1);
+                current_frame_index = 0;
+            }
+            next_animation.clear();
+        }
     }
 
     auto it = info->animations.find(current_animation);
@@ -140,6 +152,7 @@ void Asset::update() {
         c.update();
     }
 }
+
 
 
 
@@ -216,7 +229,7 @@ void Asset::set_z_offset(int z) {
 }
 
 void Asset::set_flip() {
-    if (!info || !info->can_invert) return;
+    if (!info || !info->flipable) return;
 
     std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<int> dist(0, 1);
@@ -270,16 +283,54 @@ bool Asset::get_render_player_light() const {
 }
 
 
-// === Helper to calculate static light alpha based on vertical distance ===
 double Asset::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
-    const int upper_threshold = 1;
-    const int lower_threshold = -3;
-    int dy = light_world_y - asset_y;
+    constexpr int FADE_ABOVE = 40;
+    constexpr int FADE_BELOW = -20;
+    constexpr double MIN_OPACITY = 0.1;
 
-    if (dy >= upper_threshold) return 1.0;
-    if (dy <= lower_threshold) return 0.5;
+    int delta_y = light_world_y - asset_y;
+    double factor;
+    if (delta_y <= -FADE_ABOVE)      factor = MIN_OPACITY;
+    else if (delta_y >= FADE_BELOW)  factor = 1.0;
+    else factor = double(delta_y + FADE_ABOVE) / double(FADE_ABOVE + FADE_BELOW);
 
-    // Linear interpolation between 0.5 and 1.0
-    double t = static_cast<double>(dy - lower_threshold) / (upper_threshold - lower_threshold);
-    return 0.5 + 0.5 * std::clamp(t, 0.0, 1.0);
+    factor = std::clamp(factor, MIN_OPACITY, 1.0);
+    return factor;
+}
+
+
+
+
+Area Asset::get_area(const std::string& name) const {
+    // Start with an empty/fallback area named appropriately
+    Area result(name);
+
+    if (info) {
+        if (name == "passability" && info->passability_area) {
+            result = *info->passability_area;
+        }
+        else if (name == "spacing" && info->has_spacing_area && info->spacing_area) {
+            result = *info->spacing_area;
+        }
+        else if (name == "collision" && info->has_collision_area && info->collision_area) {
+            result = *info->collision_area;
+        }
+        else if (name == "interaction" && info->has_interaction_area && info->interaction_area) {
+            result = *info->interaction_area;
+        }
+        else if (name == "attack" && info->has_attack_area && info->attack_area) {
+            result = *info->attack_area;
+        }
+        // otherwise fall back to empty area of that name
+    }
+
+    // If the sprite is flipped, mirror the local-area horizontally
+    if (flipped) {
+        result.flip_horizontal();
+    }
+
+    // Finally, move the area into world space at the asset's position
+    result.align(pos_X, pos_Y);
+
+    return result;
 }
