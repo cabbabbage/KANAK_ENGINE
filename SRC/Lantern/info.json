@@ -21,21 +21,20 @@
     "z_threshold": 3,
     "size_settings": {
         "scale_percentage": 30,
-        "variability_percentage": 0,
-        "flipability": true
+        "variability_percentage": 0
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 2000,
     "tags": [
-        "default",
-        "tall",
-        "passable",
-        "man-made",
         "light",
+        "default",
+        "passable",
         "still",
         "center",
-        "black",
         "metal",
+        "black",
+        "man-made",
+        "tall",
         "large"
     ],
     "rnd_spawn_min": 300,
@@ -76,18 +75,8 @@
             "flicker": false
         }
     ],
-    "shading_info": {
-        "has_shading": false,
-        "has_base_shadow": null,
-        "base_shadow_intensity": null,
-        "has_gradient_shadow": null,
-        "number_of_gradient_shadows": null,
-        "gradient_shadow_intensity": null,
-        "has_casted_shadows": null,
-        "number_of_casted_shadows": null,
-        "cast_shadow_intensity": null
-    },
     "has_spacing": true,
     "anti_tags": [],
-    "min_distance_all": 82
+    "min_distance_all": 82,
+    "has_shading": false
 }

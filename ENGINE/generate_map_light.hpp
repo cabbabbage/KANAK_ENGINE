@@ -20,7 +20,7 @@ public:
     SDL_Texture* get_texture() const;
     SDL_Color current_color_;
     int light_brightness = 255;
-    int light_source_off_at = 180; 
+    int light_source_off_at = 200; 
     float get_angle() const;
     int get_update_interval();
     int get_update_index();

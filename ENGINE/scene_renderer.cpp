@@ -41,7 +41,7 @@ void SceneRenderer::render_asset_lights_z() {
         int main_sz   = screen_width_ * 3;
         SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
         Uint8 main_alpha = main_light_source_.current_color_.a;
-        z_lights.push_back({ main_tex, main_rect, Uint8(main_alpha), SDL_FLIP_NONE });
+        z_lights.push_back({ main_tex, main_rect, Uint8(main_alpha * 0.9), SDL_FLIP_NONE });
     }
 
     // asset‐specific lights
@@ -205,10 +205,10 @@ void SceneRenderer::render() {
             renderReceivedStaticLights(a, bounds, light_alpha);
             renderMovingLights(a, bounds, light_alpha);
 
-            if (!a->info->orbital_light_sources.empty()) {
+                     if (!a->info->orbital_light_sources.empty()) {
                 renderOrbitalLights(a, bounds, main_alpha);
             } else {
-                renderMainLight(a, main_tex, main_rect, bounds, main_alpha);
+                renderMainLight(a, main_tex, main_rect, bounds, main_alpha * 1.5);
             }
 
             SDL_SetRenderTarget(renderer_, nullptr);
@@ -414,9 +414,9 @@ void SceneRenderer::renderMainLight(Asset* a,
 
 
 double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
-    constexpr int FADE_ABOVE = 50;
-    constexpr int FADE_BELOW = 0;
-    constexpr double MIN_OPACITY = 0.1;
+    constexpr int FADE_ABOVE = 100;
+    constexpr int FADE_BELOW = -10;
+    constexpr double MIN_OPACITY = 0.3;
 
     int delta_y = light_world_y - asset_y;
     double factor;

@@ -52,8 +52,7 @@
     "z_threshold": 9,
     "size_settings": {
         "scale_percentage": 45,
-        "variability_percentage": 0,
-        "flipability": false
+        "variability_percentage": 0
     },
     "visited_tabs": [
         "Passability",
@@ -62,18 +61,35 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 686,
     "tags": [
-        "passable",
-        "default",
-        "right",
-        "start",
-        "forward",
-        "player",
         "left",
-        "backward"
+        "backward",
+        "right",
+        "player",
+        "forward",
+        "default",
+        "start",
+        "passable"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
     "lighting_info": [
+        {
+            "has_light_source": true,
+            "light_intensity": 255,
+            "light_color": [
+                255,
+                255,
+                255
+            ],
+            "radius": 1123,
+            "orbit_radius": 107,
+            "fall_off": 100,
+            "jitter_min": 0,
+            "flare": 0,
+            "offset_x": 0,
+            "offset_y": 0,
+            "flicker": false
+        },
         {
             "has_light_source": true,
             "light_intensity": 255,
@@ -87,23 +103,6 @@
             "fall_off": 100,
             "jitter_min": 8,
             "flare": 55,
-            "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
-        },
-        {
-            "has_light_source": true,
-            "light_intensity": 155,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 989,
-            "orbit_radius": 250,
-            "fall_off": 100,
-            "jitter_min": 0,
-            "flare": 0,
             "offset_x": 0,
             "offset_y": 0,
             "flicker": false
@@ -122,5 +121,6 @@
     },
     "has_spacing": true,
     "min_distance_all": 0,
-    "anti_tags": []
+    "anti_tags": [],
+    "has_shading": true
 }

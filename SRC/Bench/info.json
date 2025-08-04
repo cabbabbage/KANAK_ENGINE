@@ -8,9 +8,9 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "wood",
         "default",
         "man-made",
+        "wood",
         "passable"
     ],
     "animations": {
@@ -27,11 +27,10 @@
     },
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "z_threshold": 9,
+    "z_threshold": 7,
     "size_settings": {
         "scale_percentage": 17,
-        "variability_percentage": 0,
-        "flipability": false
+        "variability_percentage": 0
     },
     "child_assets": [
         "child_assets_1.json"
@@ -45,5 +44,25 @@
         "gradient_shadow_intensity": 0,
         "has_casted_shadows": false,
         "cast_shadow_intensity": 0
-    }
+    },
+    "has_shading": true,
+    "lighting_info": [
+        {
+            "has_light_source": true,
+            "light_intensity": 100,
+            "light_color": [
+                255,
+                255,
+                255
+            ],
+            "radius": 10,
+            "orbit_radius": 0,
+            "fall_off": 80,
+            "jitter_min": 0,
+            "flare": 0,
+            "offset_x": 0,
+            "offset_y": 0,
+            "flicker": false
+        }
+    ]
 }

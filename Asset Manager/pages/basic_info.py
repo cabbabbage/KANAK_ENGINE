@@ -18,8 +18,11 @@ class BasicInfoPage(ttk.Frame):
 
         self.name_var = tk.StringVar()
         self.type_var = tk.StringVar()
+        self.can_invert_var = tk.BooleanVar()
+
         self.name_var.trace_add("write", self._auto_save)
         self.type_var.trace_add("write", self._auto_save)
+        self.can_invert_var.trace_add("write", self._auto_save)
 
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
@@ -75,6 +78,18 @@ class BasicInfoPage(ttk.Frame):
         self.render_radius_range.var_max.trace_add("write", lambda *_: self._auto_save())
         self.render_radius_range.pack(fill="x", padx=12, pady=(0, 10))
 
+        ttk.Label(scrollable_frame, text="Can Invert:", style="Dark.TLabel")\
+            .pack(anchor="w", padx=12, pady=(10, 0))
+        self.can_invert_check = tk.Checkbutton(
+            scrollable_frame,
+            text="Enable asset flipping",
+            variable=self.can_invert_var,
+            bg="#1e1e1e", fg="#FFFFFF", selectcolor="#1e1e1e",
+            font=("Segoe UI", 12), activebackground="#1e1e1e", activeforeground="#FFFFFF"
+        )
+        self.can_invert_check.pack(anchor="w", padx=18, pady=(0, 8))
+
+
         # Preview Image
         self.preview_label = ttk.Label(scrollable_frame, background="#1e1e1e")
         self.preview_label.pack(anchor="center", pady=(10, 20))
@@ -107,6 +122,7 @@ class BasicInfoPage(ttk.Frame):
         self._loaded = False
         self.name_var.set(data.get("asset_name", ""))
         self.type_var.set(data.get("asset_type", HARD_CODED_TYPES[0]))
+        self.can_invert_var.set(data.get("can_invert", False))
 
         self.update_radius_range.set(data.get("update_radius", 1000), data.get("update_radius", 1000))
         self.render_radius_range.set(data.get("render_radius", 1000), data.get("render_radius", 1000))
@@ -138,6 +154,7 @@ class BasicInfoPage(ttk.Frame):
 
         data["asset_name"] = self.name_var.get().strip()
         data["asset_type"] = self.type_var.get()
+        data["can_invert"] = self.can_invert_var.get()
         data["update_radius"] = self.update_radius_range.get_max()
         data["render_radius"] = self.render_radius_range.get_max()
 

@@ -167,7 +167,7 @@ def apply_effects(image_path, strength=60):
     skeleton = step_3_edge_thin(img)
     img = step_4_subtract_edges(img, skeleton, 30)
     img = step_5_boost_contrast(img, strength)
-    img = step_5_5_boost_saturation(img, 30)        # Moved up
+    img = step_5_5_boost_saturation(img, 20)        # Moved up
     img = step_6_5_color_grade(img, strength)
 
     img = step_6_apply_blur(img, strength)

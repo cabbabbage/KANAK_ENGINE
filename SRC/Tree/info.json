@@ -8,14 +8,13 @@
   "max_child_depth": 2,
   "tags": [
     "impassable",
-    "spawn",
-    "default"
+    "default",
+    "spawn"
   ],
-  "z_threshold": 7,
+  "z_threshold": 19,
   "size_settings": {
     "scale_percentage": 57,
-    "variability_percentage": 0,
-    "flipability": true
+    "variability_percentage": 0
   },
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -47,15 +46,15 @@
   "lighting_info": [
     {
       "has_light_source": true,
-      "light_intensity": 209,
+      "light_intensity": 255,
       "light_color": [
         255,
         255,
         255
       ],
-      "radius": 2000,
-      "orbit_radius": 600,
-      "fall_off": 44,
+      "radius": 1000,
+      "orbit_radius": 500,
+      "fall_off": 80,
       "jitter_min": 0,
       "flare": 0,
       "offset_x": 0,
@@ -66,5 +65,6 @@
   "child_assets": [],
   "has_spacing": true,
   "min_distance_all": 0,
-  "anti_tags": []
+  "anti_tags": [],
+  "has_shading": true
 }

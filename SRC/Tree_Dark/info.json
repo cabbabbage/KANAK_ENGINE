@@ -1,77 +1,77 @@
 {
-    "asset_name": "Tree_Dark",
-    "asset_type": "Background",
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "",
-            "event_data": [],
-            "randomize": false,
-            "audio_path": "",
-            "volume": 50
-        }
-    },
-    "impassable_area": "impassable_area.json",
-    "z_threshold": 9,
-    "size_settings": {
-        "scale_percentage": 57,
-        "variability_percentage": 0,
-        "flipability": true
-    },
-    "visited_tabs": [
-        "Passability",
-        "Spacing"
-    ],
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 39,
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 3,
-    "max_child_depth": 4,
-    "tags": [
-        "impassable",
-        "boundary",
-        "rest",
-        "Tree",
-        "default",
-        "tree",
-        "nature"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "shading_info": {
-        "has_shading": true,
-        "has_base_shadow": true,
-        "base_shadow_intensity": 100,
-        "has_gradient_shadow": false,
-        "number_of_gradient_shadows": 1,
-        "gradient_shadow_intensity": 100,
-        "has_casted_shadows": false,
-        "number_of_casted_shadows": 1,
-        "cast_shadow_intensity": 100
-    },
-    "lighting_info": [
-        {
-            "has_light_source": true,
-            "light_intensity": 255,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 2000,
-            "orbit_radius": 600,
-            "fall_off": 48,
-            "jitter_min": 0,
-            "flare": 0,
-            "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
-        }
-    ],
-    "has_spacing": true,
-    "min_distance_all": 0,
-    "anti_tags": []
+  "asset_name": "Tree_Dark",
+  "asset_type": "Background",
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "impassable_area": "impassable_area.json",
+  "z_threshold": 24,
+  "size_settings": {
+    "scale_percentage": 57,
+    "variability_percentage": 0
+  },
+  "visited_tabs": [
+    "Passability",
+    "Spacing"
+  ],
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 39,
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 3,
+  "max_child_depth": 4,
+  "tags": [
+    "tree",
+    "boundary",
+    "impassable",
+    "default",
+    "nature",
+    "rest",
+    "Tree"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "shading_info": {
+    "has_shading": true,
+    "has_base_shadow": true,
+    "base_shadow_intensity": 100,
+    "has_gradient_shadow": false,
+    "number_of_gradient_shadows": 1,
+    "gradient_shadow_intensity": 100,
+    "has_casted_shadows": false,
+    "number_of_casted_shadows": 1,
+    "cast_shadow_intensity": 100
+  },
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 255,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 1000,
+      "orbit_radius": 500,
+      "fall_off": 80,
+      "jitter_min": 0,
+      "flare": 0,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flicker": false
+    }
+  ],
+  "has_spacing": true,
+  "min_distance_all": 0,
+  "anti_tags": [],
+  "has_shading": true
 }

@@ -1,50 +1,49 @@
 {
-  "impassable_area": null,
-  "asset_name": "Grass_1_FPS_2",
-  "asset_type": "Object",
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2,
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "event_data": [],
-      "randomize": true,
-      "audio_path": "",
-      "volume": 50
-    }
-  },
-  "tags": [
-    "passable",
-    "plant",
-    "default",
-    "small",
-    "moving",
-    "nature",
-    "green",
-    "meadow",
-    "cover"
-  ],
-  "has_spacing": true,
-  "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 40,
-  "z_threshold": 21,
-  "size_settings": {
-    "scale_percentage": 3,
-    "variability_percentage": 0,
-    "flipability": true
-  },
-  "anti_tags": [
-    "center",
-    "impassable",
-    "light",
-    "man-made"
-  ],
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400,
-  "min_distance_all": 0
+    "impassable_area": null,
+    "asset_name": "Grass_1_FPS_2",
+    "asset_type": "Object",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "event_data": [],
+            "randomize": true,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "tags": [
+        "green",
+        "passable",
+        "cover",
+        "meadow",
+        "moving",
+        "default",
+        "plant",
+        "nature",
+        "small"
+    ],
+    "has_spacing": true,
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 40,
+    "z_threshold": 14,
+    "size_settings": {
+        "scale_percentage": 2,
+        "variability_percentage": 0
+    },
+    "anti_tags": [
+        "center",
+        "impassable",
+        "light",
+        "man-made"
+    ],
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "min_distance_all": 0
 }

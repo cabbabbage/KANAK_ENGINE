@@ -12,11 +12,10 @@
     }
   },
   "impassable_area": null,
-  "z_threshold": 11,
+  "z_threshold": 5,
   "size_settings": {
-    "scale_percentage": 25,
-    "variability_percentage": 0,
-    "flipability": false
+    "scale_percentage": 20,
+    "variability_percentage": 0
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 500,
@@ -24,15 +23,18 @@
     "Spacing"
   ],
   "tags": [
-    "ground",
     "bone",
+    "scary",
     "passable",
     "white",
-    "scary"
+    "ground"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
   "anti_tags": [],
   "has_spacing": true,
-  "min_distance_all": 0
+  "min_distance_all": 0,
+  "can_invert": true,
+  "update_radius": 1000,
+  "render_radius": 1000
 }

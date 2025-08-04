@@ -19,8 +19,8 @@
         }
     },
     "tags": [
-        "passable",
-        "default"
+        "default",
+        "passable"
     ],
     "has_spacing": true,
     "spacing_area": "spacing_area.json",
@@ -28,11 +28,15 @@
     "z_threshold": 0,
     "size_settings": {
         "scale_percentage": 150,
-        "variability_percentage": 0,
-        "flipability": true
+        "variability_percentage": 0
     },
     "min_distance_all": 0,
     "anti_tags": [],
     "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400
+    "rnd_spawn_max": 400,
+    "has_shading": false,
+    "lighting_info": [],
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

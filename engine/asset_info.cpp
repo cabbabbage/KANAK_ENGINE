@@ -67,14 +67,12 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
 
     // Lighting & shading
     load_lighting_info(data);
-    load_shading_info(data);
 
     // Size settings
     const auto& ss = data.value("size_settings", nlohmann::json::object());
     scale_percentage       = ss.value("scale_percentage", 100.0f);
     variability_percentage = ss.value("variability_percentage", 0.0f);
     scale_factor           = scale_percentage / 100.0f;
-    flipable               = ss.value("flipability", true);
 
     // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);
@@ -213,6 +211,8 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
     duplication_interval_min = data.value("duplication_interval_min", 0);
     duplication_interval_max = data.value("duplication_interval_max", 0);
     update_radius = data.value("update_radius", 1000);
+    has_shading = data.value("has_shading", false);
+    flipable               = data.value("can_invert", false);
 
     std::mt19937 rng{ std::random_device{}() };
     if (min_child_depth <= max_child_depth) {
@@ -285,63 +285,13 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
             if (maybe.has_value()) {
                 has_light_source = true;
                 LightSource light = maybe.value();
-                if (light.orbit_radius > 0)
+                if (light.orbit_radius > 0 && light.radius > 0)
                     orbital_light_sources.push_back(light);
                 else
                     light_sources.push_back(light);
             }
         }
     }
-}
-
-void AssetInfo::load_shading_info(const nlohmann::json& data) {
-    if (!data.contains("shading_info") || !data["shading_info"].is_object()) return;
-    const auto& s = data["shading_info"];
-
-    if (s.contains("has_shading") && s["has_shading"].is_boolean())
-        has_shading = s["has_shading"].get<bool>();
-    else
-        has_shading = false;
-
-    if (s.contains("has_base_shadow") && s["has_base_shadow"].is_boolean())
-        has_base_shadow = s["has_base_shadow"].get<bool>();
-    else
-        has_base_shadow = false;
-
-    if (s.contains("base_shadow_intensity") && s["base_shadow_intensity"].is_number())
-        base_shadow_intensity = s["base_shadow_intensity"].get<int>();
-    else
-        base_shadow_intensity = 0;
-
-    if (s.contains("has_gradient_shadow") && s["has_gradient_shadow"].is_boolean())
-        has_gradient_shadow = s["has_gradient_shadow"].get<bool>();
-    else
-        has_gradient_shadow = false;
-
-    if (s.contains("number_of_gradient_shadows") && s["number_of_gradient_shadows"].is_number())
-        number_of_gradient_shadows = s["number_of_gradient_shadows"].get<int>();
-    else
-        number_of_gradient_shadows = 0;
-
-    if (s.contains("gradient_shadow_intensity") && s["gradient_shadow_intensity"].is_number())
-        gradient_shadow_intensity = s["gradient_shadow_intensity"].get<int>();
-    else
-        gradient_shadow_intensity = 0;
-
-    if (s.contains("has_casted_shadows") && s["has_casted_shadows"].is_boolean())
-        has_casted_shadows = s["has_casted_shadows"].get<bool>();
-    else
-        has_casted_shadows = false;
-
-    if (s.contains("number_of_casted_shadows") && s["number_of_casted_shadows"].is_number())
-        number_of_casted_shadows = s["number_of_casted_shadows"].get<int>();
-    else
-        number_of_casted_shadows = 0;
-
-    if (s.contains("cast_shadow_intensity") && s["cast_shadow_intensity"].is_number())
-        cast_shadow_intensity = s["cast_shadow_intensity"].get<int>();
-    else
-        cast_shadow_intensity = 0;
 }
 
 void AssetInfo::load_collision_areas(const nlohmann::json& data,
