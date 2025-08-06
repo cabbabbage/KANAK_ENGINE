@@ -19,20 +19,19 @@
         }
     },
     "tags": [
+        "metal",
         "grey",
+        "black",
         "center",
         "impassable",
         "default",
-        "black",
-        "metal",
-        "car",
         "large",
-        "man-made"
+        "man-made",
+        "car"
     ],
-    "z_threshold": 236,
+    "z_threshold": 200,
     "size_settings": {
-        "scale_percentage": 29,
-        "variability_percentage": 0
+        "scale_percentage": 29
     },
     "has_spacing": true,
     "spacing_area": "spacing_area.json",
@@ -48,10 +47,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 575,
-            "y_radius": 147,
-            "x_radius": 172,
-            "fall_off": 30,
+            "radius": 431,
+            "y_radius": 270,
+            "x_radius": 402,
+            "falloff": 50,
             "factor": 100
         }
     ],

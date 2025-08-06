@@ -37,18 +37,17 @@
         "volume"
     ],
     "tags": [
-        "wood",
         "impassable",
         "collision",
-        "default"
+        "default",
+        "wood"
     ],
     "impassable_area": "impassable_area.json",
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 557,
     "z_threshold": 99,
     "size_settings": {
-        "scale_percentage": 11,
-        "variability_percentage": 0
+        "scale_percentage": 11
     },
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -66,10 +65,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 323,
-            "y_radius": 75,
-            "x_radius": 50,
-            "fall_off": 40,
+            "radius": 161,
+            "y_radius": 118,
+            "x_radius": 118,
+            "falloff": 50,
             "factor": 100
         }
     ]

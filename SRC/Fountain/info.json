@@ -14,8 +14,7 @@
     "impassable_area": "impassable_area.json",
     "z_threshold": 1,
     "size_settings": {
-        "scale_percentage": 77,
-        "variability_percentage": 0
+        "scale_percentage": 77
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 2000,
@@ -23,17 +22,17 @@
         "Spacing"
     ],
     "tags": [
-        "impassable",
+        "white",
         "grey",
+        "center",
+        "impassable",
         "healing",
         "light",
-        "medium",
-        "water",
-        "movement",
-        "white",
         "default",
+        "medium",
         "blue",
-        "center"
+        "water",
+        "movement"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -41,10 +40,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 357,
+            "radius": 267,
             "y_radius": 196,
-            "x_radius": 181,
-            "fall_off": 80,
+            "x_radius": 230,
+            "falloff": 50,
             "factor": 100
         },
         {
@@ -56,12 +55,11 @@
                 255
             ],
             "radius": 0,
-            "fall_off": 0,
-            "jitter_min": 0,
+            "falloff": 0,
+            "flicker": 0,
             "flare": 0,
             "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
+            "offset_y": 0
         }
     ],
     "shading_info": {

@@ -1,4 +1,3 @@
-// === File: scene_renderer.cpp ===
 #include "scene_renderer.hpp"
 #include "generate_light.hpp"
 #include <algorithm>
@@ -7,8 +6,102 @@
 #include <vector>
 #include <tuple>
 #include <iostream>
+#include <random>
 
 static constexpr SDL_Color SLATE_COLOR = {50, 70, 50, 110};
+
+
+
+void SceneRenderer::render_asset_lights_z() {
+    if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
+
+    static std::mt19937 flicker_rng{ std::random_device{}() };
+
+    struct LightEntry {
+        SDL_Texture* tex;
+        SDL_Rect dst;
+        Uint8 alpha;
+        SDL_RendererFlip flip;
+        bool apply_tint;
+    };
+
+    std::vector<LightEntry> z_lights;
+
+    // main light (no tint)
+    SDL_Texture* main_tex = main_light_source_.get_texture();
+    if (main_tex) {
+        auto [mx, my] = main_light_source_.get_position();
+        int main_sz   = screen_width_ * 3;
+        SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
+        Uint8 main_alpha = Uint8(main_light_source_.current_color_.a);
+        z_lights.push_back({ main_tex, main_rect, main_alpha, SDL_FLIP_NONE, false });
+    }
+
+    // asset-specific lights (with tint)
+    for (Asset* a : assets_->active_assets) {
+        if (!a || !a->info || !a->info->has_light_source) continue;
+        for (const auto& light : a->info->light_sources) {
+            int offX = a->flipped ? -light.offset_x : light.offset_x;
+            SDL_Point p = util_.applyParallax(a->pos_X + offX, a->pos_Y + light.offset_y);
+
+            int lw, lh;
+            SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
+            SDL_Rect dst{ p.x - lw/2, p.y - lh/2, lw, lh };
+
+            float alpha_f = static_cast<float>(main_light_source_.light_brightness);
+            if (a == assets_->player) {
+                alpha_f *= 0.6f;
+            }
+
+            if (light.flicker > 0) {
+                float intensity_scale = std::clamp(light.intensity / 255.0f, 0.0f, 1.0f);
+                float max_jitter = (light.flicker / 100.0f) * intensity_scale;
+                std::uniform_real_distribution<float> dist(-max_jitter, max_jitter);
+                float jitter = dist(flicker_rng);
+                alpha_f *= (1.0f + jitter);
+            }
+
+            Uint8 alpha = static_cast<Uint8>(std::clamp(alpha_f, 0.0f, 255.0f));
+            SDL_RendererFlip flip = a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+            z_lights.push_back({ light.texture, dst, alpha, flip, true });
+        }
+    }
+
+    // render mask
+    SDL_Texture* mask = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
+                                          SDL_TEXTUREACCESS_TARGET,
+                                          screen_width_, screen_height_);
+    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_NONE);
+    SDL_SetRenderTarget(renderer_, mask);
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+    SDL_RenderClear(renderer_);
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_ADD);
+
+    for (auto& e : z_lights) {
+        SDL_SetTextureBlendMode(e.tex, SDL_BLENDMODE_ADD);
+        SDL_SetTextureAlphaMod(e.tex, e.alpha);
+
+        if (e.apply_tint) {
+            SDL_Color tinted = main_light_source_.apply_tint_to_color({255, 255, 255, 255}, e.alpha);
+            SDL_SetTextureColorMod(e.tex, tinted.r, tinted.g, tinted.b);
+        } else {
+            SDL_SetTextureColorMod(e.tex, 255, 255, 255);
+        }
+
+        SDL_RenderCopyEx(renderer_, e.tex, nullptr, &e.dst, 0, nullptr, e.flip);
+        SDL_SetTextureColorMod(e.tex, 255, 255, 255);
+    }
+
+    SDL_SetRenderTarget(renderer_, nullptr);
+    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_MOD);
+    SDL_RenderCopy(renderer_, mask, nullptr, nullptr);
+    SDL_DestroyTexture(mask);
+
+    if (debugging) std::cout << "[render_asset_lights_z] end" << std::endl;
+}
+
+
+
 
 SceneRenderer::SceneRenderer(SDL_Renderer* renderer,
                              Assets* assets,
@@ -27,79 +120,13 @@ SceneRenderer::SceneRenderer(SDL_Renderer* renderer,
 
 {}
 
+
 void SceneRenderer::update_shading_groups() {
     ++current_shading_group_;
     if (current_shading_group_ > num_groups_)
         current_shading_group_ = 1;
 }
-void SceneRenderer::render_asset_lights_z() {
-    if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
 
-    struct LightEntry { SDL_Texture* tex; SDL_Rect dst; Uint8 alpha; SDL_RendererFlip flip; };
-    std::vector<LightEntry> z_lights;
-
-    // main light (never flipped)
-    SDL_Texture* main_tex = main_light_source_.get_texture();
-    if (main_tex) {
-        auto [mx, my] = main_light_source_.get_position();
-        int main_sz   = screen_width_ * 3;
-        SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
-        Uint8 main_alpha = main_light_source_.current_color_.a;
-        z_lights.push_back({ main_tex, main_rect, Uint8(main_alpha * 0.9), SDL_FLIP_NONE });
-    }
-
-    // asset‐specific lights
-    for (Asset* a : assets_->active_assets) {
-        if (!a || !a->info || !a->info->has_light_source) continue;
-        for (const auto& light : a->info->light_sources) {
-            int offX = a->flipped ? -light.offset_x : light.offset_x;
-            SDL_Point p = util_.applyParallax(a->pos_X + offX,
-                                              a->pos_Y + light.offset_y);
-
-            int lw, lh;
-            SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
-            SDL_Rect dst{ p.x - lw/2, p.y - lh/2, lw, lh };
-
-            Uint8 alpha = main_light_source_.light_brightness;
-            if (a == assets_->player) {
-                alpha = alpha / 2;  // half opacity for player lights
-            }
-            SDL_RendererFlip flip = a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-            z_lights.push_back({ light.texture, dst, alpha, flip });
-        }
-    }
-
-    // render into mask
-    SDL_Texture* mask = SDL_CreateTexture(
-        renderer_, SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_TARGET,
-        screen_width_, screen_height_);
-    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_NONE);
-    SDL_SetRenderTarget(renderer_, mask);
-    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
-    SDL_RenderClear(renderer_);
-    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_ADD);
-
-    for (auto& e : z_lights) {
-        SDL_SetTextureBlendMode(e.tex, SDL_BLENDMODE_ADD);
-        SDL_SetTextureAlphaMod(e.tex, e.alpha);
-        SDL_RenderCopyEx(renderer_,
-                         e.tex,
-                         nullptr,
-                         &e.dst,
-                         0,
-                         nullptr,
-                         e.flip);
-    }
-
-    // composite mask
-    SDL_SetRenderTarget(renderer_, nullptr);
-    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_MOD);
-    SDL_RenderCopy(renderer_, mask, nullptr, nullptr);
-    SDL_DestroyTexture(mask);
-
-    if (debugging) std::cout << "[render_asset_lights_z] end" << std::endl;
-}
 
 
 bool SceneRenderer::shouldRegen(Asset* a) {
@@ -157,10 +184,11 @@ SDL_Texture* SceneRenderer::regenerateFinalTexture(Asset* a) {
     if (!base) return nullptr;
 
     Uint8 main_alpha = main_light_source_.current_color_.a;
+
     int bw, bh;
     SDL_QueryTexture(base, nullptr, nullptr, &bw, &bh);
 
-    // Create final texture
+
     SDL_Texture* final_tex = SDL_CreateTexture(renderer_,
                                                SDL_PIXELFORMAT_RGBA8888,
                                                SDL_TEXTUREACCESS_TARGET,
@@ -170,15 +198,16 @@ SDL_Texture* SceneRenderer::regenerateFinalTexture(Asset* a) {
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
     SDL_RenderClear(renderer_);
 
-    // Draw base with tint
     float c = std::pow(a->alpha_percentage, 1.0f);
-    int tint = (c >= 1.0f ? 255 : int(main_alpha * c));
-    if (a->info->type == "Player") tint = std::min(255, tint * 3);
-    SDL_SetTextureColorMod(base, tint, tint, tint);
+    int alpha_mod = (c >= 1.0f) ? 255 : int(main_alpha * c);
+    if (a->info->type == "Player") alpha_mod = std::min(255, alpha_mod * 3);
+
+    SDL_Color mod_color = main_light_source_.apply_tint_to_color({255, 255, 255, 255}, alpha_mod);
+
+    SDL_SetTextureColorMod(base, mod_color.r, mod_color.g, mod_color.b);
     SDL_RenderCopy(renderer_, base, nullptr, nullptr);
     SDL_SetTextureColorMod(base, 255, 255, 255);
 
-    // If shaded, generate and composite mask
     if (a->has_shading) {
         SDL_Texture* mask = generateMask(a, bw, bh);
         SDL_SetRenderTarget(renderer_, final_tex);
@@ -190,6 +219,7 @@ SDL_Texture* SceneRenderer::regenerateFinalTexture(Asset* a) {
     SDL_SetRenderTarget(renderer_, nullptr);
     return final_tex;
 }
+
 
 void SceneRenderer::render() {
     update_shading_groups();
@@ -203,11 +233,14 @@ void SceneRenderer::render() {
     // Global light
     main_light_source_.update();
 
-    // Clear background
-    SDL_SetRenderDrawColor(renderer_,
-                           SLATE_COLOR.r, SLATE_COLOR.g,
-                           SLATE_COLOR.b, SLATE_COLOR.a);
+    SDL_Color base = SLATE_COLOR;
+    SDL_Color tinted = main_light_source_.apply_tint_to_color(base, 255);
+
+    SDL_SetRenderDrawColor(renderer_, tinted.r, tinted.g, tinted.b, tinted.a);
     SDL_RenderClear(renderer_);
+
+
+
 
     // Render assets
     for (Asset* a : assets_->active_assets) {
@@ -239,18 +272,43 @@ void SceneRenderer::render() {
 
 void SceneRenderer::renderOwnedStaticLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha) {
     if (!a || !a->info) return;
+    static std::mt19937 flicker_rng{ std::random_device{}() };
+
     for (const auto& light : a->info->light_sources) {
         if (!light.texture) continue;
+
         int offX = a->flipped ? -light.offset_x : light.offset_x;
         SDL_Point p = util_.applyParallax(a->pos_X + offX,
                                           a->pos_Y + light.offset_y);
+
         int lw, lh;
         SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
-        SDL_Rect dst{ p.x - lw/2 - bounds.x,
-                      p.y - lh/2 - bounds.y,
-                      lw, lh };
+        SDL_Rect dst{
+            p.x - lw/2 - bounds.x,
+            p.y - lh/2 - bounds.y,
+            lw, lh
+        };
+
         SDL_SetTextureBlendMode(light.texture, SDL_BLENDMODE_ADD);
-        SDL_SetTextureAlphaMod(light.texture, alpha / 2);
+
+        // base half-opacity for static lights
+        float alpha_f = static_cast<float>(alpha) * 0.5f;
+
+        // apply flicker if configured
+        if (light.flicker > 0) {
+            std::uniform_real_distribution<float> dist(
+                -light.flicker / 100.0f,
+                 light.flicker / 100.0f
+            );
+            float jitter = dist(flicker_rng);
+            alpha_f *= (1.0f + jitter);
+        }
+
+        Uint8 mod_alpha = static_cast<Uint8>(
+            std::clamp(alpha_f, 0.0f, 255.0f)
+        );
+        SDL_SetTextureAlphaMod(light.texture, mod_alpha);
+
         SDL_RenderCopyEx(renderer_,
                          light.texture,
                          nullptr,
@@ -305,35 +363,54 @@ void SceneRenderer::renderOrbitalLights(Asset* a,
                                         const SDL_Rect& bounds,
                                         Uint8 alpha) {
     if (!a || !a->info) return;
-    float offset = -M_PI / 4.0f;  // 45 degrees CCW
+
+    // Grab the global light's current angle
     float angle = main_light_source_.get_angle();
 
+    // If the asset is flipped horizontally, invert the X direction
     float dir = a->flipped ? -1.0f : 1.0f;
 
     for (const auto& light : a->info->orbital_light_sources) {
-        if (!light.texture || light.x_radius <= 0 || light.y_radius <= 0) continue;
+        // Skip any entries without a valid texture or radii
+        if (!light.texture || light.x_radius <= 0 || light.y_radius <= 0)
+            continue;
 
+        // Calculate the world‐space offset using an ellipse:
+        //   X = cos(angle) * x_radius
+        //   Y = sin(angle) * y_radius
         float lx = a->pos_X + std::cos(angle) * light.x_radius * dir;
-        float ly = a->pos_Y + std::sin(angle) * light.y_radius;
+        float ly = a->pos_Y - std::sin(angle) * light.y_radius;  // subtract sine for "up"
 
-        SDL_Point p = util_.applyParallax(static_cast<int>(lx), static_cast<int>(ly));
+        // Map to screen coords
+        SDL_Point p = util_.applyParallax(
+            static_cast<int>(std::round(lx)),
+            static_cast<int>(std::round(ly))
+        );
 
-        int lw, lh;
+        // Query the texture size
+        int lw = 0, lh = 0;
         SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
+
+        // Build a dst rect relative to the asset bounds
         SDL_Rect dst {
             p.x - lw/2 - bounds.x,
             p.y - lh/2 - bounds.y,
-            lw, lh
+            lw,
+            lh
         };
 
+        // Draw it additively
         SDL_SetTextureBlendMode(light.texture, SDL_BLENDMODE_ADD);
         SDL_SetTextureAlphaMod(light.texture, alpha);
         SDL_RenderCopy(renderer_, light.texture, nullptr, &dst);
     }
 }
 
+
 void SceneRenderer::renderReceivedStaticLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha) {
     if (!a) return;
+    static std::mt19937 flicker_rng{ std::random_device{}() };
+
     for (const auto& sl : a->static_lights) {
         if (!sl.source || !sl.source->texture) continue;
 
@@ -350,8 +427,19 @@ void SceneRenderer::renderReceivedStaticLights(Asset* a, const SDL_Rect& bounds,
         };
 
         SDL_SetTextureBlendMode(sl.source->texture, SDL_BLENDMODE_ADD);
-        Uint8 mod_alpha = static_cast<Uint8>(alpha * sl.alpha_percentage);
+
+        float base_alpha = static_cast<float>(alpha) * sl.alpha_percentage;
+        if (sl.source->flicker > 0) {
+            float brightness_scale = std::clamp(sl.source->intensity / 255.0f, 0.0f, 1.0f);
+            float max_jitter = (sl.source->flicker / 100.0f) * brightness_scale;
+            std::uniform_real_distribution<float> dist(-max_jitter, max_jitter);
+            float jitter = dist(flicker_rng);
+            base_alpha *= (1.0f + jitter);
+        }
+
+        Uint8 mod_alpha = static_cast<Uint8>(std::clamp(base_alpha, 0.0f, 255.0f));
         SDL_SetTextureAlphaMod(sl.source->texture, mod_alpha);
+
         SDL_RenderCopyEx(renderer_,
                          sl.source->texture,
                          nullptr,
@@ -361,6 +449,7 @@ void SceneRenderer::renderReceivedStaticLights(Asset* a, const SDL_Rect& bounds,
                          a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
     }
 }
+
 
 void SceneRenderer::renderMainLight(Asset* a,
                                     SDL_Texture* tex,
@@ -389,7 +478,7 @@ double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_w
     constexpr int FADE_ABOVE = 180;
     constexpr int FADE_BELOW = -30;
     constexpr double MIN_OPACITY = 0.05;
-    constexpr double MAX_OPACITY = 0.4;
+    constexpr double MAX_OPACITY = 0.6;
 
     int delta_y = light_world_y - asset_y;
     double factor;
@@ -405,3 +494,5 @@ double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_w
 
     return std::clamp(factor, MIN_OPACITY, MAX_OPACITY);
 }
+
+

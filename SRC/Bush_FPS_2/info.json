@@ -28,10 +28,10 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "bush",
-        "moving",
+        "passable",
         "nature",
-        "passable"
+        "bush",
+        "moving"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -52,10 +52,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 391,
-            "y_radius": 162,
-            "x_radius": 130,
-            "fall_off": 20,
+            "radius": 195,
+            "y_radius": 139,
+            "x_radius": 195,
+            "falloff": 30,
             "factor": 100
         }
     ]

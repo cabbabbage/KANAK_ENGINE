@@ -97,11 +97,15 @@ class LightingPage(tk.Frame):
     def _add_light_source(self, data=None):
         idx = len(self.source_frames)
         frame = LightSourceFrame(
-            self.scroll_frame, idx, data,
-            on_delete=lambda i=idx: self._delete_source(i)
+            self.scroll_frame,
+            idx,
+            data,
+            on_delete=lambda i=idx: self._delete_source(i),
+            autosave_callback=self._autosave  # ✅ hook into autosave
         )
         frame.pack(fill=tk.X, padx=10, pady=8)
         self.source_frames.append(frame)
+
 
     def _delete_source(self, idx):
         if 0 <= idx < len(self.source_frames):
@@ -221,15 +225,15 @@ class LightingPage(tk.Frame):
                 data = json.load(f)
                 scale_pct = data.get("size_settings", {}).get("scale_percentage", 100) / 100.0
 
-            y_radius = int(height * scale_pct * 1.4)
-            x_radius = int(width * scale_pct * 1.6)
-            base_radius = int(max(width, height) * scale_pct * 3)
+            y_radius = int(height * scale_pct * 1.10)
+            x_radius = int(width * scale_pct * 1.40)
+            base_radius = int(max(width, height) * scale_pct * 1.5)
 
             self.shading_control.y_radius.set(y_radius, y_radius)
             self.shading_control.x_radius.set(x_radius, x_radius)
             self.shading_control.radius.set(base_radius, base_radius)
             self.shading_control.intensity.set(255, 255)
-            self.shading_control.falloff.set(20, 20)
+            self.shading_control.falloff.set(50, 50)
             self.shading_control.factor.set(100.0, 100.0)
 
             self.has_shading_var.set(True)

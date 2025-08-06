@@ -43,10 +43,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 1816,
-            "y_radius": 847,
-            "x_radius": 404,
-            "fall_off": 20,
+            "radius": 908,
+            "y_radius": 665,
+            "x_radius": 353,
+            "falloff": 50,
             "factor": 100
         }
     ],

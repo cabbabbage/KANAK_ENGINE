@@ -10,7 +10,7 @@ struct LightSource {
     int radius = 64;
     int fall_off = 50;
     int flare = 0;
-    int flicker = false;
+    int flicker = 20;
     int offset_x = 0;
     int offset_y = 0;
     int x_radius = 0;

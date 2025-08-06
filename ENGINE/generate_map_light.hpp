@@ -1,13 +1,19 @@
+// generate_map_light.hpp
 #pragma once
 
 #include <SDL.h>
-#include <vector>
 #include <string>
+#include <vector>
+#include <utility>
 
-class CacheManager;
+struct KeyColor {
+    float degree;
+    SDL_Color color;
+};
 
 class Generate_Map_Light {
 public:
+    // center_x/center_y are the screen-center where the light orbits around
     Generate_Map_Light(SDL_Renderer* renderer,
                        int screen_center_x,
                        int screen_center_y,
@@ -15,49 +21,49 @@ public:
                        SDL_Color fallback_base_color,
                        const std::string& map_path);
 
+    // advance the sun/moon by one step
     void update();
-    std::pair<int, int> get_position() const;
-    SDL_Texture* get_texture() const;
-    SDL_Color current_color_;
-    int light_brightness = 255;
-    int light_source_off_at = 200; 
+
+    // angle in radians around the orbit
     float get_angle() const;
-    int get_update_interval();
-    int get_update_index();
-    double mult_ = 0.4;
+
+    // current world‐coords of the light
+    std::pair<int,int> get_position() const;
+
+    // the generated radial light texture
+    SDL_Texture* get_texture() const;
+
+    // tint to apply to your scene background
+    SDL_Color get_tint() const;
+    SDL_Color current_color_;    
+    // 0…255 brightness for asset‐lighting masks
+    int get_brightness() const { return light_brightness; }
+    int light_brightness;  
+    SDL_Color apply_tint_to_color(const SDL_Color& base, int alpha_mod = 255) const;
 private:
+    void set_light_brightness();
     void build_texture();
-    float compute_opacity_from_horizon(float norm) const;
     SDL_Color compute_color_from_horizon() const;
-
-    struct KeyColor {
-        float degree;
-        SDL_Color color;
-
-        KeyColor(float d, SDL_Color c) : degree(d), color(c) {}
-    };
 
     SDL_Renderer* renderer_;
     SDL_Texture* texture_;
+    SDL_Color base_color_;         // loaded from JSON
+  // from key_colors_ + horizon
+    SDL_Color tint_;               // (current_color_ * mult_)
 
-    SDL_Color base_color_;
-
-    int radius_ = 0;
-    int intensity_ = 255;
-    int orbit_radius = 150;
-    int update_interval_ = 2;
-    Uint8 min_opacity_ = 50;
-    Uint8 max_opacity_ = 255;
-
-
-    int pos_x_ = 0;
-    int pos_y_ = 0;
-    int center_x_ = 0;
-    int center_y_ = 0;
-
-    float angle_ = 0.0f;
-    bool initialized_ = false;
-    int frame_counter_ = 0;
+    int center_x_, center_y_;
+    float radius_;                 // how far the radial gradient extends
+    float intensity_;              // max alpha of the radial gradient
+    float mult_;                   // tint strength
+    float fall_off_;               // radial light falloff
+    int orbit_radius;              // distance of the “sun” from center
+    int update_interval_;          // frames between moves
 
     std::vector<KeyColor> key_colors_;
+
+    float angle_;                  // 0…2π
+    bool initialized_;
+    int pos_x_, pos_y_;            // computed from angle_
+    int frame_counter_;
+        // for masking (0…255)
 };

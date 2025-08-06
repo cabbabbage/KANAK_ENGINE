@@ -19,7 +19,7 @@
       "name": "candle",
       "min_number": 10,
       "max_number": 20,
-      "position": "Entrance",
+      "position": "Perimeter",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -31,17 +31,6 @@
       "sector_center_max": 0,
       "sector_range_min": 360,
       "sector_range_max": 360
-    },
-    {
-      "name": "Chest",
-      "min_number": 5,
-      "max_number": 20,
-      "position": "Random",
-      "exact_position": null,
-      "tag": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
     }
   ],
   "min_height": 701,
@@ -50,7 +39,7 @@
   "geometry": "Circle",
   "is_spawn": true,
   "is_boss": false,
-  "inherits_map_assets": true,
+  "inherits_map_assets": false,
   "batch_assets": {
     "has_batch_assets": false,
     "grid_spacing_min": 100,

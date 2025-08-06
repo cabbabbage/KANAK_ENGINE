@@ -1,4 +1,5 @@
 // === File: generate_light.cpp ===
+
 #include "generate_light.hpp"
 #include "cache_manager.hpp"
 
@@ -31,15 +32,16 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     const std::string meta_file  = folder + "/metadata.json";
     const std::string img_file   = folder + "/light.png";
 
+    // Try to load cached version
     json meta;
     if (CacheManager::load_metadata(meta_file, meta)) {
-        if (meta.value("radius", -1) == light.radius &&
-            meta.value("fall_off", -1) == light.fall_off &&
-            meta.value("intensity", -1) == light.intensity &&
-            meta.value("flare", -1) == light.flare &&
-            meta["color"][0].get<int>() == light.color.r &&
-            meta["color"][1].get<int>() == light.color.g &&
-            meta["color"][2].get<int>() == light.color.b)
+        if (meta.value("radius",   -1)    == light.radius &&
+            meta.value("fall_off", -1)    == light.fall_off &&
+            meta.value("intensity",-1)    == light.intensity &&
+            meta.value("flare",    -1)    == light.flare &&
+            meta["color"][0].get<int>()  == light.color.r &&
+            meta["color"][1].get<int>()  == light.color.g &&
+            meta["color"][2].get<int>()  == light.color.b)
         {
             if (SDL_Surface* surf = CacheManager::load_surface(img_file)) {
                 SDL_Texture* tex = CacheManager::surface_to_texture(renderer, surf);
@@ -50,6 +52,7 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
         }
     }
 
+    // Rebuild
     fs::remove_all(folder);
     fs::create_directories(folder);
 
@@ -59,25 +62,30 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     int intensity = std::clamp(light.intensity, 0, 255);
     int flare     = std::clamp(light.flare, 0, 100);
 
+    // Optionally downscale if radius too large
     const int max_dim = 4096;
     float scale = 1.0f;
-    while (radius * 2 > max_dim) {
+    int scaledRadius = radius;
+    while (scaledRadius * 2 > max_dim) {
         scale *= 0.5f;
-        radius = static_cast<int>(light.radius * scale);
+        scaledRadius = static_cast<int>(radius * scale);
     }
 
-    int drawRadius = radius;
-    if (falloff == 0) {
-        drawRadius = radius * 3;
-    }
+    // Always keep image = 2×radius (after scaling)
+    int drawRadius = scaledRadius;
     float effRadius = static_cast<float>(drawRadius);
     int size = drawRadius * 2;
 
-    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, size, size, 32, SDL_PIXELFORMAT_RGBA32);
+    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(
+        0, size, size, 32, SDL_PIXELFORMAT_RGBA32);
     Uint32* pixels = static_cast<Uint32*>(surf->pixels);
     SDL_PixelFormat* fmt = surf->format;
 
-    // PASS 1: Base colored glow
+    // PASS 1: Base colored glow with falloff mapped 0→solid to 100→mostly empty
+    float fFallNorm = falloff / 100.0f;             // 0.0 .. 1.0
+    const float maxExp = 8.0f;                     // exponent at falloff=100
+    float exponent = 1.0f + fFallNorm * (maxExp - 1.0f);
+
     for (int y = 0; y < size; ++y) {
         for (int x = 0; x < size; ++x) {
             float dx = x - drawRadius + 0.5f;
@@ -87,20 +95,18 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
                 pixels[y*size + x] = 0;
                 continue;
             }
-            float norm = dist / effRadius;
-            float exponent = (falloff > 0)
-                                ? ((falloff / 25.0f) + 1.5f)
-                                : 1.0f;
+            float norm = dist / effRadius;              // 0.0 at center, 1.0 at edge
             float fade = std::pow(1.0f - norm, exponent);
-            Uint8 a = Uint8(intensity * fade);
-            Uint8 r = Uint8(base.r * (a / 255.0f));
-            Uint8 g = Uint8(base.g * (a / 255.0f));
-            Uint8 b = Uint8(base.b * (a / 255.0f));
+            fade = std::clamp(fade, 0.0f, 1.0f);
+            Uint8 a = static_cast<Uint8>(intensity * fade);
+            Uint8 r = static_cast<Uint8>(base.r * (a / 255.0f));
+            Uint8 g = static_cast<Uint8>(base.g * (a / 255.0f));
+            Uint8 b = static_cast<Uint8>(base.b * (a / 255.0f));
             pixels[y*size + x] = SDL_MapRGBA(fmt, r, g, b, a);
         }
     }
 
-    // PASS 2: Realistic lens flares and halo (only if flare > 0)
+    // PASS 2: Lens flares (unchanged)
     if (flare > 0) {
         auto drawCircle = [&](int cx, int cy, int rad, Uint8 alpha) {
             for (int dy = -rad; dy <= rad; ++dy) {
@@ -114,135 +120,126 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
                     Uint8 pr, pg, pb, pa;
                     SDL_GetRGBA(pixels[idx], fmt, &pr, &pg, &pb, &pa);
                     Uint8 na = static_cast<Uint8>(std::min(255, pa + alpha));
-                    Uint8 nr = Uint8(base.r * (na / 255.0f));
-                    Uint8 ng = Uint8(base.g * (na / 255.0f));
-                    Uint8 nb = Uint8(base.b * (na / 255.0f));
+                    Uint8 nr = static_cast<Uint8>(base.r * (na / 255.0f));
+                    Uint8 ng = static_cast<Uint8>(base.g * (na / 255.0f));
+                    Uint8 nb = static_cast<Uint8>(base.b * (na / 255.0f));
                     pixels[idx] = SDL_MapRGBA(fmt, nr, ng, nb, na);
                 }
             }
         };
 
-        std::mt19937 rng(std::random_device{}());
+        static std::mt19937 rng{ std::random_device{}() };
         std::uniform_real_distribution<float> angDist(0.0f, 2.0f * M_PI);
-        std::uniform_real_distribution<float> lenDist(radius * 0.5f, radius * 1.2f);
-        std::uniform_real_distribution<float> widthDist(radius * 0.002f, radius * 0.01f);
+        std::uniform_real_distribution<float> lenDist(radius * 0.8f, radius * 1.6f);
+        std::uniform_real_distribution<float> widthDist(radius * 0.006f, radius * 0.02f);
 
-        int streakCount = std::clamp(flare / 20, 2, 6);
+        int streakCount = std::clamp(flare / 15, 3, 8);
         for (int s = 0; s < streakCount; ++s) {
-            float angle = angDist(rng);
+            float angle  = angDist(rng);
             float length = lenDist(rng);
             float widthF = widthDist(rng);
-            int steps = static_cast<int>(length);
+            int steps    = static_cast<int>(length);
             for (int i = 0; i <= steps; ++i) {
                 float t = float(i) / steps;
                 int cx = static_cast<int>(drawRadius + std::cos(angle) * t * length);
                 int cy = static_cast<int>(drawRadius + std::sin(angle) * t * length);
                 int rad = static_cast<int>(widthF * (1.0f - t));
-                Uint8 alpha = static_cast<Uint8>(flare * (1.0f - t) * 0.3f);
-                if (rad > 0) drawCircle(cx, cy, rad, alpha);
+                Uint8 alphaVal = static_cast<Uint8>(flare * (1.0f - t) * 0.5f);
+                if (rad > 0) drawCircle(cx, cy, rad, alphaVal);
             }
         }
 
-        int ghostCount = std::clamp(flare / 25, 2, 5);
+        int ghostCount = std::clamp(flare / 20, 3, 6);
         for (int g = 0; g < ghostCount; ++g) {
             float angle = angDist(rng);
-            float distF = std::uniform_real_distribution<float>(0.3f, 0.9f)(rng);
+            float distF = std::uniform_real_distribution<float>(0.25f, 0.85f)(rng);
             int gx = static_cast<int>(drawRadius + std::cos(angle) * drawRadius * distF);
             int gy = static_cast<int>(drawRadius + std::sin(angle) * drawRadius * distF);
             int gr = static_cast<int>(drawRadius * 0.05f);
-            Uint8 alpha = static_cast<Uint8>(flare * 0.1f * (1.0f - distF));
-            drawCircle(gx, gy, gr, alpha);
-        }
-
-        float ringR = effRadius * 0.9f;
-        float ringW = effRadius * 0.1f;
-        for (int y = 0; y < size; ++y) {
-            for (int x = 0; x < size; ++x) {
-                float dx = x - drawRadius + 0.5f;
-                float dy = y - drawRadius + 0.5f;
-                float dist = std::sqrt(dx*dx + dy*dy);
-                float diff = std::abs(dist - ringR);
-                if (diff > ringW) continue;
-                float fade = std::exp(-std::pow(diff / ringW, 2) * 2.0f);
-                Uint8 add = Uint8(std::clamp(flare * 0.5f * fade, 0.0f, 255.0f));
-                int idx = y * size + x;
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(pixels[idx], fmt, &pr, &pg, &pb, &pa);
-                int nr = std::min<int>(255, pr + (base.r * add / 255));
-                int ng = std::min<int>(255, pg + (base.g * add / 255));
-                int nb = std::min<int>(255, pb + (base.b * add / 255));
-                int na = std::min<int>(255, pa + add);
-                pixels[idx] = SDL_MapRGBA(fmt, Uint8(nr), Uint8(ng), Uint8(nb), Uint8(na));
-            }
+            Uint8 alphaVal = static_cast<Uint8>(flare * 0.15f * (1.0f - distF));
+            drawCircle(gx, gy, gr, alphaVal);
         }
     }
 
-    // PASS 3: Fast separable box blur
+    // PASS 3: Separable box‐blur ×2 (unchanged)
     {
-        int blurRadius = std::clamp(drawRadius / 50, 2, 15);
-        int winSize = blurRadius * 2 + 1;
-        std::vector<Uint32> copyBuf(pixels, pixels + size * size);
-        std::vector<Uint32> tempBuf(size * size);
+        const float strength = 0.5f;
+        for (int pass = 0; pass < 2; ++pass) {
+            int blurRadius = std::clamp(drawRadius / 50, 2, 15);
+            int winSize    = blurRadius * 2 + 1;
+            std::vector<Uint32> copyBuf(pixels, pixels + size * size);
+            std::vector<Uint32> tempBuf(size * size);
 
-        for (int y = 0; y < size; ++y) {
-            int sumR = 0, sumG = 0, sumB = 0, sumA = 0;
-            for (int dx = -blurRadius; dx <= blurRadius; ++dx) {
-                int cx = std::clamp(dx, 0, size-1);
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(copyBuf[y*size + cx], fmt, &pr, &pg, &pb, &pa);
-                sumR += pr; sumG += pg; sumB += pb; sumA += pa;
-            }
-            for (int x = 0; x < size; ++x) {
-                Uint8 nr = Uint8(sumR / winSize);
-                Uint8 ng = Uint8(sumG / winSize);
-                Uint8 nb = Uint8(sumB / winSize);
-                Uint8 na = Uint8(sumA / winSize);
-                tempBuf[y*size + x] = SDL_MapRGBA(fmt, nr, ng, nb, na);
-                int left = x - blurRadius;
-                int right = x + blurRadius + 1;
-                int leftCol = std::clamp(left, 0, size-1);
-                int rightCol = std::clamp(right, 0, size-1);
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(copyBuf[y*size + leftCol], fmt, &pr, &pg, &pb, &pa);
-                sumR -= pr; sumG -= pg; sumB -= pb; sumA -= pa;
-                SDL_GetRGBA(copyBuf[y*size + rightCol], fmt, &pr, &pg, &pb, &pa);
-                sumR += pr; sumG += pg; sumB += pb; sumA += pa;
-            }
-        }
-
-        for (int x = 0; x < size; ++x) {
-            int sumR = 0, sumG = 0, sumB = 0, sumA = 0;
-            for (int dy = -blurRadius; dy <= blurRadius; ++dy) {
-                int cy = std::clamp(dy, 0, size-1);
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(tempBuf[cy*size + x], fmt, &pr, &pg, &pb, &pa);
-                sumR += pr; sumG += pg; sumB += pb; sumA += pa;
-            }
+            // horizontal blur
             for (int y = 0; y < size; ++y) {
-                Uint8 nr = Uint8(sumR / winSize);
-                Uint8 ng = Uint8(sumG / winSize);
-                Uint8 nb = Uint8(sumB / winSize);
-                Uint8 na = Uint8(sumA / winSize);
-                pixels[y*size + x] = SDL_MapRGBA(fmt, nr, ng, nb, na);
-                int top = y - blurRadius;
-                int bottom = y + blurRadius + 1;
-                int topRow = std::clamp(top, 0, size-1);
-                int bottomRow = std::clamp(bottom, 0, size-1);
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(tempBuf[topRow*size + x], fmt, &pr, &pg, &pb, &pa);
-                sumR -= pr; sumG -= pg; sumB -= pb; sumA -= pa;
-                SDL_GetRGBA(tempBuf[bottomRow*size + x], fmt, &pr, &pg, &pb, &pa);
-                sumR += pr; sumG += pg; sumB += pb; sumA += pa;
+                int sumR=0, sumG=0, sumB=0, sumA=0;
+                for (int dx=-blurRadius; dx<=blurRadius; ++dx) {
+                    int cx = std::clamp(dx, 0, size-1);
+                    Uint8 pr,pg,pb,pa;
+                    SDL_GetRGBA(copyBuf[y*size + cx], fmt, &pr,&pg,&pb,&pa);
+                    sumR+=pr; sumG+=pg; sumB+=pb; sumA+=pa;
+                }
+                for (int x=0; x<size; ++x) {
+                    Uint8 nr = sumR / winSize;
+                    Uint8 ng = sumG / winSize;
+                    Uint8 nb = sumB / winSize;
+                    Uint8 na = sumA / winSize;
+                    tempBuf[y*size + x] = SDL_MapRGBA(fmt, nr,ng,nb,na);
+
+                    int left  = std::clamp(x-blurRadius, 0, size-1);
+                    int right = std::clamp(x+blurRadius+1, 0, size-1);
+                    Uint8 pr,pg,pb,pa;
+                    SDL_GetRGBA(copyBuf[y*size + left],  fmt, &pr,&pg,&pb,&pa);
+                    sumR-=pr; sumG-=pg; sumB-=pb; sumA-=pa;
+                    SDL_GetRGBA(copyBuf[y*size + right], fmt, &pr,&pg,&pb,&pa);
+                    sumR+=pr; sumG+=pg; sumB+=pb; sumA+=pa;
+                }
+            }
+
+            // vertical blend
+            for (int x = 0; x < size; ++x) {
+                int sumR=0,sumG=0,sumB=0,sumA=0;
+                for (int dy=-blurRadius; dy<=blurRadius; ++dy) {
+                    int cy = std::clamp(dy, 0, size-1);
+                    Uint8 pr,pg,pb,pa;
+                    SDL_GetRGBA(tempBuf[cy*size + x], fmt, &pr,&pg,&pb,&pa);
+                    sumR+=pr; sumG+=pg; sumB+=pb; sumA+=pa;
+                }
+                for (int y=0; y<size; ++y) {
+                    Uint8 br = sumR / winSize;
+                    Uint8 bg = sumG / winSize;
+                    Uint8 bb = sumB / winSize;
+                    Uint8 ba = sumA / winSize;
+
+                    Uint8 or_,og,ob,oa;
+                    SDL_GetRGBA(copyBuf[y*size + x], fmt, &or_,&og,&ob,&oa);
+
+                    Uint8 fr = or_ + static_cast<int>((br - or_)*strength);
+                    Uint8 fg = og + static_cast<int>((bg - og)*strength);
+                    Uint8 fb = ob + static_cast<int>((bb - ob)*strength);
+                    Uint8 fa = oa + static_cast<int>((ba - oa)*strength);
+
+                    pixels[y*size + x] = SDL_MapRGBA(fmt, fr,fg,fb,fa);
+
+                    int top    = std::clamp(y-blurRadius, 0, size-1);
+                    int bottom = std::clamp(y+blurRadius+1, 0, size-1);
+                    Uint8 pr,pg,pb,pa;
+                    SDL_GetRGBA(tempBuf[top*size + x],    fmt, &pr,&pg,&pb,&pa);
+                    sumR-=pr; sumG-=pg; sumB-=pb; sumA-=pa;
+                    SDL_GetRGBA(tempBuf[bottom*size + x], fmt, &pr,&pg,&pb,&pa);
+                    sumR+=pr; sumG+=pg; sumB+=pb; sumA+=pa;
+                }
             }
         }
     }
 
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+    // create texture & cache
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-
     CacheManager::save_surface_as_png(surf, img_file);
     SDL_FreeSurface(surf);
 
+    // write metadata
     json new_meta;
     new_meta["radius"]    = light.radius;
     new_meta["fall_off"]  = light.fall_off;

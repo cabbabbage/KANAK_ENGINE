@@ -5,11 +5,12 @@ from tkinter import ttk, messagebox, colorchooser
 from PIL import Image
 from pages.range import Range
 
+
 class LightingControls(ttk.Frame):
-    def __init__(self, parent, data=None):
+    def __init__(self, parent, data=None, autosave_callback=None):
         super().__init__(parent, style="LS.TFrame")
         self.light_color = (255, 255, 255)
-
+        self._autosave = autosave_callback or (lambda: None)
 
         self.intensity = Range(self, min_bound=0, max_bound=255, label="Light Intensity")
         self.radius = Range(self, min_bound=0, max_bound=2000, label="Radius (px)")
@@ -27,8 +28,9 @@ class LightingControls(ttk.Frame):
             self.flicker, self.flare, self.offset_x, self.offset_y
         ):
             rng.pack(fill=tk.X, padx=10, pady=4)
-
-
+            rng.var_min.trace_add("write", lambda *_: self._autosave())
+            rng.var_max.trace_add("write", lambda *_: self._autosave())
+            rng.var_random.trace_add("write", lambda *_: self._autosave())
 
         self.color_preview = tk.Label(
             self, text="Pick Light Color", bg="#FFFFFF",
@@ -40,16 +42,20 @@ class LightingControls(ttk.Frame):
         if data:
             self.load_data(data)
 
+
     def _choose_color(self, _=None):
         rgb, hex_color = colorchooser.askcolor(initialcolor=self.color_preview['bg'])
         if rgb:
             self.light_color = tuple(map(int, rgb))
             self.color_preview.config(bg=hex_color)
+            self._autosave()
+
 
     def load_data(self, data):
         self.intensity.set(data.get("light_intensity", 100), data.get("light_intensity", 100))
         self.radius.set(data.get("radius", 100), data.get("radius", 100))
-        self.falloff.set(data.get("fall_off", 100), data.get("fall_off", 100))
+        falloff_val = data.get("falloff", data.get("fall_off", 100))
+        self.falloff.set(falloff_val, falloff_val)
         self.flicker.set(data.get("flicker", 0), data.get("flicker", 0))
         self.flare.set(data.get("flare", 0), data.get("flare", 0))
         self.offset_x.set(data.get("offset_x", 0), data.get("offset_x", 0))
@@ -66,12 +72,11 @@ class LightingControls(ttk.Frame):
             "light_intensity": self.intensity.get_min(),
             "light_color": list(self.light_color),
             "radius": self.radius.get_min(),
-            "fall_off": self.falloff.get_min(),
+            "falloff": self.falloff.get_min(),
             "flicker": self.flicker.get_min(),
             "flare": self.flare.get_max(),
             "offset_x": self.offset_x.get_min(),
             "offset_y": self.offset_y.get_min(),
-
         }
 
 
@@ -100,7 +105,8 @@ class OrbitalLightingControls(ttk.Frame):
         self.radius.set(data.get("radius", 300), data.get("radius", 300))
         self.y_radius.set(data.get("y_radius", 100), data.get("y_radius", 100))
         self.x_radius.set(data.get("x_radius", 100), data.get("x_radius", 100))
-        self.falloff.set(data.get("fall_off", 80), data.get("fall_off", 80))
+        falloff_val = data.get("falloff", data.get("fall_off", 80))
+        self.falloff.set(falloff_val, falloff_val)
         self.factor.set(data.get("factor", 1), data.get("factor", 200))
 
     def get_data(self):
@@ -110,14 +116,12 @@ class OrbitalLightingControls(ttk.Frame):
             "radius": self.radius.get_min(),
             "y_radius": self.y_radius.get_min(),
             "x_radius": self.x_radius.get_min(),
-            "fall_off": self.falloff.get_min(),
+            "falloff": self.falloff.get_min(),
             "factor": self.factor.get_min()
         }
-
-
-
+    
 class LightSourceFrame(ttk.Frame):
-    def __init__(self, parent, index, data=None, on_delete=None):
+    def __init__(self, parent, index, data=None, on_delete=None, autosave_callback=None):
         super().__init__(parent, style="LS.TFrame")
         self.index = index
         self._on_delete = on_delete
@@ -133,7 +137,7 @@ class LightSourceFrame(ttk.Frame):
             font=("Segoe UI", 13, "bold"), foreground="#DDDDDD", background="#2a2a2a"
         ).pack(anchor="w", padx=10, pady=(4, 10))
 
-        self.control = LightingControls(self, data=data)
+        self.control = LightingControls(self, data=data, autosave_callback=autosave_callback)
         self.control.pack(fill=tk.X, expand=True)
 
     def _delete_self(self):

@@ -14,22 +14,32 @@
           "name": "spawn",
           "min_instances": 1,
           "max_instances": 1,
-          "required_children": [
-            "chest"
-          ]
+          "required_children": []
         }
       ]
     },
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 3000,
-      "min_rooms": 3,
+      "radius": 2328,
+      "min_rooms": 2,
       "max_rooms": 3,
       "rooms": [
         {
           "name": "flower",
-          "min_instances": 2,
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "manmade",
+          "min_instances": 1,
+          "max_instances": 2,
+          "required_children": []
+        },
+        {
+          "name": "Grave_Yard",
+          "min_instances": 1,
           "max_instances": 2,
           "required_children": []
         }
@@ -38,7 +48,7 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 6188,
+      "radius": 5516,
       "min_rooms": 7,
       "max_rooms": 9,
       "rooms": [
@@ -69,5 +79,5 @@
       ]
     }
   ],
-  "map_radius": 9095.02568810018
+  "map_radius": 8423.02568810018
 }

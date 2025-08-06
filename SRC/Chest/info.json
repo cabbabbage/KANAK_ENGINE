@@ -26,8 +26,7 @@
     "impassable_area": "impassable_area.json",
     "z_threshold": 2,
     "size_settings": {
-        "scale_percentage": 41,
-        "variability_percentage": 0
+        "scale_percentage": 41
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 1000,
@@ -36,13 +35,13 @@
     ],
     "tags": [
         "interaction",
-        "default",
         "impassable",
-        "valuable",
+        "default",
         "wood",
+        "man-made",
         "center",
-        "loot",
-        "man-made"
+        "valuable",
+        "loot"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -50,10 +49,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 297,
-            "y_radius": 56,
-            "x_radius": 59,
-            "fall_off": 40,
+            "radius": 148,
+            "y_radius": 96,
+            "x_radius": 148,
+            "falloff": 30,
             "factor": 100
         }
     ],
