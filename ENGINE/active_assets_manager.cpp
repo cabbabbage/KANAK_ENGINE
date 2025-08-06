@@ -90,7 +90,7 @@ void ActiveAssetsManager::remove(Asset* asset)
 void ActiveAssetsManager::sortByDistance(int cx, int cy)
 {
     if (!all_assets_) return;
-    const float half_w = screen_width_ * 0.5f;
+    const float half_w = screen_width_ * 2.0f;
     const float radius_sq = half_w * half_w;
 
     // Reset all active flags and active list
