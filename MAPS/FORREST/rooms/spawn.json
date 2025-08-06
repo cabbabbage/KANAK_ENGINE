@@ -19,7 +19,7 @@
       "name": "candle",
       "min_number": 10,
       "max_number": 20,
-      "position": "Perimeter",
+      "position": "Entrance",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -34,8 +34,8 @@
     },
     {
       "name": "Stump",
-      "min_number": -54,
-      "max_number": 1717,
+      "min_number": 0,
+      "max_number": 328,
       "position": "Random",
       "exact_position": null,
       "tag": false,
@@ -50,7 +50,7 @@
   "geometry": "Circle",
   "is_spawn": true,
   "is_boss": false,
-  "inherits_map_assets": true,
+  "inherits_map_assets": false,
   "batch_assets": {
     "has_batch_assets": false,
     "grid_spacing_min": 100,

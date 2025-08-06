@@ -11,19 +11,19 @@
 #include "asset_library.hpp"
 #include "room.hpp"
 #include "generate_rooms.hpp"
+#include "assets.hpp"
 
 class AssetLoader {
 public:
-    // Constructor takes the map directory and an SDL_Renderer for later texture work
     AssetLoader(const std::string& map_dir, SDL_Renderer* renderer);
 
-    // Extracts all spawned Asset instances by value, with animations loaded and finalized
     std::vector<Asset> extract_all_assets();
 
-    // Returns the Areas of all rooms and trails for minimap or collision
+    // Builds and returns a fully initialized Assets manager
+    std::unique_ptr<Assets> createAssets(int screen_width, int screen_height);
+
     std::vector<Area> getAllRoomAndTrailAreas() const;
 
-    // Builds a minimap texture of given size
     SDL_Texture* createMinimap(int width, int height);
 
 private:
@@ -39,7 +39,6 @@ private:
     SDL_Renderer*                       renderer_;
     std::unique_ptr<AssetLibrary>       asset_library_;
 
-    // For internal traversal
     std::vector<Room*>                  rooms_;
     std::vector<std::unique_ptr<Room>>  all_rooms_;
 

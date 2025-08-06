@@ -162,12 +162,12 @@ def step_8_reapply_alpha(img, alpha, save_path):
 
 def apply_effects(image_path, strength=60):
     img, alpha = step_1_load_image(image_path)
-    img = step_7_shadow_gradient(img, 100)
+    img = step_7_shadow_gradient(img, 40)
     img = step_2_smooth_mean_shift(img, 30)
     skeleton = step_3_edge_thin(img)
     img = step_4_subtract_edges(img, skeleton, 30)
     img = step_5_boost_contrast(img, strength)
-    img = step_5_5_boost_saturation(img, 30)        # Moved up
+    img = step_5_5_boost_saturation(img, 20)        # Moved up
     img = step_6_5_color_grade(img, strength)
 
     img = step_6_apply_blur(img, strength)

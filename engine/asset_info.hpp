@@ -9,6 +9,7 @@
 #include "Area.hpp"
 #include "generate_light.hpp"
 #include "animation.hpp"
+#include "light_source.hpp"
 
 struct ChildInfo {
     std::string               json_path;
@@ -17,25 +18,19 @@ struct ChildInfo {
     int                       z_offset;
 };
 
-struct LightSource {
-    int intensity;
-    int radius;
-    int fall_off;
-    int jitter_min;
-    int jitter_max;
-    bool flicker;
-    int offset_x;
-    int offset_y;
-    SDL_Color color;
-};
+
 
 class AssetInfo {
 public:
+    nlohmann::json json_data_;
+
     AssetInfo(const std::string& asset_folder_name);
     ~AssetInfo();
 
     void loadAnimations(SDL_Renderer* renderer);
     bool has_tag(const std::string& tag) const;
+    std::vector<LightSource> light_sources;
+    std::vector<LightSource> orbital_light_sources;
 
     std::string                   name;
     std::string                   type;
@@ -64,8 +59,6 @@ public:
     bool                          interaction;
     bool                          hit;
     bool                          collision;
-
-    std::vector<LightSource>      lights;
     bool                          has_light_source;
     bool                          has_shading;
     bool                          has_base_shadow;
@@ -76,7 +69,7 @@ public:
     bool                          has_casted_shadows;
     int                           number_of_casted_shadows;
     int                           cast_shadow_intensity;
-    std::vector<SDL_Texture*>     light_textures;
+
 
     std::unique_ptr<Area> passability_area;
     bool has_passability_area = false;
@@ -97,6 +90,7 @@ public:
 
     std::vector<std::string> child_json_paths;
     std::vector<ChildInfo> children;
+    int update_radius;
 private:
     void get_area_textures(SDL_Renderer* renderer);
 

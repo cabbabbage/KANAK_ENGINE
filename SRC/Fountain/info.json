@@ -12,11 +12,9 @@
         }
     },
     "impassable_area": "impassable_area.json",
-    "z_threshold": 6,
+    "z_threshold": 1,
     "size_settings": {
-        "scale_percentage": 77,
-        "variability_percentage": 0,
-        "flipability": false
+        "scale_percentage": 77
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 2000,
@@ -25,35 +23,43 @@
     ],
     "tags": [
         "white",
+        "grey",
         "center",
         "impassable",
-        "movement",
-        "light",
         "healing",
-        "blue",
-        "medium",
-        "water",
+        "light",
         "default",
-        "grey"
+        "medium",
+        "blue",
+        "water",
+        "movement"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
     "lighting_info": [
         {
             "has_light_source": true,
-            "light_intensity": 78,
+            "light_intensity": 255,
+            "radius": 267,
+            "y_radius": 196,
+            "x_radius": 230,
+            "falloff": 50,
+            "factor": 100
+        },
+        {
+            "has_light_source": true,
+            "light_intensity": 0,
             "light_color": [
-                193,
+                255,
                 255,
                 255
             ],
-            "radius": 602,
-            "fall_off": 100,
-            "jitter_min": 0,
-            "jitter_max": 0,
+            "radius": 0,
+            "falloff": 0,
+            "flicker": 0,
+            "flare": 0,
             "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
+            "offset_y": 0
         }
     ],
     "shading_info": {
@@ -76,5 +82,6 @@
         "child_assets_1.json"
     ],
     "has_spacing": true,
-    "min_distance_all": 0
+    "min_distance_all": 0,
+    "has_shading": true
 }

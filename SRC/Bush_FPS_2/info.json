@@ -11,12 +11,10 @@
             "volume": 50
         }
     },
-    "impassable_area": "impassable_area.json",
-    "z_threshold": 3,
+    "impassable_area": null,
+    "z_threshold": 30,
     "size_settings": {
-        "scale_percentage": 13,
-        "variability_percentage": 0,
-        "flipability": true
+        "scale_percentage": 13
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 557,
@@ -31,11 +29,34 @@
     "max_child_depth": 2,
     "tags": [
         "passable",
-        "moving",
+        "nature",
         "bush",
-        "nature"
+        "moving"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "has_spacing": true
+    "has_spacing": true,
+    "min_distance_all": 0,
+    "anti_tags": [],
+    "shading_info": {
+        "has_shading": true,
+        "has_base_shadow": false,
+        "base_shadow_intensity": 0,
+        "has_gradient_shadow": false,
+        "gradient_shadow_intensity": 0,
+        "has_casted_shadows": false,
+        "cast_shadow_intensity": 0
+    },
+    "has_shading": true,
+    "lighting_info": [
+        {
+            "has_light_source": true,
+            "light_intensity": 255,
+            "radius": 195,
+            "y_radius": 139,
+            "x_radius": 195,
+            "falloff": 30,
+            "factor": 100
+        }
+    ]
 }

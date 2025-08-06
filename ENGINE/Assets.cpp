@@ -1,8 +1,31 @@
 // === File: assets.cpp ===
 #include "assets.hpp"
+#include "controls_manager.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <unordered_set>
+#include <functional>
+
+namespace {
+    void set_shading_group_recursive(Asset& asset, int group, int num_groups) {
+        asset.set_shading_group(group);
+        for (auto& child : asset.children) {
+            set_shading_group_recursive(child, group, num_groups);
+        }
+    }
+
+    void collect_assets_in_range(const Asset* asset, int cx, int cy, int r2, std::vector<Asset*>& result) {
+        int ddx = asset->pos_X - cx;
+        int ddy = asset->pos_Y - cy;
+        if (ddx*ddx + ddy*ddy <= r2) {
+            result.push_back(const_cast<Asset*>(asset));
+        }
+        for (const auto& child : asset->children) {
+            collect_assets_in_range(&child, cx, cy, r2, result);
+        }
+    }
+}
 
 Assets::Assets(std::vector<Asset>&& loaded,
                Asset* player_ptr,
@@ -12,21 +35,18 @@ Assets::Assets(std::vector<Asset>&& loaded,
                int screen_center_y)
     : player(nullptr),
       activeManager(screen_width, screen_height),
-      active_assets(activeManager.getActive()),
-      closest_assets(activeManager.getClosest()),
       screen_width(screen_width),
       screen_height(screen_height),
       dx(0),
       dy(0),
       last_activat_update(0),
-      update_interval(5)
+      update_interval(20)
 {
     std::cout << "[Assets] Initializing Assets manager...\n";
 
     while (!loaded.empty()) {
         Asset a = std::move(loaded.back());
         loaded.pop_back();
-
         if (!a.info) {
             std::cerr << "[Assets] Skipping asset: info is null\n";
             continue;
@@ -50,130 +70,112 @@ Assets::Assets(std::vector<Asset>&& loaded,
     }
 
     activeManager.initialize(all, player, screen_center_x, screen_center_y);
+    active_assets  = activeManager.getActive();
+    closest_assets = activeManager.getClosest();
+    set_shading_groups();
     std::cout << "[Assets] Initialization complete. Total assets: "
               << all.size() << "\n";
-}
 
-void Assets::update_direction_movement(int offset_x, int offset_y) {
-    if (!player) return;
-
-    int new_px = player->pos_X + offset_x;
-    int new_py = player->pos_Y + offset_y;
-
-    // Only test collisions if player has a passability area
-    if (player->info && player->info->has_passability_area) {
-        for (Asset* asset : closest_assets) {
-            if (!asset || asset == player
-                || !asset->info || asset->info->passable
-                || !asset->info->has_passability_area)
-                continue;
-
-            Area obstacle = *asset->info->passability_area;
-            obstacle.align(asset->pos_X, asset->pos_Y);
-
-            if (obstacle.contains_point({new_px, new_py})) {
-                return;
-            }
-        }
+    try {
+        set_static_sources();
+    } catch (const std::length_error& e) {
+        std::cerr << "[Assets] light-gen failed: " << e.what() << "\n";
     }
-
-    dx += offset_x;
-    dy += offset_y;
+    std::cout << "[Assets] All static sources set.\n";
 }
 
 void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
                     int screen_center_x,
                     int screen_center_y)
 {
-    dx = 0;
-    dy = 0;
-    activeManager.updateClosest(player);
+    set_player_light_render();
+    dx = 0; dy = 0;
 
-    const std::string current_animation = player->get_current_animation();
+    ControlsManager controls(player, closest_assets);
+    controls.update(keys);
+    dx = controls.get_dx();
+    dy = controls.get_dy();
 
-    bool up    = keys.count(SDLK_w);
-    bool down  = keys.count(SDLK_s);
-    bool left  = keys.count(SDLK_a);
-    bool right = keys.count(SDLK_d);
+    activeManager.updateDynamicChunks();
+    activeManager.updateVisibility(player, screen_center_x, screen_center_y);
+    activeManager.updateClosest(player, /*max_count=*/3);
 
-    int move_x = (right ? 1 : 0) - (left ? 1 : 0);
-    int move_y = (down  ? 1 : 0) - (up   ? 1 : 0);
+    active_assets  = activeManager.getActive();
+    closest_assets = activeManager.getClosest();
 
-    bool any_movement = (move_x != 0 || move_y != 0);
-    bool diagonal     = (move_x != 0 && move_y != 0);
-
-    if (any_movement) {
-        float len   = std::sqrt(float(move_x*move_x + move_y*move_y));
-        float speed = player->player_speed_mult / len;
-
-        update_direction_movement(
-            int(std::round(move_x * speed)),
-            int(std::round(move_y * speed))
-        );
-
-        if (!diagonal) {
-            std::string anim;
-            if      (move_y < 0) anim = "backward";
-            else if (move_y > 0) anim = "forward";
-            else if (move_x < 0) anim = "left";
-            else if (move_x > 0) anim = "right";
-
-            if (!anim.empty() && anim != current_animation)
-                player->change_animation(anim);
-        }
-
-        if (dx != 0 || dy != 0)
-            player->set_position(player->pos_X + dx,
-                                 player->pos_Y + dy);
-    } else {
-        if (current_animation != "default")
-            player->change_animation("default");
-    }
-
-    // Interaction logic only guards collision block
-    if (player && player->info && player->info->has_passability_area) {
-        Area pa = *player->info->passability_area;
-        pa.align(player->pos_X, player->pos_Y);
-        auto [pMinX, pMinY, pMaxX, pMaxY] = pa.get_bounds();
-        int px = (pMinX + pMaxX) / 2;
-        int py = pMaxY;
-
-        if (keys.count(SDLK_e)) {
-            for (Asset* asset : closest_assets) {
-                if (!asset || asset == player
-                    || !asset->info || !asset->info->interaction_area)
-                    continue;
-
-                Area ia = *asset->info->interaction_area;
-                ia.align(asset->pos_X, asset->pos_Y);
-                auto [minx, miny, maxx, maxy] = ia.get_bounds();
-
-                bool hit = (px >= minx && px <= maxx && py >= miny && py <= maxy)
-                        || ia.contains_point({px, py});
-
-                if (hit)
-                    asset->change_animation("interaction");
-            }
-        }
-    }
-
-    // Always update animations after movement/interaction
     player->update();
-    for (Asset* asset : active_assets) {
-        if (asset && asset != player)
-            asset->update();
+    for (Asset* a : active_assets) {
+        if (a && a != player)
+            a->update();
     }
 
     if (dx != 0 || dy != 0) {
-        if (++last_activat_update >= update_interval) {
-            last_activat_update = 0;
-            activeManager.updateVisibility(player,
-                                           screen_center_x,
-                                           screen_center_y);
+        activeManager.sortByZIndex();
+    }
+}
+
+std::vector<Asset*> Assets::get_all_in_range(int cx, int cy, int radius) const {
+    std::vector<Asset*> result;
+    int r2 = radius * radius;
+    for (const auto& asset : all) {
+        if (!asset.info) continue;
+        collect_assets_in_range(&asset, cx, cy, r2, result);
+    }
+    return result;
+}
+
+void Assets::set_static_sources() {
+    // recurse through all assets and their children to collect lights
+    std::function<void(Asset&)> recurse = [&](Asset& owner) {
+        if (owner.info) {
+            for (LightSource& light : owner.info->light_sources) {
+                int lx = owner.pos_X + light.offset_x;
+                int ly = owner.pos_Y + light.offset_y;
+                auto targets = get_all_in_range(lx, ly, light.radius);
+                for (Asset* t : targets) {
+                    if (!t || !t->info || !t->info->has_shading) continue;
+                    t->add_static_light_source(&light, lx, ly);
+                }
+            }
+        }
+        for (auto& child : owner.children) {
+            recurse(child);
+        }
+    };
+
+    for (auto& owner : all) {
+        recurse(owner);
+    }
+}
+
+void Assets::set_player_light_render() {
+    if (!player || !player->info) return;
+
+    for (Asset* a : active_assets) {
+        if (a && a != player) {
+            a->set_render_player_light(false);
+        }
+    }
+
+    for (LightSource& light : player->info->light_sources) {
+        int lx = player->pos_X + light.offset_x;
+        int ly = player->pos_Y + light.offset_y;
+        auto targets = get_all_in_range(lx, ly, light.radius);
+        for (Asset* a : targets) {
+            if (a && a != player) {
+                a->set_render_player_light(true);
+            }
         }
     }
 }
 
-bool Assets::check_collision(const Area& a, const Area& b) {
-    return a.intersects(b);
+void Assets::set_shading_groups() {
+    int current_group = 1;
+    for (auto& a : all) {
+        if (!a.info) continue;
+        set_shading_group_recursive(a, current_group, num_groups_);
+        current_group++;
+        if (current_group > num_groups_)
+            current_group = 1;
+    }
 }

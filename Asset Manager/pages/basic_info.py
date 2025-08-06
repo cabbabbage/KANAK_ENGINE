@@ -4,6 +4,7 @@ import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from PIL import Image, ImageTk
+from pages.range import Range
 
 ASSET_DIR = "SRC"
 HARD_CODED_TYPES = ["Player", "Object", "Background", "Enemy", "Map Boundary", "MAP"]
@@ -17,9 +18,11 @@ class BasicInfoPage(ttk.Frame):
 
         self.name_var = tk.StringVar()
         self.type_var = tk.StringVar()
+        self.can_invert_var = tk.BooleanVar()
 
         self.name_var.trace_add("write", self._auto_save)
         self.type_var.trace_add("write", self._auto_save)
+        self.can_invert_var.trace_add("write", self._auto_save)
 
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
@@ -30,7 +33,6 @@ class BasicInfoPage(ttk.Frame):
 
         scrollable_frame = tk.Frame(canvas, bg="#1e1e1e")
         scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -40,6 +42,7 @@ class BasicInfoPage(ttk.Frame):
 
         ttk.Style().configure("Dark.TFrame", background="#1e1e1e")
         ttk.Style().configure("Dark.TLabel", background="#1e1e1e", foreground="#FFFFFF", font=("Segoe UI", 12))
+        ttk.Style().configure("Dark.TButton", font=("Segoe UI", 13, "bold"))
         ttk.Style().configure("DarkHeader.TLabel", background="#1e1e1e", foreground="#DDDDDD", font=("Segoe UI", 20, "bold"))
 
         # Title
@@ -58,6 +61,34 @@ class BasicInfoPage(ttk.Frame):
         self.type_menu = ttk.OptionMenu(scrollable_frame, self.type_var, HARD_CODED_TYPES[0], *HARD_CODED_TYPES)
         self.type_menu.config(width=30)
         self.type_menu.pack(anchor="w", padx=12, pady=(0, 8))
+
+        # Update Radius
+        ttk.Label(scrollable_frame, text="Update Radius:", style="Dark.TLabel")\
+            .pack(anchor="w", padx=12, pady=(10, 0))
+        self.update_radius_range = Range(scrollable_frame, label=None, min_bound=0, max_bound=10000)
+        self.update_radius_range.set_fixed()
+        self.update_radius_range.var_max.trace_add("write", lambda *_: self._auto_save())
+        self.update_radius_range.pack(fill="x", padx=12, pady=(0, 8))
+
+        # Render Radius
+        ttk.Label(scrollable_frame, text="Render Radius:", style="Dark.TLabel")\
+            .pack(anchor="w", padx=12, pady=(0, 0))
+        self.render_radius_range = Range(scrollable_frame, label=None, min_bound=0, max_bound=10000)
+        self.render_radius_range.set_fixed()
+        self.render_radius_range.var_max.trace_add("write", lambda *_: self._auto_save())
+        self.render_radius_range.pack(fill="x", padx=12, pady=(0, 10))
+
+        ttk.Label(scrollable_frame, text="Can Invert:", style="Dark.TLabel")\
+            .pack(anchor="w", padx=12, pady=(10, 0))
+        self.can_invert_check = tk.Checkbutton(
+            scrollable_frame,
+            text="Enable asset flipping",
+            variable=self.can_invert_var,
+            bg="#1e1e1e", fg="#FFFFFF", selectcolor="#1e1e1e",
+            font=("Segoe UI", 12), activebackground="#1e1e1e", activeforeground="#FFFFFF"
+        )
+        self.can_invert_check.pack(anchor="w", padx=18, pady=(0, 8))
+
 
         # Preview Image
         self.preview_label = ttk.Label(scrollable_frame, background="#1e1e1e")
@@ -91,6 +122,10 @@ class BasicInfoPage(ttk.Frame):
         self._loaded = False
         self.name_var.set(data.get("asset_name", ""))
         self.type_var.set(data.get("asset_type", HARD_CODED_TYPES[0]))
+        self.can_invert_var.set(data.get("can_invert", False))
+
+        self.update_radius_range.set(data.get("update_radius", 1000), data.get("update_radius", 1000))
+        self.render_radius_range.set(data.get("render_radius", 1000), data.get("render_radius", 1000))
 
         preview_path = os.path.join(os.path.dirname(info_path), "default", "0.png")
         if os.path.exists(preview_path):
@@ -119,6 +154,9 @@ class BasicInfoPage(ttk.Frame):
 
         data["asset_name"] = self.name_var.get().strip()
         data["asset_type"] = self.type_var.get()
+        data["can_invert"] = self.can_invert_var.get()
+        data["update_radius"] = self.update_radius_range.get_max()
+        data["render_radius"] = self.render_radius_range.get_max()
 
         try:
             with open(self.asset_path, "w") as f:

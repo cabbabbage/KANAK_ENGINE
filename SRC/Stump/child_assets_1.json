@@ -3,8 +3,8 @@
   "assets": [
     {
       "name": "Axe",
-      "min_number": -100,
-      "max_number": 91,
+      "min_number": -50,
+      "max_number": 644,
       "position": "Random",
       "exact_position": null,
       "tag": false,

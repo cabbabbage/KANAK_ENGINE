@@ -12,10 +12,8 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
     rng_(std::random_device{}())
 {
     load_map_json();
-
     asset_library_ = std::make_unique<AssetLibrary>();
 
-    // Generate rooms and trails (no renderer passed into generator)
     GenerateRooms generator(map_layers_, map_center_x_, map_center_y_, map_path_);
     auto room_ptrs = generator.build(asset_library_.get(),
                                      map_radius_,
@@ -26,10 +24,7 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
         all_rooms_.push_back(std::move(up));
     }
 
-    // Load all animations from AssetInfo data
     asset_library_->loadAllAnimations(renderer_);
-
-    // Finalize every spawned Asset with lighting/textures
     for (Room* room : rooms_) {
         for (auto& asset_up : room->assets) {
             asset_up->finalize_setup(renderer_);
@@ -37,60 +32,9 @@ AssetLoader::AssetLoader(const std::string& map_dir, SDL_Renderer* renderer)
     }
 }
 
-void AssetLoader::load_map_json() {
-    std::ifstream f(map_path_ + "/map_info.json");
-    if (!f) throw std::runtime_error("Failed to open map_info.json");
-
-    json j;
-    try {
-        f >> j;
-    } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("JSON parse error: ") + e.what());
-    }
-
-    if (!j.contains("map_radius") || !j.contains("map_boundary") || !j.contains("map_layers")) {
-        throw std::runtime_error("map_info.json missing required fields");
-    }
-
-    map_radius_        = (j.value("map_radius", 0));
-    map_boundary_file_ = j.value("map_boundary", "");
-    map_center_x_      = map_center_y_ = map_radius_;
-
-    for (const auto& L : j["map_layers"]) {
-        LayerSpec spec;
-        spec.level     = L.value("level", 0);
-        spec.radius    = L.value("radius", 0);
-        spec.min_rooms = L.value("min_rooms", 0);
-        spec.max_rooms = L.value("max_rooms", 0);
-
-        if (!L.contains("rooms") || !L["rooms"].is_array()) {
-            std::cerr << "[AssetLoader] Warning: Layer missing valid 'rooms' array.\n";
-            continue;
-        }
-
-        for (const auto& R : L["rooms"]) {
-            RoomSpec rs;
-            rs.name = R.value("name", "unnamed");
-            rs.min_instances = R.value("min_instances", 1);
-            rs.max_instances = R.value("max_instances", 1);
-
-            if (R.contains("required_children") && R["required_children"].is_array()) {
-                for (const auto& c : R["required_children"]) {
-                    if (c.is_string()) rs.required_children.push_back(c.get<std::string>());
-                }
-            }
-
-            spec.rooms.push_back(std::move(rs));
-        }
-
-        map_layers_.push_back(std::move(spec));
-    }
-}
-
 std::vector<Asset> AssetLoader::extract_all_assets() {
     std::vector<Asset> out;
     out.reserve(rooms_.size() * 4);
-
     for (Room* room : rooms_) {
         for (auto& aup : room->assets) {
             out.push_back(std::move(*aup));
@@ -99,10 +43,44 @@ std::vector<Asset> AssetLoader::extract_all_assets() {
     return out;
 }
 
+std::unique_ptr<Assets> AssetLoader::createAssets(int screen_width, int screen_height) {
+    std::cout << "[AssetLoader] createAssets() start\n";
+    auto assetsVec = extract_all_assets();
+    std::cout << "[AssetLoader] extracted " << assetsVec.size() << " assets\n";
+
+    Asset* player_ptr = nullptr;
+    for (size_t i = 0; i < assetsVec.size(); ++i) {
+        auto& a = assetsVec[i];
+        if (a.info && a.info->type == "Player") {
+            player_ptr = &a;
+            std::cout << "[AssetLoader] found player asset '" << a.info->name
+                      << "' at index " << i << "\n";
+            break;
+        }
+    }
+    if (!player_ptr) {
+        std::cerr << "[AssetLoader] ERROR: no player asset found\n";
+        throw std::runtime_error("No player asset found in extracted assets");
+    }
+
+    std::cout << "[AssetLoader] constructing Assets manager\n";
+    auto assetsPtr = std::make_unique<Assets>(
+        std::move(assetsVec),
+        player_ptr,
+        screen_width,
+        screen_height,
+        player_ptr->pos_X,
+        player_ptr->pos_Y
+    );
+    std::cout << "[AssetLoader] createAssets() complete\n";
+    return assetsPtr;
+}
+
+
+
 std::vector<Area> AssetLoader::getAllRoomAndTrailAreas() const {
     std::vector<Area> areas;
     areas.reserve(rooms_.size());
-
     for (Room* r : rooms_) {
         areas.push_back(*r->room_area);
     }
@@ -190,4 +168,35 @@ SDL_Texture* AssetLoader::createMinimap(int width, int height) {
     SDL_DestroyTexture(highres);
 
     return final;
+}
+
+void AssetLoader::load_map_json() {
+    std::ifstream f(map_path_ + "/map_info.json");
+    if (!f) throw std::runtime_error("Failed to open map_info.json");
+    json j;
+    f >> j;
+
+    map_radius_        = j.value("map_radius", 0);
+    map_boundary_file_ = j.value("map_boundary", "");
+    map_center_x_ = map_center_y_ = map_radius_;
+
+    for (const auto& L : j["map_layers"]) {
+        LayerSpec spec;
+        spec.level     = L.value("level", 0);
+        spec.radius    = L.value("radius", 0);
+        spec.min_rooms = L.value("min_rooms", 0);
+        spec.max_rooms = L.value("max_rooms", 0);
+        for (const auto& R : L["rooms"]) {
+            RoomSpec rs;
+            rs.name = R.value("name", "unnamed");
+            rs.min_instances = R.value("min_instances", 1);
+            rs.max_instances = R.value("max_instances", 1);
+            if (R.contains("required_children")) {
+                for (const auto& c : R["required_children"])
+                    rs.required_children.push_back(c.get<std::string>());
+            }
+            spec.rooms.push_back(std::move(rs));
+        }
+        map_layers_.push_back(std::move(spec));
+    }
 }

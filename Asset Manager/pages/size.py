@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 from pages.range import Range
+from pages.apply_page_settings import ApplyPageSettings
 
 class SizePage(tk.Frame):
     def __init__(self, parent):
@@ -29,17 +30,14 @@ class SizePage(tk.Frame):
         canvas = tk.Canvas(self, bg='#2a2a2a', highlightthickness=0)
         scroll_frame = tk.Frame(canvas, bg='#2a2a2a')
         window_id = canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
-        # update scrollregion
         scroll_frame.bind(
             '<Configure>',
             lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
         )
-        # span full width
         canvas.bind(
             '<Configure>',
             lambda e: canvas.itemconfig(window_id, width=e.width)
         )
-        # mousewheel on hover
         def _scroll(ev):
             canvas.yview_scroll(int(-1*(ev.delta/120)), 'units')
         scroll_frame.bind('<Enter>', lambda e: canvas.bind_all('<MouseWheel>', _scroll))
@@ -67,28 +65,24 @@ class SizePage(tk.Frame):
         )
         hdr2.pack(anchor='w', padx=12, pady=(10, 4))
 
-        # Range widgets
         self.scale_range = Range(
-            scroll_frame, min_bound=1, max_bound=150,
+            scroll_frame,
+            min_bound=1, max_bound=150,
             set_min=100, set_max=100,
-            force_fixed=True, label="Scale (%)"
-        )
-        self.variability_range = Range(
-            scroll_frame, min_bound=0, max_bound=20,
-            set_min=0, set_max=0,
-            force_fixed=True, label="Size Variability (%)"
+            force_fixed=True,
+            label="Scale (%)"
         )
         self.threshold_range = Range(
-            scroll_frame, min_bound=0, max_bound=1,
+            scroll_frame,
+            min_bound=-100, max_bound=200,
             set_min=0, set_max=0,
-            force_fixed=True, label="Z Threshold (px)"
+            force_fixed=True,
+            label="Z Threshold (px)"
         )
-        for rw in (self.scale_range, self.variability_range, self.threshold_range):
+        for rw in (self.scale_range, self.threshold_range):
             rw.pack(fill='x', padx=12, pady=6)
             rw.var_min.trace_add("write", lambda *_: [self._rescale(), self._autosave()])
             rw.var_max.trace_add("write", lambda *_: [self._rescale(), self._autosave()])
-            if hasattr(rw, 'var_random'):
-                rw.var_random.trace_add("write", lambda *_: [self._rescale(), self._autosave()])
 
         # -- Options --
         hdr3 = tk.Label(
@@ -96,48 +90,19 @@ class SizePage(tk.Frame):
             font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
         )
         hdr3.pack(anchor='w', padx=12, pady=(10, 4))
-        self.flipability_var = tk.BooleanVar(value=False)
-        self.flipability_var.trace_add("write", lambda *_: self._autosave())
-        chk = ttk.Checkbutton(
-            scroll_frame, text="Randomly Flip Y-Axis",
-            variable=self.flipability_var,
-            style='W.TCheckbutton'
-        )
-        chk.pack(anchor='w', padx=12, pady=6)
         ttk.Style().configure('W.TCheckbutton', font=("Segoe UI", 12), background='#2a2a2a', foreground='#FFFFFF')
 
-        # -- Min/Max Preview --
-        hdr4 = tk.Label(
-            scroll_frame, text="Min / Max Size Preview",
-            font=("Segoe UI", 13, "bold"), fg="#DDDDDD", bg='#2a2a2a'
+        # ✅ Apply Page Settings Button
+        apply_btn = ApplyPageSettings(
+            scroll_frame,
+            page_data=lambda: {
+                "z_threshold": self.threshold_range.get()[1],
+                "size_settings": {"scale_percentage": self.scale_range.get()[1]}
+            },
+            label="Apply Size Settings to Another Asset"
         )
-        hdr4.pack(anchor='w', padx=12, pady=(10, 4))
+        apply_btn.pack(pady=(6, 12))
 
-        label_row = tk.Frame(scroll_frame, bg='#2a2a2a')
-        label_row.pack(fill='x', padx=12)
-        tk.Label(
-            label_row, text="Min Size Preview",
-            font=("Segoe UI", 12), fg="#FFFFFF", bg='#2a2a2a'
-        ).pack(side='left', pady=(0,4))
-        tk.Label(
-            label_row, text="Max Size Preview",
-            font=("Segoe UI", 12), fg="#FFFFFF", bg='#2a2a2a'
-        ).pack(side='right', pady=(0,4))
-
-        preview_row = tk.Frame(scroll_frame, bg='#2a2a2a')
-        preview_row.pack(fill='x', padx=12, pady=(4,12))
-        self.preview_min = tk.Canvas(
-            preview_row, width=self.CANVAS_W//2, height=self.CANVAS_H//2,
-            bg='black', bd=1, relief='sunken'
-        )
-        self.preview_min.pack(side='left', padx=6)
-        self.preview_max = tk.Canvas(
-            preview_row, width=self.CANVAS_W//2, height=self.CANVAS_H//2,
-            bg='black', bd=1, relief='sunken'
-        )
-        self.preview_max.pack(side='left', padx=6)
-
-        # finalize scrollable area
         self._loaded = True
 
     def load(self, info_path):
@@ -150,19 +115,17 @@ class SizePage(tk.Frame):
         with open(info_path, 'r') as f:
             data = json.load(f)
         ss = data.get("size_settings", {})
-        self.scale_range.set(ss.get("scale_percentage", 100), ss.get("scale_percentage", 100))
-        self.variability_range.set(ss.get("variability_percentage", 0), ss.get("variability_percentage", 0))
-        zt = data.get('z_threshold', None)
-        self.flipability_var.set(ss.get("flipability", False))
+        self.scale_range.set(
+            ss.get("scale_percentage", 100),
+            ss.get("scale_percentage", 100)
+        )
+        zt = data.get('z_threshold', 0)
+        self.threshold_range.set(zt, zt)
         base_dir = os.path.dirname(info_path)
         img_p = os.path.join(base_dir, "default", "0.png")
         self._orig_img = Image.open(img_p).convert('RGBA') if os.path.isfile(img_p) else None
         if self._orig_img:
             bw, bh = self._orig_img.size
-            self.threshold_range.min_bound = 0
-            self.threshold_range.max_bound = bh
-            disp = int((zt or (bh*4/5))/(self.scale_range.get()[1]/100.0)) if bh else 0
-            self.threshold_range.set(disp, disp)
             fit_scale = min(self.CANVAS_W/bw, self.CANVAS_H/bh)
             self._fit_img = self._orig_img.resize((int(bw*fit_scale), int(bh*fit_scale)), Image.LANCZOS)
         else:
@@ -171,38 +134,29 @@ class SizePage(tk.Frame):
         self._loaded = True
 
     def _rescale(self):
-        # clear and redraw previews
-        for canvas in (self.preview, self.preview_min, self.preview_max):
-            canvas.delete('all')
+        self.preview.delete('all')
         if not self._fit_img:
             return
-        # main preview
         base_pct = self.scale_range.get()[1]
         self._draw(self.preview, base_pct/100.0)
-        # threshold line
         thr = self.threshold_range.get()[1]
         orig_h = getattr(self._orig_img, 'height', 0)
         if orig_h:
-            disp_h = self._fit_img.height*(base_pct/100.0)
+            disp_h = self._fit_img.height * (base_pct/100.0)
             yoff = (self.CANVAS_H - disp_h)/2
             frac = 1.0 - thr/orig_h
-            y = yoff + disp_h*frac
+            y = yoff + disp_h * frac
             self.preview.create_line(0, y, self.CANVAS_W, y, fill='red', width=2)
-        # min/max previews
-        var_pct = self.variability_range.get()[1]
-        for cvs, pct in ((self.preview_min, max(0,(base_pct-var_pct)/100.0)),
-                         (self.preview_max, (base_pct+var_pct)/100.0)):
-            self._draw(cvs, pct)
 
     def _draw(self, cvs, scale):
         w, h = self._fit_img.size
         sw, sh = int(w*scale), int(h*scale)
-        if sw<=0 or sh<=0:
+        if sw <= 0 or sh <= 0:
             return
         img = self._fit_img.resize((sw, sh), Image.LANCZOS)
         tk_img = ImageTk.PhotoImage(img)
-        x = (int(cvs['width'])-sw)//2
-        y = (int(cvs['height'])-sh)//2
+        x = (int(cvs['width']) - sw) // 2
+        y = (int(cvs['height']) - sh) // 2
         cvs.create_image(x, y, anchor='nw', image=tk_img)
         setattr(self, f'_img_{id(cvs)}', tk_img)
 
@@ -218,13 +172,7 @@ class SizePage(tk.Frame):
                 data = json.load(f)
         except Exception:
             data = {}
-        base_pct = self.scale_range.get()[1]
-        thr = self.threshold_range.get()[1]
-        data['z_threshold'] = int(thr*(base_pct/100.0))
-        data['size_settings'] = {
-            'scale_percentage': base_pct,
-            'variability_percentage': self.variability_range.get()[1],
-            'flipability': self.flipability_var.get()
-        }
+        data['z_threshold'] = self.threshold_range.get()[1]
+        data['size_settings'] = { 'scale_percentage': self.scale_range.get()[1] }
         with open(self.asset_path, 'w') as f:
             json.dump(data, f, indent=4)

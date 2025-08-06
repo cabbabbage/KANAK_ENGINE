@@ -21,48 +21,28 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 2949,
+      "radius": 2328,
       "min_rooms": 3,
       "max_rooms": 3,
       "rooms": [
         {
-          "name": "KEY",
-          "min_instances": 0,
-          "max_instances": 1,
-          "required_children": []
-        },
-        {
-          "name": "wood",
-          "min_instances": 0,
-          "max_instances": 1,
-          "required_children": []
-        },
-        {
-          "name": "flower",
-          "min_instances": 0,
-          "max_instances": 1,
-          "required_children": []
-        },
-        {
           "name": "manmade",
-          "min_instances": 0,
-          "max_instances": 1,
+          "min_instances": 2,
+          "max_instances": 4,
           "required_children": []
         },
         {
-          "name": "odd",
+          "name": "Grave_Yard",
           "min_instances": 0,
-          "max_instances": 1,
-          "required_children": [
-            "Grave_Yard"
-          ]
+          "max_instances": 2,
+          "required_children": []
         }
       ]
     },
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 6758,
+      "radius": 5516,
       "min_rooms": 7,
       "max_rooms": 9,
       "rooms": [
@@ -91,38 +71,7 @@
           "required_children": []
         }
       ]
-    },
-    {
-      "level": 3,
-      "name": "layer_3",
-      "radius": 9947,
-      "min_rooms": 0,
-      "max_rooms": 13,
-      "rooms": [
-        {
-          "name": "flower",
-          "min_instances": 0,
-          "max_instances": 14,
-          "required_children": []
-        }
-      ]
-    },
-    {
-      "level": 4,
-      "name": "layer_4",
-      "radius": 11447,
-      "min_rooms": 0,
-      "max_rooms": 0,
-      "rooms": []
-    },
-    {
-      "level": 5,
-      "name": "layer_5",
-      "radius": 11447,
-      "min_rooms": 0,
-      "max_rooms": 0,
-      "rooms": []
     }
   ],
-  "map_radius": 12947.032346864937
+  "map_radius": 8423.02568810018
 }

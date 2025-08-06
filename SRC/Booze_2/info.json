@@ -19,25 +19,24 @@
     }
   },
   "tags": [
-    "brown",
-    "crime",
     "small",
     "drinking",
-    "passable",
-    "barrel_child",
-    "booze",
+    "crime",
     "still",
-    "child",
     "man-made",
-    "default"
+    "passable",
+    "booze",
+    "child",
+    "barrel_child",
+    "default",
+    "brown"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
   "z_threshold": 10,
   "size_settings": {
     "scale_percentage": 5,
-    "variability_percentage": 0,
-    "flipability": true
+    "variability_percentage": 0
   },
   "anti_tags": [
     "book",
@@ -50,5 +49,20 @@
   "has_spacing": true,
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 50,
-  "min_distance_all": 0
+  "min_distance_all": 0,
+  "can_invert": true,
+  "update_radius": 1000,
+  "render_radius": 1000,
+  "has_shading": true,
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 255,
+      "radius": 95,
+      "y_radius": 52,
+      "x_radius": 51,
+      "fall_off": 80,
+      "factor": 100
+    }
+  ]
 }

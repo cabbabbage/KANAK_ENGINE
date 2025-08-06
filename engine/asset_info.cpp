@@ -67,14 +67,12 @@ AssetInfo::AssetInfo(const std::string& asset_folder_name)
 
     // Lighting & shading
     load_lighting_info(data);
-    load_shading_info(data);
 
     // Size settings
     const auto& ss = data.value("size_settings", nlohmann::json::object());
     scale_percentage       = ss.value("scale_percentage", 100.0f);
     variability_percentage = ss.value("variability_percentage", 0.0f);
     scale_factor           = scale_percentage / 100.0f;
-    flipable               = ss.value("flipable", false);
 
     // Collision & child assets (offsets computed assuming no animation size)
     int scaled_canvas_w = static_cast<int>(original_canvas_width * scale_factor);
@@ -140,7 +138,6 @@ void AssetInfo::loadAnimations(SDL_Renderer* renderer) {
     get_area_textures(renderer);
 }
 
-
 void AssetInfo::get_area_textures(SDL_Renderer* renderer) {
     if (!renderer) return;
 
@@ -196,7 +193,6 @@ void AssetInfo::get_area_textures(SDL_Renderer* renderer) {
     try_load_or_create(attack_area, "attack");
 }
 
-
 void AssetInfo::load_base_properties(const nlohmann::json& data) {
     type = data.value("asset_type", "Object");
     if (type == "Player") {
@@ -214,6 +210,9 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
     duplicatable = data.value("duplicatable", false);
     duplication_interval_min = data.value("duplication_interval_min", 0);
     duplication_interval_max = data.value("duplication_interval_max", 0);
+    update_radius = data.value("update_radius", 1000);
+    has_shading = data.value("has_shading", false);
+    flipable               = data.value("can_invert", false);
 
     std::mt19937 rng{ std::random_device{}() };
     if (min_child_depth <= max_child_depth) {
@@ -233,134 +232,72 @@ void AssetInfo::load_base_properties(const nlohmann::json& data) {
 }
 
 void AssetInfo::load_lighting_info(const nlohmann::json& data) {
-    lights.clear();
     has_light_source = false;
+    light_sources.clear();
+    orbital_light_sources.clear();
 
     if (!data.contains("lighting_info"))
         return;
 
     const auto& linfo = data["lighting_info"];
 
-    // backward-compatible single light object
-    if (linfo.is_object()) {
-        if (!linfo.value("has_light_source", false)) return;
-        has_light_source = true;
+    auto parse_light = [](const nlohmann::json& l) -> std::optional<LightSource> {
+        if (!l.is_object() || !l.value("has_light_source", false))
+            return std::nullopt;
 
         LightSource light;
-        light.intensity  = linfo.value("light_intensity", 0);
-        light.radius     = linfo.value("radius", 100);
-        light.fall_off   = linfo.value("fall_off", 0);
-        light.jitter_min = linfo.value("jitter_min", 0);
-        light.jitter_max = linfo.value("jitter_max", 0);
-        light.flicker    = linfo.value("flicker", false);
-        light.offset_x   = linfo.value("offset_x", 0);
-        light.offset_y   = linfo.value("offset_y", 0);
-        light.color      = { 0, 0, 0, 255 };
-        if (linfo.contains("light_color") &&
-            linfo["light_color"].is_array() &&
-            linfo["light_color"].size() == 3)
-        {
-            light.color.r = linfo["light_color"][0].get<int>();
-            light.color.g = linfo["light_color"][1].get<int>();
-            light.color.b = linfo["light_color"][2].get<int>();
+        light.intensity = l.value("light_intensity", 0);
+        light.radius    = l.value("radius", 100);
+        light.fall_off  = l.value("fall_off", 0);
+        light.flare     = l.value("flare", 1);
+        light.flicker   = l.value("flicker", 0);
+        light.offset_x  = l.value("offset_x", 0);
+        light.offset_y  = l.value("offset_y", 0);
+        light.x_radius  = l.value("x_radius", 0);
+        light.y_radius  = l.value("y_radius", 0);
+        double factor   = l.value("factor", 100);
+        light.color     = {255, 255, 255, 255};
+        factor = factor/100;
+        light.x_radius = light.x_radius * factor;
+        light.y_radius = light.y_radius * factor;
+
+        if (l.contains("light_color") && l["light_color"].is_array() && l["light_color"].size() == 3) {
+            light.color.r = l["light_color"][0].get<int>();
+            light.color.g = l["light_color"][1].get<int>();
+            light.color.b = l["light_color"][2].get<int>();
         }
 
-        lights.push_back(light);
-    }
-    // array of lights
-    else if (linfo.is_array()) {
+        return light;
+    };
+
+    if (linfo.is_array()) {
         for (const auto& l : linfo) {
-            if (!l.is_object() || !l.value("has_light_source", false))
-                continue;
-            has_light_source = true;
+            auto maybe = parse_light(l);
+            if (maybe.has_value()) {
+                has_light_source = true;
+                LightSource light = maybe.value();
 
-            LightSource light;
-            light.intensity  = l.value("light_intensity", 0);
-            light.radius     = l.value("radius", 100);
-            light.fall_off   = l.value("fall_off", 0);
-            light.jitter_min = l.value("jitter_min", 0);
-            light.jitter_max = l.value("jitter_max", 0);
-            light.flicker    = l.value("flicker", false);
-            light.offset_x   = l.value("offset_x", 0);
-            light.offset_y   = l.value("offset_y", 0);
-            light.color      = { 0, 0, 0, 255 };
-            if (l.contains("light_color") &&
-                l["light_color"].is_array() &&
-                l["light_color"].size() == 3)
-            {
-                light.color.r = l["light_color"][0].get<int>();
-                light.color.g = l["light_color"][1].get<int>();
-                light.color.b = l["light_color"][2].get<int>();
+                // Identify orbital by non-zero elliptical radius
+                if (light.x_radius > 0 || light.y_radius > 0)
+                    orbital_light_sources.push_back(light);
+                else
+                    light_sources.push_back(light);
             }
+        }
+    } else if (linfo.is_object()) {
+        auto maybe = parse_light(linfo);
+        if (maybe.has_value()) {
+            has_light_source = true;
+            LightSource light = maybe.value();
 
-            lights.push_back(light);
+            if (light.x_radius > 0 || light.y_radius > 0)
+                orbital_light_sources.push_back(light);
+            else
+                light_sources.push_back(light);
         }
     }
 }
 
-void AssetInfo::generate_lights(SDL_Renderer* renderer) {
-    light_textures.clear();
-    if (!has_light_source) return;
-
-    GenerateLight gen(renderer);
-    for (std::size_t i = 0; i < lights.size(); ++i) {
-        SDL_Texture* tex = gen.generate(this, lights[i], i);
-        if (tex) {
-            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-            light_textures.push_back(tex);
-        }
-    }
-}
-
-void AssetInfo::load_shading_info(const nlohmann::json& data) {
-    if (!data.contains("shading_info") || !data["shading_info"].is_object()) return;
-    const auto& s = data["shading_info"];
-
-    if (s.contains("has_shading") && s["has_shading"].is_boolean())
-        has_shading = s["has_shading"].get<bool>();
-    else
-        has_shading = false;
-
-    if (s.contains("has_base_shadow") && s["has_base_shadow"].is_boolean())
-        has_base_shadow = s["has_base_shadow"].get<bool>();
-    else
-        has_base_shadow = false;
-
-    if (s.contains("base_shadow_intensity") && s["base_shadow_intensity"].is_number())
-        base_shadow_intensity = s["base_shadow_intensity"].get<int>();
-    else
-        base_shadow_intensity = 0;
-
-    if (s.contains("has_gradient_shadow") && s["has_gradient_shadow"].is_boolean())
-        has_gradient_shadow = s["has_gradient_shadow"].get<bool>();
-    else
-        has_gradient_shadow = false;
-
-    if (s.contains("number_of_gradient_shadows") && s["number_of_gradient_shadows"].is_number())
-        number_of_gradient_shadows = s["number_of_gradient_shadows"].get<int>();
-    else
-        number_of_gradient_shadows = 0;
-
-    if (s.contains("gradient_shadow_intensity") && s["gradient_shadow_intensity"].is_number())
-        gradient_shadow_intensity = s["gradient_shadow_intensity"].get<int>();
-    else
-        gradient_shadow_intensity = 0;
-
-    if (s.contains("has_casted_shadows") && s["has_casted_shadows"].is_boolean())
-        has_casted_shadows = s["has_casted_shadows"].get<bool>();
-    else
-        has_casted_shadows = false;
-
-    if (s.contains("number_of_casted_shadows") && s["number_of_casted_shadows"].is_number())
-        number_of_casted_shadows = s["number_of_casted_shadows"].get<int>();
-    else
-        number_of_casted_shadows = 0;
-
-    if (s.contains("cast_shadow_intensity") && s["cast_shadow_intensity"].is_number())
-        cast_shadow_intensity = s["cast_shadow_intensity"].get<int>();
-    else
-        cast_shadow_intensity = 0;
-}
 
 void AssetInfo::load_collision_areas(const nlohmann::json& data,
                                      const std::string& dir_path,
@@ -601,4 +538,25 @@ void AssetInfo::try_load_area(const nlohmann::json& data,
 
 bool AssetInfo::has_tag(const std::string& tag) const {
     return std::find(tags.begin(), tags.end(), tag) != tags.end();
+}
+
+void AssetInfo::generate_lights(SDL_Renderer* renderer) {
+    GenerateLight generator(renderer);
+
+    for (std::size_t i = 0; i < light_sources.size(); ++i) {
+        SDL_Texture* tex = generator.generate(renderer, name, light_sources[i], i);
+        if (tex) {
+            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+            light_sources[i].texture = tex;
+        }
+    }
+
+    std::size_t base_index = light_sources.size();
+    for (std::size_t i = 0; i < orbital_light_sources.size(); ++i) {
+        SDL_Texture* tex = generator.generate(renderer, name, orbital_light_sources[i], base_index + i);
+        if (tex) {
+            SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+            orbital_light_sources[i].texture = tex;
+        }
+    }
 }

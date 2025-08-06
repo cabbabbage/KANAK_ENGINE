@@ -19,21 +19,20 @@
     }
   },
   "tags": [
+    "impassable",
+    "grey",
     "scary",
+    "grave",
+    "death",
+    "medium",
+    "man-made",
     "still",
     "graveyard",
-    "impassable",
-    "death",
-    "default",
-    "grey",
-    "man-made",
-    "medium",
-    "grave"
+    "default"
   ],
-  "z_threshold": 5,
+  "z_threshold": 3,
   "size_settings": {
-    "scale_percentage": 15,
-    "variability_percentage": 0
+    "scale_percentage": 15
   },
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -60,5 +59,24 @@
   ],
   "child_assets": [
     "child_assets_1.json"
-  ]
+  ],
+  "can_invert": true,
+  "update_radius": 1000,
+  "render_radius": 1000,
+  "has_shading": true,
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 255,
+      "radius": 98,
+      "y_radius": 71,
+      "x_radius": 76,
+      "falloff": 50,
+      "factor": 100
+    }
+  ],
+  "has_spacing": true,
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 0,
+  "min_distance_all": 0
 }

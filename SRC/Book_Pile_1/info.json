@@ -24,11 +24,11 @@
     "Spacing"
   ],
   "tags": [
-    "book",
-    "passable",
-    "barrel_child",
     "man-made",
-    "library"
+    "book",
+    "barrel_child",
+    "library",
+    "passable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

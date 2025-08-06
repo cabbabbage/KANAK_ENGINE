@@ -15,8 +15,7 @@
   "z_threshold": 6,
   "size_settings": {
     "scale_percentage": 20,
-    "variability_percentage": 0,
-    "flipability": true
+    "variability_percentage": 0
   },
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 1000,
@@ -24,11 +23,11 @@
     "Spacing"
   ],
   "tags": [
-    "book",
+    "library",
     "passable",
-    "barrel_child",
     "man-made",
-    "library"
+    "book",
+    "barrel_child"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

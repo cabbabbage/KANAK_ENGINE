@@ -3,8 +3,8 @@
   "inherits_map_assets": false,
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 105,
-    "grid_spacing_max": 105,
+    "grid_spacing_min": 118,
+    "grid_spacing_max": 118,
     "jitter_min": 29,
     "jitter_max": 29,
     "batch_assets": [

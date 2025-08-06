@@ -113,7 +113,6 @@ class AssetOrganizerApp(tk.Toplevel):
             (ChildAssetsPage, 'Child Assets'),
             (TagsPage, 'Tags'),
             (LightingPage, 'Lighting'),
-            (ShadingPage, 'Shading'),
             (EditRawJsonPage, 'JSON')
         ]:
             if cls is AnimationsPage:

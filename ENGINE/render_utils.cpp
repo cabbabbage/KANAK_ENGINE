@@ -115,10 +115,11 @@ void RenderUtils::renderLightDistorted(SDL_Texture* tex) const {
     SDL_RenderCopyEx(renderer_, tex, nullptr, &scaled, rot, nullptr, SDL_FLIP_NONE);
 }
 
+
+
 void RenderUtils::setAssetTrapezoid(const Asset* asset, int playerX, int playerY) {
     trapSettings_.enabled = false;
     if (!asset) return;
-
     SDL_Texture* tex = asset->get_current_frame();
     if (!tex) return;
 
@@ -129,59 +130,130 @@ void RenderUtils::setAssetTrapezoid(const Asset* asset, int playerX, int playerY
     trapSettings_.screen_x = p.x;
     trapSettings_.screen_y = p.y;
 
-    struct EdgeScales { float L,R,T,B; };
-    const EdgeScales top{0.96f, 0.96f, 0.96f, 0.91f},
-                    mid{0.93f, 0.93f, 0.93f, 0.91f},
-                    bot{0.88f, 0.88f, 0.88f, 0.91f};
-
-    auto lerp = [](float a,float b,float t){return a+(b-a)*t;};
+    struct EdgeScales { float L, R, T, B; };
+    const EdgeScales top{1.0f,1.0f,1.0f,1.0f},
+                     mid{1.0f,1.0f,1.0f,1.0f},
+                     bot{1.0f,1.0f,1.0f,1.0f};
+    auto lerp = [](float a, float b, float t){ return a + (b - a) * t; };
     auto lerpE = [&](auto A, auto B, float t){
         return EdgeScales{
             lerp(A.L,B.L,t), lerp(A.R,B.R,t),
             lerp(A.T,B.T,t), lerp(A.B,B.B,t)
         };
     };
-    auto ease = [](float t){return t*t*(3.0f-2.0f*t);};
+    auto ease = [](float t){ return t*t*(3.0f - 2.0f*t); };
 
-    float dy = (asset->pos_Y - playerY)/1000.0f;
-    float dx = (asset->pos_X - playerX)/1000.0f;
-    float ny = std::clamp(dy,-1.0f,1.0f);
-    float nx = std::clamp(dx,-1.0f,1.0f);
+    float dy = float(asset->pos_Y - playerY)/1000.0f;
+    float dx = float(asset->pos_X - playerX)/1000.0f;
+    float ny = std::clamp(dy, -1.0f, 1.0f);
+    float nx = std::clamp(dx, -1.0f, 1.0f);
 
-    EdgeScales L,I;
-    if(ny<0){float e=ease(ny+1); L=lerpE(top, mid,e); I=lerpE(top,mid,e);} 
-    else     {float e=ease(ny);   L=lerpE(mid, bot,e); I=lerpE(mid,bot,e);}  
-    float tx=(nx+1)*0.5f, ex=ease(tx);
-    EdgeScales S=lerpE(L,I,ex);
-    if(nx>0) std::swap(S.L,S.R);
+    EdgeScales L, I;
+    if (ny < 0) {
+        float e = ease(ny + 1.0f);
+        L = lerpE(top, mid, e);
+        I = lerpE(top, mid, e);
+    } else {
+        float e = ease(ny);
+        L = lerpE(mid, bot, e);
+        I = lerpE(mid, bot, e);
+    }
+    float tx = (nx + 1.0f) * 0.5f;
+    float ex = ease(tx);
+    EdgeScales S = lerpE(L, I, ex);
+    if (nx > 0) std::swap(S.L, S.R);
 
-    trapSettings_.topScaleX = (S.L+S.R)*0.5f;
-    trapSettings_.topScaleY = (S.T+S.B)*0.5f;
+    trapSettings_.topScaleX = (S.L + S.R) * 0.5f;
+    trapSettings_.topScaleY = (S.T + S.B) * 0.5f;
 
-    float c = std::pow(asset->gradient_opacity,1.2f);
-    int d = static_cast<int>(255*c);
-    if(asset->info->type=="Player") d=std::min(255,d*3);
-    trapSettings_.color={Uint8(d),Uint8(d),Uint8(d),255};
+    float c = std::pow(asset->alpha_percentage, 1.2f);
+    int d = static_cast<int>(255 * c);
+    if (asset->info->type == "Player") d = std::min(255, d * 3);
+    trapSettings_.color = { Uint8(d), Uint8(d), Uint8(d), 255 };
 }
+void RenderUtils::renderAssetTrapezoid(SDL_Texture* tex,
+                                       SDL_BlendMode blendMode,
+                                       bool flipped) const {
+    if (!trapSettings_.enabled || !tex) return;
+    SDL_SetTextureBlendMode(tex, blendMode);
 
-void RenderUtils::renderAssetTrapezoid(SDL_Texture* tex) const {
-    if(!trapSettings_.enabled||!tex) return;
-    SDL_SetTextureBlendMode(tex,SDL_BLENDMODE_BLEND);
+    int halfBottom = trapSettings_.w / 2;
+    int topWidth   = int(trapSettings_.w * trapSettings_.topScaleX);
+    int topHeight  = int(trapSettings_.h * trapSettings_.topScaleY);
+    int halfTop    = topWidth / 2;
+    int bottomY    = trapSettings_.screen_y;
+    int topY       = bottomY - topHeight;
+
+    float L0 = float(trapSettings_.screen_x - halfTop);
+    float R0 = float(trapSettings_.screen_x + halfTop);
+    float L1 = float(trapSettings_.screen_x - halfBottom);
+    float R1 = float(trapSettings_.screen_x + halfBottom);
+
+    if (flipped) {
+        std::swap(L0, R0);
+        std::swap(L1, R1);
+    }
+
     SDL_Vertex V[4];
-    int hb=trapSettings_.w/2;
-    int tW=int(trapSettings_.w*trapSettings_.topScaleX);
-    int tH=int(trapSettings_.h*trapSettings_.topScaleY);
-    int ht=tW/2;
-    int by=trapSettings_.screen_y;
-    int ty=by-tH;
-    V[0].position={float(trapSettings_.screen_x-ht),float(ty)}; V[0].tex_coord={0,0};
-    V[1].position={float(trapSettings_.screen_x+ht),float(ty)}; V[1].tex_coord={1,0};
-    V[2].position={float(trapSettings_.screen_x+hb),float(by)};  V[2].tex_coord={1,1};
-    V[3].position={float(trapSettings_.screen_x-hb),float(by)};  V[3].tex_coord={0,1};
-    for(int i=0;i<4;++i) V[i].color=trapSettings_.color;
-    int idx[]={0,1,2,2,3,0};
-    SDL_RenderGeometry(renderer_,tex,V,4,idx,6);
+    V[0].position = { L0, float(topY) };
+    V[1].position = { R0, float(topY) };
+    V[2].position = { R1, float(bottomY) };
+    V[3].position = { L1, float(bottomY) };
+
+    if (flipped) {
+        V[0].tex_coord = {1,0};
+        V[1].tex_coord = {0,0};
+        V[2].tex_coord = {0,1};
+        V[3].tex_coord = {1,1};
+    } else {
+        V[0].tex_coord = {0,0};
+        V[1].tex_coord = {1,0};
+        V[2].tex_coord = {1,1};
+        V[3].tex_coord = {0,1};
+    }
+
+    for (int i = 0; i < 4; ++i)
+        V[i].color = trapSettings_.color;
+
+    int idx[] = {0,1,2, 2,3,0};
+    SDL_RenderGeometry(renderer_, tex, V, 4, idx, 6);
 }
+
+// === File: RenderUtils.hpp (additions needed) ===
+// Add inside the class declaration:
+// SDL_FPoint trapezoid_[4];
+// void renderTrapezoid(SDL_Texture* tex, const SDL_FPoint quad[4]);
+
+// === File: RenderUtils.cpp (add to end of file) ===
+
+// === File: render_utils.cpp ===
+RenderUtils::TrapezoidGeometry RenderUtils::getTrapezoidGeometry(SDL_Texture* tex, const SDL_FPoint quad[4]) const {
+    TrapezoidGeometry geom;
+
+    geom.vertices[0].position = quad[0];
+    geom.vertices[1].position = quad[1];
+    geom.vertices[2].position = quad[2];
+    geom.vertices[3].position = quad[3];
+
+    geom.vertices[0].tex_coord = {0, 0};
+    geom.vertices[1].tex_coord = {1, 0};
+    geom.vertices[2].tex_coord = {1, 1};
+    geom.vertices[3].tex_coord = {0, 1};
+
+    for (int i = 0; i < 4; ++i)
+        geom.vertices[i].color = SDL_Color{255, 255, 255, 255};
+
+    geom.indices[0] = 0;
+    geom.indices[1] = 1;
+    geom.indices[2] = 2;
+    geom.indices[3] = 2;
+    geom.indices[4] = 3;
+    geom.indices[5] = 0;
+
+    return geom;
+}
+
+
 
 void RenderUtils::renderMinimap() const {
     if (!minimapTexture_) return;

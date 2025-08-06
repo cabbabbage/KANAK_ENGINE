@@ -1,36 +1,60 @@
-// === File: active_assets_manager.hpp ===
-#pragma once
+// active_assets_manager.hpp
+#ifndef ACTIVE_ASSETS_MANAGER_HPP
+#define ACTIVE_ASSETS_MANAGER_HPP
 
 #include <vector>
-#include <algorithm>
-#include "Asset.hpp"
+#include <unordered_map>
+#include <unordered_set>
+#include <cstdint>
+#include "asset.hpp"
 
-// Manages which assets are in-range (active) and tracks the closest assets to the player.
 class ActiveAssetsManager {
 public:
     ActiveAssetsManager(int screen_width, int screen_height);
 
-    // Initial scan: activate assets in range and ensure the player is active
-    void initialize(std::vector<Asset>& all_assets, Asset* player, int screen_center_x, int screen_center_y);
+    void initialize(std::vector<Asset>& all_assets,
+                    Asset* player,
+                    int screen_center_x,
+                    int screen_center_y);
 
-    // After player moves or the camera center changes, re-compute which assets are active
-    void updateVisibility(Asset* player, int screen_center_x, int screen_center_y);
+    void updateVisibility(Asset* player,
+                          int screen_center_x,
+                          int screen_center_y);
 
-    // Compute the N closest active assets to the player
-    void updateClosest(Asset* player, size_t max_count = 30);
+    void updateClosest(Asset* player, size_t max_count = 10);
 
-    // Accessors
-    std::vector<Asset*>& getActive()  { return active_assets_; }
+    std::vector<Asset*>& getActive() { return active_assets_; }
+    const std::vector<Asset*>& getActive() const { return active_assets_; }
+
     std::vector<Asset*>& getClosest() { return closest_assets_; }
+    const std::vector<Asset*>& getClosest() const { return closest_assets_; }
+    void ActiveAssetsManager::sortByZIndex();
+    void updateDynamicChunks();
 
 private:
+    using ChunkKey = std::int64_t;
+
+    int screen_width_;
+    int screen_height_;
+    std::vector<Asset>* all_assets_;
+
+    std::unordered_map<ChunkKey, std::vector<Asset*>> static_chunks_;
+    std::unordered_map<ChunkKey, std::vector<Asset*>> dynamic_chunks_;
+    std::vector<Asset*> movable_assets_;
+
+    std::vector<Asset*> active_assets_;
+    std::vector<Asset*> closest_assets_;
+
     void activate(Asset* asset);
     void remove(Asset* asset);
-    void sortByDistance(int cx, int cy);
 
-    std::vector<Asset>*       all_assets_;       // pointer to master list
-    std::vector<Asset*>       active_assets_;    // currently active (in-range)
-    std::vector<Asset*>       closest_assets_;   // nearest to player
-    int                       screen_width_;
-    int                       screen_height_;
+    void sortByDistance(int cx, int cy);
+    void buildStaticChunks();
+
+
+    inline ChunkKey makeKey(int cx, int cy) const {
+        return (static_cast<ChunkKey>(cx) << 32) | static_cast<uint32_t>(cy);
+    }
 };
+
+#endif // ACTIVE_ASSETS_MANAGER_HPP

@@ -1,22 +1,20 @@
 // === File: engine.cpp ===
 
 #include "engine.hpp"
-#include "asset_loader.hpp"
 #include "fade_textures.hpp"
 #include "generate_base_shadow.hpp"
 #include "shadow_overlay.hpp"
-#include "scene_renderer.hpp"
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <filesystem>
 #include <random>
 #include <ctime>
-#include <cmath>
-#include <utility>
 
 namespace fs = std::filesystem;
 
-Engine::Engine(const std::string& map_path, SDL_Renderer* renderer, int screen_w, int screen_h)
+Engine::Engine(const std::string& map_path,
+               SDL_Renderer* renderer,
+               int screen_w,
+               int screen_h)
     : map_path(map_path),
       renderer(renderer),
       SCREEN_WIDTH(screen_w),
@@ -26,7 +24,8 @@ Engine::Engine(const std::string& map_path, SDL_Renderer* renderer, int screen_w
       minimap_texture_(nullptr),
       game_assets(nullptr),
       util(renderer, screen_w, screen_h, nullptr, map_path),
-      scene(nullptr) {}
+      scene(nullptr)
+{}
 
 Engine::~Engine() {
     if (overlay_texture) SDL_DestroyTexture(overlay_texture);
@@ -37,48 +36,16 @@ Engine::~Engine() {
 }
 
 void Engine::init() {
-    srand(static_cast<unsigned int>(time(nullptr)));
-
-    overlay_texture = IMG_LoadTexture(renderer, (map_path + "/over.png").c_str());
-    if (overlay_texture) {
-        SDL_SetTextureBlendMode(overlay_texture, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureAlphaMod(overlay_texture, static_cast<Uint8>(255 * 0.2));
-    }
-
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
     try {
-        AssetLoader loader(map_path, renderer);
-        roomTrailAreas = loader.getAllRoomAndTrailAreas();
+        loader_ = std::make_unique<AssetLoader>(map_path, renderer);
 
-        std::vector<Asset> assets = loader.extract_all_assets();
-        minimap_texture_ = loader.createMinimap(200, 200);
+        roomTrailAreas = loader_->getAllRoomAndTrailAreas();
 
-        std::unordered_map<std::string, int> type_counts;
-        for (const auto& asset : assets) {
-            if (asset.info) ++type_counts[asset.info->type];
-        }
-        for (const auto& [type, count] : type_counts) {
-            std::cout << "  - " << type << ": " << count << "\n";
-        }
+        minimap_texture_ = loader_->createMinimap(200, 200);
 
-        Asset* player_ptr = nullptr;
-        for (auto& asset : assets) {
-            if (asset.info && asset.info->type == "Player") {
-                player_ptr = &asset;
-                break;
-            }
-        }
-        if (!player_ptr) {
-            throw std::runtime_error("No player asset found.");
-        }
-
-        game_assets = new Assets(
-            std::move(assets),
-            player_ptr,
-            SCREEN_WIDTH,
-            SCREEN_HEIGHT,
-            player_ptr->pos_X,
-            player_ptr->pos_Y
-        );
+        auto assets_uptr = loader_->createAssets(SCREEN_WIDTH, SCREEN_HEIGHT);
+        game_assets = assets_uptr.release();
     }
     catch (const std::exception& e) {
         std::cerr << "[Engine] Error: " << e.what() << "\n";
@@ -86,9 +53,10 @@ void Engine::init() {
     }
 
     util = RenderUtils(renderer, SCREEN_WIDTH, SCREEN_HEIGHT, minimap_texture_, map_path);
-    util.createMapLight();
     scene = new SceneRenderer(renderer, game_assets, util, SCREEN_WIDTH, SCREEN_HEIGHT, map_path);
     GenerateBaseShadow base(renderer, roomTrailAreas, game_assets);
+
+    std::cout << "\n\nENTERING GAME LOOP\n\n";
     game_loop();
 }
 
@@ -103,7 +71,7 @@ void Engine::game_loop() {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) quit = true;
             else if (e.type == SDL_KEYDOWN) keys.insert(e.key.keysym.sym);
-            else if (e.type == SDL_KEYUP) keys.erase(e.key.keysym.sym);
+            else if (e.type == SDL_KEYUP)   keys.erase(e.key.keysym.sym);
         }
 
         int px = game_assets->player->pos_X;
