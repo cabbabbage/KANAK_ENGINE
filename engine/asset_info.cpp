@@ -246,20 +246,22 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
             return std::nullopt;
 
         LightSource light;
-        light.intensity    = l.value("light_intensity", 0);
-        light.radius       = l.value("radius", 100);
-        light.orbit_radius = l.value("orbit_radius", 0);
-        light.fall_off     = l.value("fall_off", 0);
-        light.flare        = l.value("flare", 0);
-        light.flicker      = l.value("flicker", false);
-        light.offset_x     = l.value("offset_x", 0);
-        light.offset_y     = l.value("offset_y", 0);
-        light.color        = {0, 0, 0, 255};
+        light.intensity = l.value("light_intensity", 0);
+        light.radius    = l.value("radius", 100);
+        light.fall_off  = l.value("fall_off", 0);
+        light.flare     = l.value("flare", 1);
+        light.flicker   = l.value("flicker", 0);
+        light.offset_x  = l.value("offset_x", 0);
+        light.offset_y  = l.value("offset_y", 0);
+        light.x_radius  = l.value("x_radius", 0);
+        light.y_radius  = l.value("y_radius", 0);
+        double factor   = l.value("factor", 100);
+        light.color     = {255, 255, 255, 255};
+        factor = factor/100;
+        light.x_radius = light.x_radius * factor;
+        light.y_radius = light.y_radius * factor;
 
-        if (l.contains("light_color") &&
-            l["light_color"].is_array() &&
-            l["light_color"].size() == 3)
-        {
+        if (l.contains("light_color") && l["light_color"].is_array() && l["light_color"].size() == 3) {
             light.color.r = l["light_color"][0].get<int>();
             light.color.g = l["light_color"][1].get<int>();
             light.color.b = l["light_color"][2].get<int>();
@@ -268,31 +270,34 @@ void AssetInfo::load_lighting_info(const nlohmann::json& data) {
         return light;
     };
 
-    if (linfo.is_object()) {
-        auto maybe = parse_light(linfo);
-        if (maybe.has_value()) {
-            has_light_source = true;
-            LightSource light = maybe.value();
-            if (light.orbit_radius > 0)
-                orbital_light_sources.push_back(light);
-            else
-                light_sources.push_back(light);
-        }
-    }
-    else if (linfo.is_array()) {
+    if (linfo.is_array()) {
         for (const auto& l : linfo) {
             auto maybe = parse_light(l);
             if (maybe.has_value()) {
                 has_light_source = true;
                 LightSource light = maybe.value();
-                if (light.orbit_radius > 0 && light.radius > 0)
+
+                // Identify orbital by non-zero elliptical radius
+                if (light.x_radius > 0 || light.y_radius > 0)
                     orbital_light_sources.push_back(light);
                 else
                     light_sources.push_back(light);
             }
         }
+    } else if (linfo.is_object()) {
+        auto maybe = parse_light(linfo);
+        if (maybe.has_value()) {
+            has_light_source = true;
+            LightSource light = maybe.value();
+
+            if (light.x_radius > 0 || light.y_radius > 0)
+                orbital_light_sources.push_back(light);
+            else
+                light_sources.push_back(light);
+        }
     }
 }
+
 
 void AssetInfo::load_collision_areas(const nlohmann::json& data,
                                      const std::string& dir_path,

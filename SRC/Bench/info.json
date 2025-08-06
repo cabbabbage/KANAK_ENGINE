@@ -8,10 +8,10 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "default",
-        "man-made",
         "wood",
-        "passable"
+        "man-made",
+        "passable",
+        "default"
     ],
     "animations": {
         "default": {
@@ -27,7 +27,7 @@
     },
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "z_threshold": 7,
+    "z_threshold": 1,
     "size_settings": {
         "scale_percentage": 17,
         "variability_percentage": 0
@@ -49,20 +49,12 @@
     "lighting_info": [
         {
             "has_light_source": true,
-            "light_intensity": 100,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 10,
-            "orbit_radius": 0,
-            "fall_off": 80,
-            "jitter_min": 0,
-            "flare": 0,
-            "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
+            "light_intensity": 255,
+            "radius": 702,
+            "y_radius": 78,
+            "x_radius": 140,
+            "fall_off": 40,
+            "factor": 100
         }
     ]
 }

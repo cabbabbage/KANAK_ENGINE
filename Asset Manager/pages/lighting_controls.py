@@ -2,38 +2,33 @@ import os
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox, colorchooser
+from PIL import Image
 from pages.range import Range
 
 class LightingControls(ttk.Frame):
-    def __init__(self, parent, data=None, show_orbit=True):
+    def __init__(self, parent, data=None):
         super().__init__(parent, style="LS.TFrame")
         self.light_color = (255, 255, 255)
-        self.flicker_var = tk.BooleanVar(value=False)
-        self.show_orbit = show_orbit
+
 
         self.intensity = Range(self, min_bound=0, max_bound=255, label="Light Intensity")
         self.radius = Range(self, min_bound=0, max_bound=2000, label="Radius (px)")
-        self.orbit_radius = Range(self, min_bound=0, max_bound=2000, label="Orbit Radius (px)")
         self.falloff = Range(self, min_bound=0, max_bound=100, label="Falloff (%)")
-        self.jitter_min = Range(self, min_bound=0, max_bound=20, label="Jitter Max (px)")
+        self.flicker = Range(self, min_bound=0, max_bound=20, label="Flicker")
         self.flare = Range(self, min_bound=0, max_bound=100, label="Flare (px)")
         self.offset_x = Range(self, min_bound=-2000, max_bound=2000, label="Offset X")
         self.offset_y = Range(self, min_bound=-2000, max_bound=2000, label="Offset Y")
 
-        for rng in (self.jitter_min, self.flare, self.offset_x, self.offset_y):
+        for rng in (self.flicker, self.flare, self.offset_x, self.offset_y):
             rng.set_fixed()
 
         for rng in (
             self.intensity, self.radius, self.falloff,
-            self.jitter_min, self.flare, self.offset_x, self.offset_y
+            self.flicker, self.flare, self.offset_x, self.offset_y
         ):
             rng.pack(fill=tk.X, padx=10, pady=4)
 
-        if show_orbit:
-            self.orbit_radius.pack(fill=tk.X, padx=10, pady=4)
 
-        ttk.Checkbutton(self, text="Flicker", variable=self.flicker_var, style='TCheckbutton')\
-            .pack(anchor='w', padx=10, pady=4)
 
         self.color_preview = tk.Label(
             self, text="Pick Light Color", bg="#FFFFFF",
@@ -42,16 +37,7 @@ class LightingControls(ttk.Frame):
         self.color_preview.pack(padx=10, pady=4)
         self.color_preview.bind("<Button-1>", self._choose_color)
 
-        if data is None:
-            self.intensity.set(100, 100)
-            self.radius.set(300, 300)
-            self.orbit_radius.set(0, 0)
-            self.falloff.set(80, 80)
-            self.jitter_min.set(0, 0)
-            self.flare.set(0, 0)
-            self.offset_x.set(0, 0)
-            self.offset_y.set(0, 0)
-        else:
+        if data:
             self.load_data(data)
 
     def _choose_color(self, _=None):
@@ -63,13 +49,12 @@ class LightingControls(ttk.Frame):
     def load_data(self, data):
         self.intensity.set(data.get("light_intensity", 100), data.get("light_intensity", 100))
         self.radius.set(data.get("radius", 100), data.get("radius", 100))
-        self.orbit_radius.set(data.get("orbit_radius", 0), data.get("orbit_radius", 0))
         self.falloff.set(data.get("fall_off", 100), data.get("fall_off", 100))
-        self.jitter_min.set(data.get("jitter_min", 0), data.get("jitter_min", 0))
+        self.flicker.set(data.get("flicker", 0), data.get("flicker", 0))
         self.flare.set(data.get("flare", 0), data.get("flare", 0))
         self.offset_x.set(data.get("offset_x", 0), data.get("offset_x", 0))
         self.offset_y.set(data.get("offset_y", 0), data.get("offset_y", 0))
-        self.flicker_var.set(data.get("flicker", False))
+
         if isinstance(data.get("light_color"), list):
             r, g, b = data["light_color"]
             self.light_color = (r, g, b)
@@ -81,14 +66,54 @@ class LightingControls(ttk.Frame):
             "light_intensity": self.intensity.get_min(),
             "light_color": list(self.light_color),
             "radius": self.radius.get_min(),
-            "orbit_radius": self.orbit_radius.get_min() if self.show_orbit else 0,
             "fall_off": self.falloff.get_min(),
-            "jitter_min": self.jitter_min.get_min(),
+            "flicker": self.flicker.get_min(),
             "flare": self.flare.get_max(),
             "offset_x": self.offset_x.get_min(),
             "offset_y": self.offset_y.get_min(),
-            "flicker": self.flicker_var.get()
+
         }
+
+
+class OrbitalLightingControls(ttk.Frame):
+    def __init__(self, parent, data=None):
+        super().__init__(parent, style="LS.TFrame")
+
+        self.intensity = Range(self, min_bound=0, max_bound=255, label="Light Intensity")
+        self.radius = Range(self, min_bound=0, max_bound=2000, label="Radius (px)")
+        self.y_radius = Range(self, min_bound=0, max_bound=2000, label="Y Orbit Radius (px)")
+        self.x_radius = Range(self, min_bound=0, max_bound=2000, label="X Orbit Radius (px)")
+        self.falloff = Range(self, min_bound=0, max_bound=100, label="Falloff (%)")
+        self.factor = Range(self, min_bound=1.0, max_bound=200.0, label="Factor")
+
+        for rng in (
+            self.intensity, self.radius, self.y_radius,
+            self.x_radius, self.falloff, self.factor
+        ):
+            rng.pack(fill=tk.X, padx=10, pady=4)
+
+        if data:
+            self.load_data(data)
+
+    def load_data(self, data):
+        self.intensity.set(data.get("light_intensity", 100), data.get("light_intensity", 100))
+        self.radius.set(data.get("radius", 300), data.get("radius", 300))
+        self.y_radius.set(data.get("y_radius", 100), data.get("y_radius", 100))
+        self.x_radius.set(data.get("x_radius", 100), data.get("x_radius", 100))
+        self.falloff.set(data.get("fall_off", 80), data.get("fall_off", 80))
+        self.factor.set(data.get("factor", 1), data.get("factor", 200))
+
+    def get_data(self):
+        return {
+            "has_light_source": True,
+            "light_intensity": self.intensity.get_min(),
+            "radius": self.radius.get_min(),
+            "y_radius": self.y_radius.get_min(),
+            "x_radius": self.x_radius.get_min(),
+            "fall_off": self.falloff.get_min(),
+            "factor": self.factor.get_min()
+        }
+
 
 
 class LightSourceFrame(ttk.Frame):
@@ -108,7 +133,7 @@ class LightSourceFrame(ttk.Frame):
             font=("Segoe UI", 13, "bold"), foreground="#DDDDDD", background="#2a2a2a"
         ).pack(anchor="w", padx=10, pady=(4, 10))
 
-        self.control = LightingControls(self, data=data, show_orbit=False)
+        self.control = LightingControls(self, data=data)
         self.control.pack(fill=tk.X, expand=True)
 
     def _delete_self(self):

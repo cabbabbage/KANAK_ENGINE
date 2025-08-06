@@ -12,10 +12,9 @@
     }
   },
   "impassable_area": "impassable_area.json",
-  "z_threshold": 0,
+  "z_threshold": 91,
   "size_settings": {
-    "scale_percentage": 13,
-    "variability_percentage": 0
+    "scale_percentage": 13
   },
   "visited_tabs": [
     "Passability",
@@ -30,11 +29,11 @@
   "min_child_depth": 0,
   "max_child_depth": 2,
   "tags": [
-    "parent",
-    "wood",
-    "impassable",
     "man-made",
-    "surface"
+    "wood",
+    "surface",
+    "parent",
+    "impassable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -48,20 +47,12 @@
   "lighting_info": [
     {
       "has_light_source": true,
-      "light_intensity": 150,
-      "light_color": [
-        255,
-        255,
-        255
-      ],
-      "radius": 1500,
-      "orbit_radius": 200,
-      "fall_off": 100,
-      "jitter_min": 0,
-      "flare": 0,
-      "offset_x": 0,
-      "offset_y": 0,
-      "flicker": false
+      "light_intensity": 255,
+      "radius": 237,
+      "y_radius": 58,
+      "x_radius": 71,
+      "fall_off": 30,
+      "factor": 100
     }
   ],
   "can_invert": true,

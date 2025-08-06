@@ -1,82 +1,81 @@
 {
-    "impassable_area": null,
-    "asset_name": "lantern",
-    "asset_type": "Object",
-    "duplicatable": false,
-    "duplication_interval_min": 30,
-    "duplication_interval_max": 60,
-    "min_child_depth": 3,
-    "max_child_depth": 9,
-    "animations": {
-        "default": {
-            "frames_path": "default",
-            "speed": 1.0,
-            "on_end": "rest",
-            "event_data": [],
-            "randomize": true,
-            "audio_path": "",
-            "volume": 50
-        }
+  "impassable_area": null,
+  "asset_name": "lantern",
+  "asset_type": "Object",
+  "duplicatable": false,
+  "duplication_interval_min": 30,
+  "duplication_interval_max": 60,
+  "min_child_depth": 3,
+  "max_child_depth": 9,
+  "animations": {
+    "default": {
+      "frames_path": "default",
+      "speed": 1.0,
+      "on_end": "rest",
+      "event_data": [],
+      "randomize": true,
+      "audio_path": "",
+      "volume": 50
+    }
+  },
+  "z_threshold": 3,
+  "size_settings": {
+    "scale_percentage": 30
+  },
+  "spacing_area": "spacing_area.json",
+  "min_same_type_distance": 2000,
+  "tags": [
+    "man-made",
+    "metal",
+    "still",
+    "passable",
+    "center",
+    "light",
+    "default",
+    "large",
+    "tall",
+    "black"
+  ],
+  "rnd_spawn_min": 300,
+  "rnd_spawn_max": 400,
+  "lighting_info": [
+    {
+      "has_light_source": true,
+      "light_intensity": 152,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 232,
+      "orbit_radius": 0,
+      "fall_off": 100,
+      "jitter_min": 20,
+      "flare": 2,
+      "offset_x": 30,
+      "offset_y": -200,
+      "flicker": false
     },
-    "z_threshold": 3,
-    "size_settings": {
-        "scale_percentage": 30,
-        "variability_percentage": 0
-    },
-    "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 2000,
-    "tags": [
-        "light",
-        "default",
-        "passable",
-        "still",
-        "center",
-        "metal",
-        "black",
-        "man-made",
-        "tall",
-        "large"
-    ],
-    "rnd_spawn_min": 300,
-    "rnd_spawn_max": 400,
-    "lighting_info": [
-        {
-            "has_light_source": true,
-            "light_intensity": 152,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 232,
-            "orbit_radius": 0,
-            "fall_off": 100,
-            "jitter_min": 20,
-            "flare": 2,
-            "offset_x": 30,
-            "offset_y": -200,
-            "flicker": false
-        },
-        {
-            "has_light_source": true,
-            "light_intensity": 178,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 734,
-            "orbit_radius": 0,
-            "fall_off": 100,
-            "jitter_min": 0,
-            "flare": 4,
-            "offset_x": 30,
-            "offset_y": 0,
-            "flicker": false
-        }
-    ],
-    "has_spacing": true,
-    "anti_tags": [],
-    "min_distance_all": 82,
-    "has_shading": false
+    {
+      "has_light_source": true,
+      "light_intensity": 178,
+      "light_color": [
+        255,
+        255,
+        255
+      ],
+      "radius": 734,
+      "orbit_radius": 0,
+      "fall_off": 100,
+      "jitter_min": 0,
+      "flare": 4,
+      "offset_x": 30,
+      "offset_y": 0,
+      "flicker": false
+    }
+  ],
+  "has_spacing": true,
+  "anti_tags": [],
+  "min_distance_all": 82,
+  "has_shading": false
 }

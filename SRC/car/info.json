@@ -1,70 +1,62 @@
 {
-  "impassable_area": "impassable_area.json",
-  "asset_name": "car",
-  "asset_type": "Object",
-  "duplicatable": false,
-  "duplication_interval_min": 30,
-  "duplication_interval_max": 60,
-  "min_child_depth": 0,
-  "max_child_depth": 2,
-  "animations": {
-    "default": {
-      "frames_path": "default",
-      "speed": 1.0,
-      "on_end": "default",
-      "event_data": [],
-      "randomize": false,
-      "audio_path": "",
-      "volume": 50
-    }
-  },
-  "tags": [
-    "man-made",
-    "grey",
-    "center",
-    "large",
-    "metal",
-    "default",
-    "car",
-    "black",
-    "impassable"
-  ],
-  "z_threshold": 239,
-  "size_settings": {
-    "scale_percentage": 29,
-    "variability_percentage": 0
-  },
-  "has_spacing": true,
-  "spacing_area": "spacing_area.json",
-  "min_same_type_distance": 2000,
-  "rnd_spawn_min": 300,
-  "rnd_spawn_max": 400,
-  "child_assets": [],
-  "anti_tags": [
-    "passable"
-  ],
-  "min_distance_all": 72,
-  "lighting_info": [
-    {
-      "has_light_source": true,
-      "light_intensity": 255,
-      "light_color": [
-        255,
-        255,
-        255
-      ],
-      "radius": 1553,
-      "orbit_radius": 300,
-      "fall_off": 80,
-      "jitter_min": 0,
-      "flare": 0,
-      "offset_x": 0,
-      "offset_y": 0,
-      "flicker": false
-    }
-  ],
-  "has_shading": true,
-  "can_invert": true,
-  "update_radius": 1000,
-  "render_radius": 1000
+    "impassable_area": "impassable_area.json",
+    "asset_name": "car",
+    "asset_type": "Object",
+    "duplicatable": false,
+    "duplication_interval_min": 30,
+    "duplication_interval_max": 60,
+    "min_child_depth": 0,
+    "max_child_depth": 2,
+    "animations": {
+        "default": {
+            "frames_path": "default",
+            "speed": 1.0,
+            "on_end": "default",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50
+        }
+    },
+    "tags": [
+        "grey",
+        "center",
+        "impassable",
+        "default",
+        "black",
+        "metal",
+        "car",
+        "large",
+        "man-made"
+    ],
+    "z_threshold": 236,
+    "size_settings": {
+        "scale_percentage": 29,
+        "variability_percentage": 0
+    },
+    "has_spacing": true,
+    "spacing_area": "spacing_area.json",
+    "min_same_type_distance": 2000,
+    "rnd_spawn_min": 300,
+    "rnd_spawn_max": 400,
+    "child_assets": [],
+    "anti_tags": [
+        "passable"
+    ],
+    "min_distance_all": 72,
+    "lighting_info": [
+        {
+            "has_light_source": true,
+            "light_intensity": 255,
+            "radius": 575,
+            "y_radius": 147,
+            "x_radius": 172,
+            "fall_off": 30,
+            "factor": 100
+        }
+    ],
+    "has_shading": true,
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

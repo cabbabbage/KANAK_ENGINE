@@ -143,7 +143,6 @@ void Assets::set_player_light_render() {
 
     // Then, compute which assets should be lit this frame and enable them
     for (LightSource& light : player->info->light_sources) {
-        if (light.orbit_radius > 0) continue;
         int lx = player->pos_X + light.offset_x;
         int ly = player->pos_Y + light.offset_y;
 
@@ -159,11 +158,14 @@ void Assets::set_player_light_render() {
 
 
 void Assets::set_shading_groups() {
-    int current_group = 0;
+    int current_group = 1;
     for (auto& a : all) {
         if (!a.info || !a.has_shading) continue;
         if (a.is_shading_group_set()) continue;
         a.set_shading_group(current_group);
-        current_group = (current_group + 1) % num_groups_;
+        current_group++;
+        if (current_group > num_groups_)
+            current_group = 1;
     }
+
 }

@@ -3,8 +3,9 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox, colorchooser
 from pages.range import Range
-from pages.lighting_controls import LightingControls, LightSourceFrame
+from pages.lighting_controls import LightingControls, LightSourceFrame, OrbitalLightingControls
 from pages.apply_page_settings import ApplyPageSettings
+from PIL import Image
 
 class LightingPage(tk.Frame):
     def __init__(self, parent):
@@ -51,23 +52,17 @@ class LightingPage(tk.Frame):
             activebackground="#2a2a2a", activeforeground="#FFFFFF"
         ).pack(anchor="w")
 
-        self.shading_control = LightingControls(header, show_orbit=True)
+        self.shading_control = OrbitalLightingControls(header)
         self.shading_control.pack(fill=tk.X, pady=(10, 0))
 
-        # Bind autosave for all shading_control sliders and flicker
         for rng in (
             self.shading_control.intensity,
             self.shading_control.radius,
-            self.shading_control.orbit_radius,
-            self.shading_control.falloff,
-            self.shading_control.jitter_min,
-            self.shading_control.flare,
-            self.shading_control.offset_x,
-            self.shading_control.offset_y,
+            self.shading_control.x_radius,
+            self.shading_control.y_radius,
         ):
             rng.var_min.trace_add("write", lambda *_: self._autosave())
             rng.var_max.trace_add("write", lambda *_: self._autosave())
-        self.shading_control.flicker_var.trace_add("write", lambda *_: self._autosave())
 
         add_btn = tk.Button(
             self.scroll_frame, text="Add New Light Source",
@@ -93,6 +88,8 @@ class LightingPage(tk.Frame):
     def _toggle_shading(self):
         if self.has_shading_var.get():
             self.shading_control.pack(fill=tk.X, pady=(10, 0))
+            if self._loaded:
+                self.set_defaults()
         else:
             self.shading_control.pack_forget()
         self._autosave()
@@ -140,19 +137,26 @@ class LightingPage(tk.Frame):
         if isinstance(lighting, dict):
             lighting = [lighting] if lighting.get("has_light_source") else []
 
-        # Extract the light with orbit_radius > 0 (if any) for shading_control
         shading_light = None
         normal_lights = []
         for light in lighting:
-            if shading_light is None and light.get("orbit_radius", 0) > 0:
+            if shading_light is None and "x_radius" in light and "y_radius" in light:
                 shading_light = light
             else:
                 normal_lights.append(light)
 
-        if shading_light:
-            self.has_shading_var.set(True)
-            self.shading_control.load_data(shading_light)
-            self.shading_control.pack(fill=tk.X, pady=(10, 0))
+        if shading_light and data.get("has_shading", False):
+            is_all_zero = all(
+                shading_light.get(k, 0) == 0
+                for k in ["x_radius", "y_radius", "radius", "light_intensity"]
+            )
+            if is_all_zero:
+                self.has_shading_var.set(False)
+                self.shading_control.pack_forget()
+            else:
+                self.has_shading_var.set(True)
+                self.shading_control.load_data(shading_light)
+                self.shading_control.pack(fill=tk.X, pady=(10, 0))
         else:
             self.has_shading_var.set(False)
             self.shading_control.pack_forget()
@@ -177,8 +181,18 @@ class LightingPage(tk.Frame):
         data["has_shading"] = self.has_shading_var.get()
 
         lighting_info = [f.get_data() for f in self.source_frames]
+
         if self.has_shading_var.get():
             lighting_info.insert(0, self.shading_control.get_data())
+        else:
+            reset_orbital = {
+                "has_light_source": True,
+                "light_intensity": 0,
+                "radius": 0,
+                "x_radius": 0,
+                "y_radius": 0
+            }
+            lighting_info.insert(0, reset_orbital)
 
         data["lighting_info"] = lighting_info
 
@@ -187,3 +201,39 @@ class LightingPage(tk.Frame):
                 json.dump(data, f, indent=4)
         except Exception as e:
             messagebox.showerror("Save Error", str(e))
+
+    def set_defaults(self):
+        if not self.asset_path:
+            return
+
+        try:
+            base_dir = os.path.dirname(self.asset_path)
+            img_path = os.path.join(base_dir, "default", "0.png")
+            info_path = self.asset_path
+
+            if not os.path.isfile(img_path) or not os.path.isfile(info_path):
+                return
+
+            img = Image.open(img_path)
+            width, height = img.size
+
+            with open(info_path, "r") as f:
+                data = json.load(f)
+                scale_pct = data.get("size_settings", {}).get("scale_percentage", 100) / 100.0
+
+            y_radius = int(height * scale_pct * 1.4)
+            x_radius = int(width * scale_pct * 1.6)
+            base_radius = int(max(width, height) * scale_pct * 3)
+
+            self.shading_control.y_radius.set(y_radius, y_radius)
+            self.shading_control.x_radius.set(x_radius, x_radius)
+            self.shading_control.radius.set(base_radius, base_radius)
+            self.shading_control.intensity.set(255, 255)
+            self.shading_control.falloff.set(20, 20)
+            self.shading_control.factor.set(100.0, 100.0)
+
+            self.has_shading_var.set(True)
+            self.shading_control.pack(fill=tk.X, pady=(10, 0))
+
+        except Exception as e:
+            print(f"[set_defaults] Failed to set orbital defaults: {e}")

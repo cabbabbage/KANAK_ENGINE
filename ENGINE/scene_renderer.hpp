@@ -1,4 +1,3 @@
-// === File: scene_renderer.hpp ===
 #ifndef SCENE_RENDERER_HPP
 #define SCENE_RENDERER_HPP
 
@@ -24,22 +23,30 @@ public:
     void render();
 
 private:
+    SDL_Texture* generateMask(Asset* a, int bw, int bh);
     bool debugging = false;
-    double player_shade_percent =1.0;
+    double player_shade_percent = 1.0;
     double calculate_static_alpha_percentage(int asset_y, int light_world_y);
 
     void render_asset_lights_z();
 
     void renderOwnedStaticLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
     void renderReceivedStaticLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
-    void SceneRenderer::renderMovingLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha);
-
+    void renderMovingLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
     void renderOrbitalLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
-void renderMainLight(Asset* a,
-                                    SDL_Texture* tex,
-                                    const SDL_Rect& main_rect,
-                                    const SDL_Rect& bounds,
-                                    Uint8 alpha);
+
+    int current_shading_group_ = 1;
+    int num_groups_ = 20;
+    void update_shading_groups();
+
+    bool shouldRegen(Asset* asset);
+    SDL_Texture* regenerateFinalTexture(Asset* asset);
+
+    void renderMainLight(Asset* asset,
+                         SDL_Texture* tex,
+                         const SDL_Rect& main_rect,
+                         const SDL_Rect& bounds,
+                         Uint8 alpha);
 
     std::string map_path_;
     SDL_Renderer* renderer_;
@@ -49,7 +56,6 @@ void renderMainLight(Asset* a,
     int screen_height_;
 
     Generate_Map_Light main_light_source_;
-
 };
 
 #endif // SCENE_RENDERER_HPP

@@ -19,7 +19,6 @@ struct StaticLight {
     double alpha_percentage = 1.0;
 };
 
-
 class Asset {
 public:
     Area get_area(const std::string& name) const;
@@ -47,11 +46,12 @@ public:
     bool get_render_player_light() const;
 
     void set_z_offset(int z);
-    void set_last_mask(SDL_Texture* tex);
     void set_shading_group(int x);
-    bool is_shading_group_set();
-    int get_shading_group();
-    SDL_Texture* get_last_mask();
+    bool is_shading_group_set() const;
+    int get_shading_group() const;
+
+    SDL_Texture* get_final_texture() const;
+    void set_final_texture(SDL_Texture* tex);
 
     Asset* parent = nullptr;
     std::shared_ptr<AssetInfo> info;
@@ -77,11 +77,11 @@ public:
     std::vector<StaticLight> static_lights;
     int gradient_shadow;
     int depth = 0;
-    bool has_shading; 
-    bool dead =false;
-    bool static_frame =true;
+    bool has_shading;
+    bool dead = false;
+    bool static_frame = true;
+    void deactivate();
 private:
-
     double calculate_static_alpha_percentage(int asset_y, int light_world_y);
     void set_flip();
     void set_z_index();
@@ -90,8 +90,8 @@ private:
     int current_frame_index = 0;
     int shading_group = 0;
     bool shading_group_set = false;
-    SDL_Texture* last_mask = nullptr;
 
+    SDL_Texture* final_texture = nullptr;
     std::unordered_map<std::string, std::vector<SDL_Texture*>> custom_frames;
 };
 

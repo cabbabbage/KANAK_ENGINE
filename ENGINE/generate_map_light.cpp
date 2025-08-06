@@ -58,15 +58,18 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
                 base_color_.a = j["base_color"].size() > 3 ? j["base_color"][3].get<Uint8>() : 255;
             }
 
-
             if (j.contains("keys")) {
                 for (const auto& entry : j["keys"]) {
                     if (entry.is_array() && entry.size() == 2) {
                         float deg = entry[0];
                         const auto& color = entry[1];
                         if (color.is_array() && color.size() == 4) {
-                            SDL_Color c{static_cast<Uint8>(color[0]), static_cast<Uint8>(color[1]),
-                                        static_cast<Uint8>(color[2]), static_cast<Uint8>(color[3])};
+                            SDL_Color c{
+                                static_cast<Uint8>(color[0]),
+                                static_cast<Uint8>(color[1]),
+                                static_cast<Uint8>(color[2]),
+                                static_cast<Uint8>(color[3])
+                            };
                             key_colors_.emplace_back(deg, c);
                         }
                     }
@@ -81,14 +84,14 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
         key_colors_ = {
             {  0.0f,   {255, 255, 255, 255}},
             { 85.0f,   {255, 255, 255, 200}},
-            { 95.0f,   {120, 80,  50,  static_cast<Uint8>(60 * mult_)}},
-            {105.0f,   {90,  55,  90,  static_cast<Uint8>(50 * mult_)}},
-            {120.0f,   {60,  70, 150,  static_cast<Uint8>(20 * mult_)}},
-            {150.0f,   {0,   0,   0,   static_cast<Uint8>(0   * mult_)}},
-            {210.0f,   {0,   0,   0,   static_cast<Uint8>(0   * mult_)}},
-            {240.0f,   {60,  70, 150,  static_cast<Uint8>(20 * mult_)}},
-            {255.0f,   {90,  55,  90,  static_cast<Uint8>(50 * mult_)}},
-            {265.0f,   {120, 80,  50,  static_cast<Uint8>(60 * mult_)}},
+            { 95.0f,   {120,  80,  50,  static_cast<Uint8>(60 * mult_)}},
+            {105.0f,   { 90,  55,  90,  static_cast<Uint8>(50 * mult_)}},
+            {120.0f,   { 60,  70, 150,  static_cast<Uint8>(20 * mult_)}},
+            {150.0f,   {  0,   0,   0,  static_cast<Uint8>( 0 * mult_)}},
+            {210.0f,   {  0,   0,   0,  static_cast<Uint8>( 0 * mult_)}},
+            {240.0f,   { 60,  70, 150,  static_cast<Uint8>(20 * mult_)}},
+            {255.0f,   { 90,  55,  90,  static_cast<Uint8>(50 * mult_)}},
+            {265.0f,   {120,  80,  50,  static_cast<Uint8>(60 * mult_)}},
             {275.0f,   {255, 255, 255, 200}},
             {360.0f,   {255, 255, 255, 255}}
         };
@@ -111,20 +114,24 @@ void Generate_Map_Light::update() {
         initialized_ = true;
     }
 
-    angle_ = std::fmod(angle_ + 2.0f * static_cast<float>(M_PI) - 0.01f, 2.0f * static_cast<float>(M_PI));
+    angle_ = std::fmod(angle_ + 2.0f * static_cast<float>(M_PI) - 0.01f,
+                      2.0f * static_cast<float>(M_PI));
 
     float cos_a = std::cos(angle_);
     float sin_a = std::sin(angle_);
     pos_x_ = center_x_ + static_cast<int>(orbit_radius * cos_a);
     pos_y_ = center_y_ + static_cast<int>(orbit_radius * sin_a);
 
+    // Height-based normalization [0..1]
     float height_ratio = std::clamp(1.0f - ((sin_a + 1.0f) * 0.5f), 0.0f, 1.0f);
-    Uint8 alpha = static_cast<Uint8>(min_opacity_ + (max_opacity_ - min_opacity_) * height_ratio);
 
-    SDL_Color new_color = compute_color_from_horizon();
-    new_color.a = alpha;
-    current_color_ = new_color;
+    // Interpolate full RGBA from color keys and apply opacity factor
+    SDL_Color key_color = compute_color_from_horizon();
+    float opacity_factor = compute_opacity_from_horizon(height_ratio);
+    key_color.a = static_cast<Uint8>(key_color.a * opacity_factor);
+    current_color_ = key_color;
 
+    // Compute light brightness thresholded by alpha
     if (current_color_.a >= light_source_off_at) {
         light_brightness = 0;
     } else if (current_color_.a <= min_opacity_) {
@@ -150,8 +157,8 @@ void Generate_Map_Light::build_texture() {
     LightSource light;
     light.radius    = radius_;
     light.intensity = intensity_;
-    light.fall_off  = 100;
-    light.flare     = 100;
+    light.fall_off  = 1;
+    light.flare     = 0;
     light.color     = base_color_;
 
     GenerateLight generator(renderer_);
@@ -193,7 +200,7 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
         }
     }
 
-    const auto& k_last = key_colors_.back();
+    const auto& k_last  = key_colors_.back();
     const auto& k_first = key_colors_.front();
     float range = 360.0f - k_last.degree + k_first.degree;
     float t = (degrees < k_first.degree)
@@ -206,12 +213,4 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
         lerp(k_last.color.b, k_first.color.b, t),
         lerp(k_last.color.a, k_first.color.a, t)
     };
-}
-
-int Generate_Map_Light::get_update_interval() {
-    return update_interval_;
-}
-
-int Generate_Map_Light::get_update_index() {
-    return frame_counter_ % update_interval_;
 }

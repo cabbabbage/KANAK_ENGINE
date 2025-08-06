@@ -24,7 +24,7 @@ public:
     float get_angle() const;
     int get_update_interval();
     int get_update_index();
-
+    double mult_ = 0.4;
 private:
     void build_texture();
     float compute_opacity_from_horizon(float norm) const;
@@ -48,7 +48,7 @@ private:
     int update_interval_ = 2;
     Uint8 min_opacity_ = 50;
     Uint8 max_opacity_ = 255;
-    double mult_ = 0.4;
+
 
     int pos_x_ = 0;
     int pos_y_ = 0;

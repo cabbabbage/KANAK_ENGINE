@@ -238,26 +238,27 @@ void Asset::set_flip() {
 }
 
 
-void Asset::set_last_mask(SDL_Texture* tex) {
-    if (last_mask) SDL_DestroyTexture(last_mask);
-    last_mask = tex;  // assume last_mask is an SDL_Texture* member
+void Asset::set_final_texture(SDL_Texture* tex) {
+    if (final_texture) SDL_DestroyTexture(final_texture);
+    final_texture = tex;
 }
 
-int Asset::get_shading_group(){
+SDL_Texture* Asset::get_final_texture() const {
+    return final_texture;
+}
+
+int Asset::get_shading_group() const {
     return shading_group;
 }
+
+bool Asset::is_shading_group_set() const {
+    return shading_group_set;
+}
+
 
 void Asset::set_shading_group(int x){
     shading_group = x;
     shading_group_set = true;
-}
-
-SDL_Texture* Asset::get_last_mask(){
-    return last_mask;
-}
-
-bool Asset::is_shading_group_set(){
-    return shading_group_set;
 }
 
 // === Updated add_static_light_source using alpha calculation ===
@@ -283,20 +284,25 @@ bool Asset::get_render_player_light() const {
     return render_player_light;
 }
 
-
 double Asset::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
-    constexpr int FADE_ABOVE = 40;
-    constexpr int FADE_BELOW = -20;
-    constexpr double MIN_OPACITY = 0.1;
+    constexpr int FADE_ABOVE = 180;
+    constexpr int FADE_BELOW = -30;
+    constexpr double MIN_OPACITY = 0.05;
+    constexpr double MAX_OPACITY = 0.4;
 
     int delta_y = light_world_y - asset_y;
     double factor;
-    if (delta_y <= -FADE_ABOVE)      factor = MIN_OPACITY;
-    else if (delta_y >= FADE_BELOW)  factor = 1.0;
-    else factor = double(delta_y + FADE_ABOVE) / double(FADE_ABOVE + FADE_BELOW);
 
-    factor = std::clamp(factor, MIN_OPACITY, 1.0);
-    return factor;
+    if (delta_y <= -FADE_ABOVE) {
+        factor = MIN_OPACITY;
+    } else if (delta_y >= FADE_BELOW) {
+        factor = MAX_OPACITY;
+    } else {
+        factor = double(delta_y + FADE_ABOVE) / double(FADE_ABOVE + FADE_BELOW);
+        factor = MIN_OPACITY + (MAX_OPACITY - MIN_OPACITY) * factor;
+    }
+
+    return std::clamp(factor, MIN_OPACITY, MAX_OPACITY);
 }
 
 
@@ -334,4 +340,16 @@ Area Asset::get_area(const std::string& name) const {
     result.align(pos_X, pos_Y);
 
     return result;
+}
+
+
+
+
+
+// In Asset.cpp:
+void Asset::deactivate() {
+    if (final_texture) {
+        SDL_DestroyTexture(final_texture);
+        final_texture = nullptr;
+    }
 }

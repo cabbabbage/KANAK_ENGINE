@@ -12,10 +12,9 @@
         }
     },
     "impassable_area": "impassable_area.json",
-    "z_threshold": 6,
+    "z_threshold": 0,
     "size_settings": {
-        "scale_percentage": 68,
-        "variability_percentage": 20
+        "scale_percentage": 68
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 194,
@@ -29,8 +28,8 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "impassable",
         "boundary",
+        "impassable",
         "rock"
     ],
     "rnd_spawn_min": 300,
@@ -45,19 +44,11 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 1553,
-            "orbit_radius": 300,
-            "fall_off": 80,
-            "jitter_min": 0,
-            "flare": 0,
-            "offset_x": 0,
-            "offset_y": 0,
-            "flicker": false
+            "radius": 793,
+            "y_radius": 217,
+            "x_radius": 423,
+            "fall_off": 20,
+            "factor": 100
         }
     ],
     "shading_info": {

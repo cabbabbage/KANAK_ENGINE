@@ -26,8 +26,8 @@
     "library",
     "passable",
     "man-made",
-    "barrel_child",
-    "book"
+    "book",
+    "barrel_child"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
