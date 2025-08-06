@@ -60,13 +60,13 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 686,
     "tags": [
+        "left",
         "default",
-        "backward",
-        "start",
         "passable",
+        "start",
         "forward",
         "player",
-        "left",
+        "backward",
         "right"
     ],
     "rnd_spawn_min": 300,
@@ -89,7 +89,7 @@
                 255,
                 255
             ],
-            "radius": 600,
+            "radius": 275,
             "falloff": 100,
             "flicker": 0,
             "flare": 2,

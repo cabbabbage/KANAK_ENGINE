@@ -14,8 +14,7 @@
     "impassable_area": null,
     "z_threshold": 2,
     "size_settings": {
-        "scale_percentage": 18,
-        "variability_percentage": 0
+        "scale_percentage": 18
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 0,
@@ -23,12 +22,12 @@
         "Spacing"
     ],
     "tags": [
-        "book",
-        "library",
-        "passable",
         "barrel_child",
-        "man-made",
-        "red"
+        "passable",
+        "library",
+        "book",
+        "red",
+        "man-made"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -37,5 +36,5 @@
         "default",
         "ground"
     ],
-    "min_distance_all": 921
+    "min_distance_all": 0
 }

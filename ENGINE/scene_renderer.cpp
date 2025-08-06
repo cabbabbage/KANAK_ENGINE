@@ -220,7 +220,6 @@ SDL_Texture* SceneRenderer::regenerateFinalTexture(Asset* a) {
     return final_tex;
 }
 
-
 void SceneRenderer::render() {
     update_shading_groups();
     if (debugging) std::cout << "[render] begin\n";
@@ -269,6 +268,8 @@ void SceneRenderer::render() {
     util_.renderMinimap();
     SDL_RenderPresent(renderer_);
 }
+
+
 
 void SceneRenderer::renderOwnedStaticLights(Asset* a, const SDL_Rect& bounds, Uint8 alpha) {
     if (!a || !a->info) return;

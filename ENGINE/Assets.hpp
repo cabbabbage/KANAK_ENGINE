@@ -35,7 +35,7 @@ public:
     std::vector<Asset*>           get_all_in_range(int cx, int cy, int radius) const;
 
 private:
-    int num_groups_ = 20;
+    int num_groups_ = 40;
     ActiveAssetsManager           activeManager;
     std::vector<Asset*>           closest_assets;
     int                           dx                 = 0;

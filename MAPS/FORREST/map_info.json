@@ -22,24 +22,18 @@
       "level": 1,
       "name": "layer_1",
       "radius": 2328,
-      "min_rooms": 2,
+      "min_rooms": 3,
       "max_rooms": 3,
       "rooms": [
         {
-          "name": "flower",
-          "min_instances": 0,
-          "max_instances": 1,
-          "required_children": []
-        },
-        {
           "name": "manmade",
-          "min_instances": 1,
-          "max_instances": 2,
+          "min_instances": 2,
+          "max_instances": 4,
           "required_children": []
         },
         {
           "name": "Grave_Yard",
-          "min_instances": 1,
+          "min_instances": 0,
           "max_instances": 2,
           "required_children": []
         }
