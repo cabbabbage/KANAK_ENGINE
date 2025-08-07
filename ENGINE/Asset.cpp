@@ -25,7 +25,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
       pos_Y(start_pos_Y),
       z_index(0),
       z_offset(0),
-      player_speed_mult(10),
+      player_speed(10),
       is_lit(info->has_light_source),
       is_shaded(info->has_shading),
       alpha_percentage(1.0),
@@ -35,7 +35,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
 {
     set_flip();
     set_z_index();
-    player_speed_mult = 10;
+    player_speed = 10;
     // pick initial animation frame
     auto it = info->animations.find("start");
     if (it == info->animations.end())

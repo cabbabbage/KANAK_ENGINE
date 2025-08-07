@@ -11,11 +11,15 @@
 static constexpr SDL_Color SLATE_COLOR = {50, 70, 50, 110};
 
 
-
 void SceneRenderer::render_asset_lights_z() {
     if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
 
     static std::mt19937 flicker_rng{ std::random_device{}() };
+
+    // === Tunable parameters ===
+    const int downscale = 4;     // ← Adjust for softness/speed
+    const int blur_radius = 4;   // ← Adjust for blur width
+    const int kernel_size = blur_radius * 2 + 1;
 
     struct LightEntry {
         SDL_Texture* tex;
@@ -27,17 +31,17 @@ void SceneRenderer::render_asset_lights_z() {
 
     std::vector<LightEntry> z_lights;
 
-    // main light (no tint)
+    // main light
     SDL_Texture* main_tex = main_light_source_.get_texture();
     if (main_tex) {
         auto [mx, my] = main_light_source_.get_position();
-        int main_sz   = screen_width_ * 3;
+        int main_sz = screen_width_ * 3;
         SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
         Uint8 main_alpha = Uint8(main_light_source_.current_color_.a);
         z_lights.push_back({ main_tex, main_rect, main_alpha, SDL_FLIP_NONE, false });
     }
 
-    // asset-specific lights (with tint)
+    // asset-specific lights
     for (Asset* a : assets_->active_assets) {
         if (!a || !a->info || !a->info->has_light_source) continue;
         for (const auto& light : a->info->light_sources) {
@@ -46,12 +50,10 @@ void SceneRenderer::render_asset_lights_z() {
 
             int lw, lh;
             SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
-            SDL_Rect dst{ p.x - lw/2, p.y - lh/2, lw, lh };
+            SDL_Rect dst{ p.x - lw / 2, p.y - lh / 2, lw, lh };
 
             float alpha_f = static_cast<float>(main_light_source_.light_brightness);
-            if (a == assets_->player) {
-                alpha_f *= 0.9f;
-            }
+            if (a == assets_->player) alpha_f *= 0.9f;
 
             if (light.flicker > 0) {
                 float intensity_scale = std::clamp(light.intensity / 255.0f, 0.0f, 1.0f);
@@ -67,12 +69,14 @@ void SceneRenderer::render_asset_lights_z() {
         }
     }
 
-    // render mask
-    SDL_Texture* mask = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
-                                          SDL_TEXTUREACCESS_TARGET,
-                                          screen_width_, screen_height_);
-    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_NONE);
-    SDL_SetRenderTarget(renderer_, mask);
+    // Step 1: Render all lights into downscaled mask texture
+    int low_w = screen_width_ / downscale;
+    int low_h = screen_height_ / downscale;
+
+    SDL_Texture* lowres_mask = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
+                                                 SDL_TEXTUREACCESS_TARGET, low_w, low_h);
+    SDL_SetTextureBlendMode(lowres_mask, SDL_BLENDMODE_NONE);
+    SDL_SetRenderTarget(renderer_, lowres_mask);
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
     SDL_RenderClear(renderer_);
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_ADD);
@@ -88,17 +92,74 @@ void SceneRenderer::render_asset_lights_z() {
             SDL_SetTextureColorMod(e.tex, 255, 255, 255);
         }
 
-        SDL_RenderCopyEx(renderer_, e.tex, nullptr, &e.dst, 0, nullptr, e.flip);
+        SDL_Rect scaled_dst{
+            e.dst.x / downscale,
+            e.dst.y / downscale,
+            e.dst.w / downscale,
+            e.dst.h / downscale
+        };
+        SDL_RenderCopyEx(renderer_, e.tex, nullptr, &scaled_dst, 0, nullptr, e.flip);
         SDL_SetTextureColorMod(e.tex, 255, 255, 255);
     }
 
+    // Step 2: Blur the lowres surface
+    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, low_w, low_h, 32, SDL_PIXELFORMAT_RGBA8888);
+    SDL_RenderReadPixels(renderer_, nullptr, SDL_PIXELFORMAT_RGBA8888, surf->pixels, surf->pitch);
+
+    Uint32* pixels = static_cast<Uint32*>(surf->pixels);
+    std::vector<Uint32> temp(pixels, pixels + low_w * low_h);
+
+    // Horizontal blur
+    for (int y = 0; y < low_h; ++y) {
+        for (int x = 0; x < low_w; ++x) {
+            int r = 0, g = 0, b = 0, a = 0;
+            for (int k = -blur_radius; k <= blur_radius; ++k) {
+                int nx = std::clamp(x + k, 0, low_w - 1);
+                Uint8 pr, pg, pb, pa;
+                SDL_GetRGBA(temp[y * low_w + nx], surf->format, &pr, &pg, &pb, &pa);
+                r += pr; g += pg; b += pb; a += pa;
+            }
+            pixels[y * low_w + x] = SDL_MapRGBA(surf->format,
+                                                r / kernel_size,
+                                                g / kernel_size,
+                                                b / kernel_size,
+                                                a / kernel_size);
+        }
+    }
+
+    // Vertical blur
+    temp.assign(pixels, pixels + low_w * low_h);
+    for (int y = 0; y < low_h; ++y) {
+        for (int x = 0; x < low_w; ++x) {
+            int r = 0, g = 0, b = 0, a = 0;
+            for (int k = -blur_radius; k <= blur_radius; ++k) {
+                int ny = std::clamp(y + k, 0, low_h - 1);
+                Uint8 pr, pg, pb, pa;
+                SDL_GetRGBA(temp[ny * low_w + x], surf->format, &pr, &pg, &pb, &pa);
+                r += pr; g += pg; b += pb; a += pa;
+            }
+            pixels[y * low_w + x] = SDL_MapRGBA(surf->format,
+                                                r / kernel_size,
+                                                g / kernel_size,
+                                                b / kernel_size,
+                                                a / kernel_size);
+        }
+    }
+
+    // Step 3: Stretch blurred lowres texture back to full screen
+    SDL_Texture* blurred = SDL_CreateTextureFromSurface(renderer_, surf);
+    SDL_SetTextureBlendMode(blurred, SDL_BLENDMODE_MOD);
+    SDL_FreeSurface(surf);
+    SDL_DestroyTexture(lowres_mask);
+
     SDL_SetRenderTarget(renderer_, nullptr);
-    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_MOD);
-    SDL_RenderCopy(renderer_, mask, nullptr, nullptr);
-    SDL_DestroyTexture(mask);
+    SDL_Rect dst_rect{ 0, 0, screen_width_, screen_height_ };
+    SDL_RenderCopy(renderer_, blurred, nullptr, &dst_rect);
+    SDL_DestroyTexture(blurred);
 
     if (debugging) std::cout << "[render_asset_lights_z] end" << std::endl;
 }
+
 
 
 
@@ -166,9 +227,9 @@ SDL_Texture* SceneRenderer::generateMask(Asset* a, int bw, int bh) {
     Uint8 main_alpha = main_light_source_.current_color_.a;
     int main_sz = screen_width_ * 3;
 
-    renderOrbitalLights(a, bounds, main_alpha * 2);
+    renderOrbitalLights(a, bounds, main_alpha);
 
-    renderMainLight(a,main_light_source_.get_texture(),SDL_Rect{ bounds.x - main_sz, bounds.y - main_sz, main_sz * 2, main_sz * 2 },bounds,Uint8(main_alpha/3));
+    //renderMainLight(a,main_light_source_.get_texture(),SDL_Rect{ bounds.x - main_sz, bounds.y - main_sz, main_sz * 2, main_sz * 2 },bounds,Uint8(main_alpha/3));
     
 
     // 80% opacity modulation

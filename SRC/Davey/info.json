@@ -62,11 +62,11 @@
     "tags": [
         "player",
         "forward",
+        "start",
         "backward",
+        "right",
         "passable",
         "default",
-        "start",
-        "right",
         "left"
     ],
     "rnd_spawn_min": 300,
@@ -75,10 +75,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 350,
-            "y_radius": 127,
-            "x_radius": 57,
-            "falloff": 50,
+            "radius": 173,
+            "y_radius": 173,
+            "x_radius": 73,
+            "falloff": 60,
             "factor": 100
         },
         {
@@ -105,7 +105,7 @@
                 255
             ],
             "radius": 0,
-            "falloff": 0,
+            "falloff": 100,
             "flicker": 0,
             "flare": 0,
             "offset_x": 0,

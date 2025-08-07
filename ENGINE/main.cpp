@@ -78,8 +78,6 @@ int main(int argc, char* argv[]) {
     SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
     std::cout << "[Main] Screen resolution: " << screen_width << "x" << screen_height << "\n";
 
-    // === Pause for 5 seconds to inspect renderer info ===
-    std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // === Optional: Rebuild Asset Cache ===
     if (rebuild_cache) {

@@ -31,6 +31,7 @@ Assets::Assets(std::vector<Asset>&& loaded,
                int screen_center_x,
                int screen_center_y)
     : player(nullptr),
+      controls(nullptr, nullptr),  // temporary init
       activeManager(screen_width, screen_height),
       screen_width(screen_width),
       screen_height(screen_height),
@@ -71,6 +72,10 @@ Assets::Assets(std::vector<Asset>&& loaded,
     active_assets  = activeManager.getActive();
     closest_assets = activeManager.getClosest();
     set_shading_groups();
+
+    // ✅ Now initialize persistent ControlsManager with valid player + pointer to closest_assets
+    controls = ControlsManager(player, &closest_assets);
+
     std::cout << "[Assets] Initialization complete. Total assets: "
               << all.size() << "\n";
 
@@ -90,8 +95,7 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
     set_player_light_render();
     dx = dy = 0;
 
-    ControlsManager controls(player, closest_assets);
-    controls.update(keys);
+    controls.update(keys);  // ✅ Reuses persistent instance
     dx = controls.get_dx();
     dy = controls.get_dy();
 
@@ -115,7 +119,7 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
 std::vector<Asset*> Assets::get_all_in_range(int cx, int cy, int radius) const {
     std::vector<Asset*> result;
     int r2 = radius * radius;
-    result.reserve(all.size()); // conservative estimate
+    result.reserve(all.size());
     for (const auto& asset : all) {
         if (!asset.info) continue;
         collect_assets_in_range(&asset, cx, cy, r2, result);
@@ -131,7 +135,7 @@ void Assets::set_static_sources() {
                 int ly = owner.pos_Y + light.offset_y;
                 int r2 = light.radius * light.radius;
                 std::vector<Asset*> targets;
-                targets.reserve(all.size()); // conservative reserve
+                targets.reserve(all.size());
                 for (const auto& asset : all) {
                     if (!asset.info) continue;
                     collect_assets_in_range(&asset, lx, ly, r2, targets);
@@ -164,7 +168,7 @@ void Assets::set_player_light_render() {
         int ly = player->pos_Y + light.offset_y;
         int r2 = light.radius * light.radius;
         std::vector<Asset*> targets;
-        targets.reserve(all.size()); // conservative reserve
+        targets.reserve(all.size());
         for (const auto& asset : all) {
             if (!asset.info) continue;
             collect_assets_in_range(&asset, lx, ly, r2, targets);

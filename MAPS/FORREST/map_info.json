@@ -21,7 +21,7 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 2328,
+      "radius": 2876,
       "min_rooms": 3,
       "max_rooms": 3,
       "rooms": [
@@ -42,7 +42,7 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 5516,
+      "radius": 6064,
       "min_rooms": 7,
       "max_rooms": 9,
       "rooms": [
@@ -73,5 +73,5 @@
       ]
     }
   ],
-  "map_radius": 8423.02568810018
+  "map_radius": 8971.42568810018
 }

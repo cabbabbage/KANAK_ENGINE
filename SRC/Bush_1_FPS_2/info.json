@@ -39,9 +39,9 @@
             "has_light_source": true,
             "light_intensity": 255,
             "radius": 165,
-            "y_radius": 117,
-            "x_radius": 165,
-            "falloff": 30,
+            "y_radius": 147,
+            "x_radius": 198,
+            "falloff": 60,
             "factor": 100
         }
     ],

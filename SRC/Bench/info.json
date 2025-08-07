@@ -8,8 +8,8 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "man-made",
         "passable",
+        "man-made",
         "wood",
         "default"
     ],
@@ -50,9 +50,9 @@
             "has_light_source": true,
             "light_intensity": 255,
             "radius": 351,
-            "y_radius": 122,
-            "x_radius": 327,
-            "falloff": 50,
+            "y_radius": 167,
+            "x_radius": 421,
+            "falloff": 60,
             "factor": 100
         }
     ]

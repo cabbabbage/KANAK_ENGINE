@@ -1,5 +1,3 @@
-// === File: ControlsManager.cpp ===
-
 #include "controls_manager.hpp"
 #include <cmath>
 #include <iostream>
@@ -26,12 +24,14 @@ bool ControlsManager::pointInAABB(int x, int y, const Area& B) const {
 // -----------------------------------------------------------------------------
 // Constructor
 // -----------------------------------------------------------------------------
-ControlsManager::ControlsManager(Asset* player, std::vector<Asset*>& closest)
+ControlsManager::ControlsManager(Asset* player, std::vector<Asset*>* closest)
     : player_(player),
       closest_(closest),
       dx_(0),
-      dy_(0)
+      dy_(0),
+      teleport_set_(false)
 {}
+
 
 // -----------------------------------------------------------------------------
 // Handle WASD movement & animation
@@ -53,9 +53,15 @@ void ControlsManager::movement(const std::unordered_set<SDL_Keycode>& keys) {
     const std::string current = player_->get_current_animation();
 
     if (any_movement) {
-        float len   = std::sqrt(float(move_x*move_x + move_y*move_y));
-        if (len == 0.0f) return;  // guard divide-by-zero
-        float speed = player_->player_speed_mult / len;
+        float len = std::sqrt(float(move_x * move_x + move_y * move_y));
+        if (len == 0.0f) return;
+
+        float base_speed = player_->player_speed;
+        if (keys.count(SDLK_LSHIFT) || keys.count(SDLK_RSHIFT)) {
+            base_speed *= 2.0f;  // Sprinting
+        }
+
+        float speed = base_speed / len;
         int ox = static_cast<int>(std::round(move_x * speed));
         int oy = static_cast<int>(std::round(move_y * speed));
 
@@ -86,30 +92,21 @@ void ControlsManager::movement(const std::unordered_set<SDL_Keycode>& keys) {
 // -----------------------------------------------------------------------------
 // Check whether the player can move by (offset_x, offset_y)
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Check whether the player can move by (offset_x, offset_y)
+// -----------------------------------------------------------------------------
 bool ControlsManager::canMove(int offset_x, int offset_y) {
-    if (!player_) return false;
+    if (!player_ || !closest_) return false;
 
-    // Compute the test point (where the player would land)
     int test_x = player_->pos_X + offset_x;
     int test_y = player_->pos_Y + offset_y - player_->info->z_threshold;
 
-
-    // For each nearby obstacle, test whether that point is inside its passability area
-    for (Asset* a : closest_) {
-        if (!a ||
-            a == player_ ||
-            !a->info ||
-            a->info->passable ||
-            !a->info->has_passability_area)
-        {
+    for (Asset* a : *closest_) {
+        if (!a || a == player_ || !a->info || a->info->passable || !a->info->has_passability_area)
             continue;
-        }
 
         Area obstacle = a->get_area("passability");
-
-
         if (obstacle.contains_point({ test_x, test_y })) {
-
             return false;
         }
     }
@@ -117,12 +114,11 @@ bool ControlsManager::canMove(int offset_x, int offset_y) {
     return true;
 }
 
-
 // -----------------------------------------------------------------------------
 // Handle 'E' interaction key
 // -----------------------------------------------------------------------------
 void ControlsManager::interaction() {
-    if (!player_ || !player_->info) {
+    if (!player_ || !player_->info || !closest_) {
         std::cout << "[ControlsManager::interaction] no valid player or info\n";
         return;
     }
@@ -132,24 +128,40 @@ void ControlsManager::interaction() {
     int py = player_->pos_Y - player_->info->z_threshold;
     std::cout << "[ControlsManager::interaction] player position = (" << px << ", " << py << ")\n";
 
-    for (Asset* a : closest_) {
+    for (Asset* a : *closest_) {
         if (!a || a == player_ || !a->info || !a->info->has_interaction_area || !a->info->interaction_area) {
-            std::cout << "[ControlsManager::interaction] skipping invalid asset pointer or no interaction area\n";
             continue;
         }
 
-        std::cout << "[ControlsManager::interaction] testing asset '" << a->info->name << "'\n";
         Area ia = a->get_area("interaction");
-
-        auto [minx, miny, maxx, maxy] = ia.get_bounds();
-        std::cout << "  interaction bounds = [" << minx << "," << miny << "]–[" << maxx << "," << maxy << "]\n";
-
         if (pointInAABB(px, py, ia)) {
-            std::cout << "[ControlsManager::interaction] HIT on '" << a->info->name << "', changing animation\n";
             a->change_animation("interaction");
-        } else {
-            std::cout << "[ControlsManager::interaction] MISS on '" << a->info->name << "'\n";
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Handle teleport logic (space to set, ctrl to teleport)
+// -----------------------------------------------------------------------------
+void ControlsManager::handle_teleport(const std::unordered_set<SDL_Keycode>& keys) {
+    if (!player_) return;
+
+    if (keys.count(SDLK_SPACE)) {
+        teleport_point_ = { player_->pos_X, player_->pos_Y };
+        teleport_set_ = true;
+        std::cout << "[Teleport] Point set to (" << teleport_point_.x << ", " << teleport_point_.y << ")\n";
+    }
+
+    if (keys.count(SDLK_q)) {
+        std::cout << "[Teleport] Q pressed. teleport_set = " << (teleport_set_ ? "true" : "false") << "\n";
+    }
+
+    if (keys.count(SDLK_q) && teleport_set_) {
+        std::cout << "[Teleport] Attempting teleport\n";
+        player_->set_position(teleport_point_.x, teleport_point_.y);
+        teleport_point_ = { 0, 0 };
+        teleport_set_ = false;
+        std::cout << "[Teleport] Teleported to saved point.\n";
     }
 }
 
@@ -157,11 +169,14 @@ void ControlsManager::interaction() {
 // Update both movement and interaction
 // -----------------------------------------------------------------------------
 void ControlsManager::update(const std::unordered_set<SDL_Keycode>& keys) {
+
+    handle_teleport(keys);
     movement(keys);
+
+
     if (keys.count(SDLK_e)) {
         interaction();
     }
-
 }
 
 // -----------------------------------------------------------------------------
