@@ -4,7 +4,19 @@
   "max_width": 700,
   "curvyness": 3,
   "inherits_map_assets": true,
-  "assets": [],
+  "assets": [
+    {
+      "name": "lantern",
+      "min_number": 0,
+      "max_number": 37,
+      "position": "Random",
+      "exact_position": null,
+      "tag": false,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    }
+  ],
   "batch_assets": {
     "has_batch_assets": true,
     "grid_spacing_min": 100,

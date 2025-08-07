@@ -23,14 +23,14 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 0,
   "tags": [
-    "meadow",
-    "medium",
-    "still",
     "impassable",
+    "nature",
+    "still",
     "wood",
     "default",
-    "nature",
-    "brown"
+    "brown",
+    "medium",
+    "meadow"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,

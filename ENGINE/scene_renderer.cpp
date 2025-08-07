@@ -50,7 +50,7 @@ void SceneRenderer::render_asset_lights_z() {
 
             float alpha_f = static_cast<float>(main_light_source_.light_brightness);
             if (a == assets_->player) {
-                alpha_f *= 0.6f;
+                alpha_f *= 0.9f;
             }
 
             if (light.flicker > 0) {
@@ -166,7 +166,7 @@ SDL_Texture* SceneRenderer::generateMask(Asset* a, int bw, int bh) {
     Uint8 main_alpha = main_light_source_.current_color_.a;
     int main_sz = screen_width_ * 3;
 
-    renderOrbitalLights(a, bounds, main_alpha);
+    renderOrbitalLights(a, bounds, main_alpha * 2);
 
     renderMainLight(a,main_light_source_.get_texture(),SDL_Rect{ bounds.x - main_sz, bounds.y - main_sz, main_sz * 2, main_sz * 2 },bounds,Uint8(main_alpha/3));
     
@@ -478,8 +478,8 @@ void SceneRenderer::renderMainLight(Asset* a,
 double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
     constexpr int FADE_ABOVE = 180;
     constexpr int FADE_BELOW = -30;
-    constexpr double MIN_OPACITY = 0.05;
-    constexpr double MAX_OPACITY = 0.6;
+    constexpr double MIN_OPACITY = 0.15;
+    constexpr double MAX_OPACITY = 0.7;
 
     int delta_y = light_world_y - asset_y;
     double factor;

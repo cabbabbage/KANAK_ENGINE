@@ -184,12 +184,16 @@ class ChildAssetsPage(tk.Frame):
             filename = f"child_assets_{idx + 1}.json"
             full_path = os.path.join(base_folder, filename)
 
-            data = {"z_offset": z_offset, "assets": assets}
+            # ✅ Grab the latest area data from AreaUI
+            area_data = entry['area_ui'].area_data
 
-            if entry["area_edited"] and isinstance(entry["area_data"], dict) and entry["area_data"]:
-                data.update(entry["area_data"])
-            elif isinstance(entry["original_area_data"], dict):
-                data.update(entry["original_area_data"])
+            data = {
+                "z_offset": z_offset,
+                "assets": assets
+            }
+
+            if isinstance(area_data, dict) and area_data:
+                data.update(area_data)
 
             try:
                 with open(full_path, 'w') as f:
@@ -199,6 +203,7 @@ class ChildAssetsPage(tk.Frame):
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save {filename}: {e}")
 
+        # Write back to parent info.json
         try:
             with open(self.asset_path, 'r') as f:
                 parent = json.load(f)

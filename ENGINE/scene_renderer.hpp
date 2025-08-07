@@ -36,7 +36,7 @@ private:
     void renderOrbitalLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
 
     int current_shading_group_ = 1;
-    int num_groups_ = 100;
+    int num_groups_ = 20;
     void update_shading_groups();
 
     bool shouldRegen(Asset* asset);

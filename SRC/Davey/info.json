@@ -60,13 +60,13 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 686,
     "tags": [
-        "right",
         "player",
+        "forward",
         "backward",
         "passable",
-        "start",
         "default",
-        "forward",
+        "start",
+        "right",
         "left"
     ],
     "rnd_spawn_min": 300,
@@ -75,7 +75,7 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 274,
+            "radius": 350,
             "y_radius": 127,
             "x_radius": 57,
             "falloff": 50,
@@ -89,12 +89,27 @@
                 255,
                 255
             ],
-            "radius": 600,
+            "radius": 368,
             "falloff": 100,
             "flicker": 0,
-            "flare": 2,
+            "flare": 0,
             "offset_x": 0,
             "offset_y": -9
+        },
+        {
+            "has_light_source": true,
+            "light_intensity": 0,
+            "light_color": [
+                255,
+                255,
+                255
+            ],
+            "radius": 0,
+            "falloff": 0,
+            "flicker": 0,
+            "flare": 0,
+            "offset_x": 0,
+            "offset_y": 0
         }
     ],
     "shading_info": {

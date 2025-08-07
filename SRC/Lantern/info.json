@@ -25,16 +25,16 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 2000,
     "tags": [
-        "default",
-        "still",
-        "passable",
+        "metal",
         "center",
-        "light",
+        "still",
+        "tall",
+        "default",
+        "man-made",
+        "passable",
         "black",
         "large",
-        "metal",
-        "man-made",
-        "tall"
+        "light"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -72,7 +72,7 @@
             "radius": 742,
             "falloff": 91,
             "flicker": 0,
-            "flare": 5,
+            "flare": 1,
             "offset_x": 35,
             "offset_y": 0
         }
