@@ -148,7 +148,7 @@ SDL_Color Generate_Map_Light::get_tint() const {
 }
 
 void Generate_Map_Light::set_light_brightness() {
-    constexpr int OFF = 175, FULL = 100;
+    constexpr int OFF = 245, FULL = 100;
     int a = current_color_.a;
     if (a >= OFF) {
         light_brightness = 0;

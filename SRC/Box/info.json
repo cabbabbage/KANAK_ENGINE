@@ -29,11 +29,11 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "parent",
-        "man-made",
         "impassable",
+        "surface",
         "wood",
-        "surface"
+        "parent",
+        "man-made"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -48,10 +48,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 178,
-            "y_radius": 145,
-            "x_radius": 214,
-            "falloff": 60,
+            "radius": 356,
+            "y_radius": 106,
+            "x_radius": 154,
+            "falloff": 40,
             "factor": 100
         }
     ],

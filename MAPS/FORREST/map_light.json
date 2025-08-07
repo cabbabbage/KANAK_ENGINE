@@ -1,7 +1,7 @@
 {
-  "radius": 6023,
+  "radius": 7439,
   "intensity": 255,
-  "orbit_radius": 2288,
+  "orbit_radius": 0,
   "update_interval": 4,
   "mult": 0.15,
   "fall_off": 0,

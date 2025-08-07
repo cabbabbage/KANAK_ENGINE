@@ -21,20 +21,38 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 2876,
+      "radius": 2841,
       "min_rooms": 3,
       "max_rooms": 3,
       "rooms": [
         {
           "name": "manmade",
-          "min_instances": 2,
-          "max_instances": 4,
+          "min_instances": 0,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "Grave_Yard",
           "min_instances": 0,
-          "max_instances": 2,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "flower",
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "fountain2",
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "bar",
+          "min_instances": 0,
+          "max_instances": 1,
           "required_children": []
         }
       ]
@@ -42,36 +60,69 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 6064,
+      "radius": 6462,
       "min_rooms": 7,
-      "max_rooms": 9,
+      "max_rooms": 7,
       "rooms": [
         {
           "name": "bar",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "library",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "KEY",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "Portal",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "random",
+          "min_instances": 0,
+          "max_instances": 0,
+          "required_children": []
+        },
+        {
+          "name": "random",
+          "min_instances": 0,
+          "max_instances": 9,
+          "required_children": []
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "name": "layer_3",
+      "radius": 10083,
+      "min_rooms": 15,
+      "max_rooms": 17,
+      "rooms": [
+        {
+          "name": "odd",
+          "min_instances": 0,
+          "max_instances": 13,
+          "required_children": []
+        },
+        {
+          "name": "fountain2",
+          "min_instances": 0,
+          "max_instances": 9,
           "required_children": []
         }
       ]
     }
   ],
-  "map_radius": 8971.42568810018
+  "map_radius": 12833.640687119285
 }

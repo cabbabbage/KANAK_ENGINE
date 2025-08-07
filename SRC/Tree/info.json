@@ -7,9 +7,9 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "default",
         "impassable",
-        "spawn"
+        "spawn",
+        "default"
     ],
     "z_threshold": 7,
     "size_settings": {
@@ -46,10 +46,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 913,
-            "y_radius": 913,
-            "x_radius": 471,
-            "falloff": 60,
+            "radius": 1523,
+            "y_radius": 731,
+            "x_radius": 262,
+            "falloff": 0,
             "factor": 100
         }
     ],

@@ -130,7 +130,7 @@ class RoomsPage(tk.Frame):
         geom = ttk.Combobox(self.editor_frame,
                             textvariable=self.geometry_var,
                             state='readonly',
-                            values=["Random","Circle","Square"])
+                            values=["Circle","Square"])
         geom.pack(fill=tk.X, pady=2)
         geom.bind('<<ComboboxSelected>>',
                   lambda e: (self._on_field_change(), self._toggle_height_state()))

@@ -41,10 +41,10 @@
   ],
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 142,
-    "grid_spacing_max": 142,
-    "jitter_min": 0,
-    "jitter_max": 0,
+    "grid_spacing_min": 195,
+    "grid_spacing_max": 195,
+    "jitter_min": 1,
+    "jitter_max": 1,
     "batch_assets": [
       {
         "name": "null",

@@ -225,15 +225,15 @@ class LightingPage(tk.Frame):
                 data = json.load(f)
                 scale_pct = data.get("size_settings", {}).get("scale_percentage", 100) / 100.0
 
-            y_radius = int(height * scale_pct * 1.50)
-            x_radius = int(width * scale_pct * 1.80)
-            base_radius = int(max(width, height) * scale_pct * 1.5)
+            y_radius = int(height * scale_pct * 1.2)
+            x_radius = int(width * scale_pct * 1.00)
+            base_radius = int(max(width, height) * scale_pct * 2.5)
 
             self.shading_control.y_radius.set(y_radius, y_radius)
             self.shading_control.x_radius.set(x_radius, x_radius)
             self.shading_control.radius.set(base_radius, base_radius)
             self.shading_control.intensity.set(255, 255)
-            self.shading_control.falloff.set(60, 60)
+            self.shading_control.falloff.set(0, 0)
             self.shading_control.factor.set(100.0, 100.0)
 
             self.has_shading_var.set(True)

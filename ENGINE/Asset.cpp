@@ -286,9 +286,9 @@ bool Asset::get_render_player_light() const {
 
 double Asset::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
     constexpr int FADE_ABOVE = 180;
-    constexpr int FADE_BELOW = -30;
-    constexpr double MIN_OPACITY = 0.05;
-    constexpr double MAX_OPACITY = 0.4;
+    constexpr int FADE_BELOW = -60;
+    constexpr double MIN_OPACITY = 0.2;
+    constexpr double MAX_OPACITY = 0.8;
 
     int delta_y = light_world_y - asset_y;
     double factor;

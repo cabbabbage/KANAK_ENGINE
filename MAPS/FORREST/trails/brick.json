@@ -4,19 +4,7 @@
   "max_width": 700,
   "curvyness": 3,
   "inherits_map_assets": true,
-  "assets": [
-    {
-      "name": "lantern",
-      "min_number": 0,
-      "max_number": 37,
-      "position": "Random",
-      "exact_position": null,
-      "tag": false,
-      "check_overlap": false,
-      "check_min_spacing": false,
-      "inherited": false
-    }
-  ],
+  "assets": [],
   "batch_assets": {
     "has_batch_assets": true,
     "grid_spacing_min": 100,
@@ -27,20 +15,26 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 65,
+        "percent": 71,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 31,
+        "percent": 19,
         "color": "#2911cb"
       },
       {
-        "name": "flower",
+        "name": "flowers",
+        "tag": true,
+        "percent": 8,
+        "color": "#1e4b95"
+      },
+      {
+        "name": "candle",
         "tag": false,
-        "percent": 4,
-        "color": "#8c7735"
+        "percent": 2,
+        "color": "#62b3e9"
       }
     ]
   }

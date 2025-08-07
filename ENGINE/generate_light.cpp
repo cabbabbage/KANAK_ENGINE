@@ -70,7 +70,7 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
 
     // === PASS 1: Improved falloff fade ===
     float fFallNorm = falloff / 100.0f;
-    float exponent = std::pow(10.0f, fFallNorm); // exponential curve: falloff=0 → 1, falloff=1 → 10
+    float exponent = std::pow(0.0f, fFallNorm); // exponential curve: falloff=0 → 1, falloff=1 → 10
 
 
     for (int y = 0; y < size; ++y) {

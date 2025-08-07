@@ -1,14 +1,14 @@
 {
   "name": "spawn",
-  "min_width": 2294,
-  "max_width": 2294,
+  "min_width": 2235,
+  "max_width": 2235,
   "curvyness": 1,
   "assets": [
     {
       "name": "Davey",
       "min_number": 1,
       "max_number": 1,
-      "position": "Perimeter",
+      "position": "Center",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -33,12 +33,12 @@
       "sector_range_max": 360
     },
     {
-      "name": "Stump",
-      "min_number": 351,
-      "max_number": 351,
+      "name": "ground",
+      "min_number": 0,
+      "max_number": 45,
       "position": "Random",
       "exact_position": null,
-      "tag": false,
+      "tag": true,
       "check_overlap": false,
       "check_min_spacing": false,
       "inherited": false

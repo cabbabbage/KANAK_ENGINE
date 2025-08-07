@@ -19,15 +19,15 @@
         }
     },
     "tags": [
+        "impassable",
+        "large",
+        "default",
         "grey",
         "metal",
-        "black",
-        "car",
         "man-made",
-        "impassable",
-        "center",
-        "default",
-        "large"
+        "car",
+        "black",
+        "center"
     ],
     "z_threshold": 200,
     "size_settings": {
@@ -47,10 +47,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 431,
-            "y_radius": 369,
-            "x_radius": 517,
-            "falloff": 60,
+            "radius": 719,
+            "y_radius": 295,
+            "x_radius": 287,
+            "falloff": 0,
             "factor": 100
         }
     ],
