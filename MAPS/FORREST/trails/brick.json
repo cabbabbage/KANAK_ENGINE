@@ -15,20 +15,26 @@
       {
         "name": "null",
         "tag": false,
-        "percent": 65,
+        "percent": 71,
         "color": "#CCCCCC"
       },
       {
         "name": "light",
         "tag": true,
-        "percent": 31,
+        "percent": 19,
         "color": "#2911cb"
       },
       {
-        "name": "flower",
+        "name": "flowers",
+        "tag": true,
+        "percent": 8,
+        "color": "#1e4b95"
+      },
+      {
+        "name": "candle",
         "tag": false,
-        "percent": 4,
-        "color": "#8c7735"
+        "percent": 2,
+        "color": "#62b3e9"
       }
     ]
   }

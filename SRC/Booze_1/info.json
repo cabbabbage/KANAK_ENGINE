@@ -19,20 +19,19 @@
         }
     },
     "tags": [
-        "small",
-        "drinking",
+        "child",
+        "default",
         "crime",
         "passable",
         "booze",
-        "child",
+        "brown",
         "barrel_child",
-        "default",
-        "brown"
+        "drinking",
+        "small"
     ],
     "z_threshold": 6,
     "size_settings": {
-        "scale_percentage": 5,
-        "variability_percentage": 0
+        "scale_percentage": 5
     },
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -49,10 +48,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 75,
+            "radius": 45,
             "y_radius": 41,
-            "x_radius": 21,
-            "fall_off": 80,
+            "x_radius": 55,
+            "falloff": 0,
             "factor": 100
         }
     ]

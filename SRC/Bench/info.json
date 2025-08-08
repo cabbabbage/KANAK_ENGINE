@@ -8,10 +8,10 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "man-made",
-        "passable",
         "wood",
-        "default"
+        "passable",
+        "default",
+        "man-made"
     ],
     "animations": {
         "default": {
@@ -51,8 +51,8 @@
             "light_intensity": 255,
             "radius": 351,
             "y_radius": 122,
-            "x_radius": 327,
-            "falloff": 50,
+            "x_radius": 257,
+            "falloff": 0,
             "factor": 100
         }
     ]

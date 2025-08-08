@@ -21,20 +21,38 @@
     {
       "level": 1,
       "name": "layer_1",
-      "radius": 2328,
+      "radius": 2595,
       "min_rooms": 3,
       "max_rooms": 3,
       "rooms": [
         {
           "name": "manmade",
-          "min_instances": 2,
-          "max_instances": 4,
+          "min_instances": 0,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "Grave_Yard",
           "min_instances": 0,
-          "max_instances": 2,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "flower",
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "fountain2",
+          "min_instances": 0,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "bar",
+          "min_instances": 0,
+          "max_instances": 1,
           "required_children": []
         }
       ]
@@ -42,36 +60,48 @@
     {
       "level": 2,
       "name": "layer_2",
-      "radius": 5516,
+      "radius": 6216,
       "min_rooms": 7,
-      "max_rooms": 9,
+      "max_rooms": 7,
       "rooms": [
         {
           "name": "bar",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "library",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "KEY",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
           "required_children": []
         },
         {
           "name": "Portal",
           "min_instances": 0,
-          "max_instances": 3,
+          "max_instances": 1,
+          "required_children": []
+        },
+        {
+          "name": "random",
+          "min_instances": 0,
+          "max_instances": 0,
+          "required_children": []
+        },
+        {
+          "name": "random",
+          "min_instances": 0,
+          "max_instances": 9,
           "required_children": []
         }
       ]
     }
   ],
-  "map_radius": 8423.02568810018
+  "map_radius": 9484.087296526011
 }

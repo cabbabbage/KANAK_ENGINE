@@ -14,7 +14,7 @@
       "name": "center",
       "min_number": 1,
       "max_number": 1,
-      "position": "Exact Position",
+      "position": "Center",
       "exact_position": null,
       "tag": true,
       "check_overlap": false,

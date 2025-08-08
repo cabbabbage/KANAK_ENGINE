@@ -25,7 +25,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
       pos_Y(start_pos_Y),
       z_index(0),
       z_offset(0),
-      player_speed_mult(10),
+      player_speed(10),
       is_lit(info->has_light_source),
       is_shaded(info->has_shading),
       alpha_percentage(1.0),
@@ -35,7 +35,7 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
 {
     set_flip();
     set_z_index();
-    player_speed_mult = 10;
+    player_speed = 10;
     // pick initial animation frame
     auto it = info->animations.find("start");
     if (it == info->animations.end())
@@ -286,9 +286,9 @@ bool Asset::get_render_player_light() const {
 
 double Asset::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
     constexpr int FADE_ABOVE = 180;
-    constexpr int FADE_BELOW = -30;
-    constexpr double MIN_OPACITY = 0.05;
-    constexpr double MAX_OPACITY = 0.4;
+    constexpr int FADE_BELOW = -60;
+    constexpr double MIN_OPACITY = 0.2;
+    constexpr double MAX_OPACITY = 0.8;
 
     int delta_y = light_world_y - asset_y;
     double factor;

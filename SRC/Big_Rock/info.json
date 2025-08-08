@@ -46,8 +46,8 @@
             "light_intensity": 255,
             "radius": 396,
             "y_radius": 170,
-            "x_radius": 370,
-            "falloff": 50,
+            "x_radius": 290,
+            "falloff": 0,
             "factor": 100
         }
     ],

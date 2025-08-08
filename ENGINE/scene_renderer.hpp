@@ -23,6 +23,7 @@ public:
     void render();
 
 private:
+    SDL_Texture* fullscreen_light_tex_;
     SDL_Texture* generateMask(Asset* a, int bw, int bh);
     bool debugging = false;
     double player_shade_percent = 1.0;
@@ -36,7 +37,7 @@ private:
     void renderOrbitalLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
 
     int current_shading_group_ = 1;
-    int num_groups_ = 100;
+    int num_groups_ = 10;
     void update_shading_groups();
 
     bool shouldRegen(Asset* asset);

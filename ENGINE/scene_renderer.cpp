@@ -10,99 +10,6 @@
 
 static constexpr SDL_Color SLATE_COLOR = {50, 70, 50, 110};
 
-
-
-void SceneRenderer::render_asset_lights_z() {
-    if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
-
-    static std::mt19937 flicker_rng{ std::random_device{}() };
-
-    struct LightEntry {
-        SDL_Texture* tex;
-        SDL_Rect dst;
-        Uint8 alpha;
-        SDL_RendererFlip flip;
-        bool apply_tint;
-    };
-
-    std::vector<LightEntry> z_lights;
-
-    // main light (no tint)
-    SDL_Texture* main_tex = main_light_source_.get_texture();
-    if (main_tex) {
-        auto [mx, my] = main_light_source_.get_position();
-        int main_sz   = screen_width_ * 3;
-        SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
-        Uint8 main_alpha = Uint8(main_light_source_.current_color_.a);
-        z_lights.push_back({ main_tex, main_rect, main_alpha, SDL_FLIP_NONE, false });
-    }
-
-    // asset-specific lights (with tint)
-    for (Asset* a : assets_->active_assets) {
-        if (!a || !a->info || !a->info->has_light_source) continue;
-        for (const auto& light : a->info->light_sources) {
-            int offX = a->flipped ? -light.offset_x : light.offset_x;
-            SDL_Point p = util_.applyParallax(a->pos_X + offX, a->pos_Y + light.offset_y);
-
-            int lw, lh;
-            SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
-            SDL_Rect dst{ p.x - lw/2, p.y - lh/2, lw, lh };
-
-            float alpha_f = static_cast<float>(main_light_source_.light_brightness);
-            if (a == assets_->player) {
-                alpha_f *= 0.6f;
-            }
-
-            if (light.flicker > 0) {
-                float intensity_scale = std::clamp(light.intensity / 255.0f, 0.0f, 1.0f);
-                float max_jitter = (light.flicker / 100.0f) * intensity_scale;
-                std::uniform_real_distribution<float> dist(-max_jitter, max_jitter);
-                float jitter = dist(flicker_rng);
-                alpha_f *= (1.0f + jitter);
-            }
-
-            Uint8 alpha = static_cast<Uint8>(std::clamp(alpha_f, 0.0f, 255.0f));
-            SDL_RendererFlip flip = a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-            z_lights.push_back({ light.texture, dst, alpha, flip, true });
-        }
-    }
-
-    // render mask
-    SDL_Texture* mask = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
-                                          SDL_TEXTUREACCESS_TARGET,
-                                          screen_width_, screen_height_);
-    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_NONE);
-    SDL_SetRenderTarget(renderer_, mask);
-    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
-    SDL_RenderClear(renderer_);
-    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_ADD);
-
-    for (auto& e : z_lights) {
-        SDL_SetTextureBlendMode(e.tex, SDL_BLENDMODE_ADD);
-        SDL_SetTextureAlphaMod(e.tex, e.alpha);
-
-        if (e.apply_tint) {
-            SDL_Color tinted = main_light_source_.apply_tint_to_color({255, 255, 255, 255}, e.alpha);
-            SDL_SetTextureColorMod(e.tex, tinted.r, tinted.g, tinted.b);
-        } else {
-            SDL_SetTextureColorMod(e.tex, 255, 255, 255);
-        }
-
-        SDL_RenderCopyEx(renderer_, e.tex, nullptr, &e.dst, 0, nullptr, e.flip);
-        SDL_SetTextureColorMod(e.tex, 255, 255, 255);
-    }
-
-    SDL_SetRenderTarget(renderer_, nullptr);
-    SDL_SetTextureBlendMode(mask, SDL_BLENDMODE_MOD);
-    SDL_RenderCopy(renderer_, mask, nullptr, nullptr);
-    SDL_DestroyTexture(mask);
-
-    if (debugging) std::cout << "[render_asset_lights_z] end" << std::endl;
-}
-
-
-
-
 SceneRenderer::SceneRenderer(SDL_Renderer* renderer,
                              Assets* assets,
                              RenderUtils& util,
@@ -115,10 +22,32 @@ SceneRenderer::SceneRenderer(SDL_Renderer* renderer,
       util_(util),
       screen_width_(screen_width),
       screen_height_(screen_height),
-      main_light_source_(renderer, screen_width/2, screen_height/2,
-                         screen_width, {255,255,255,255}, map_path)
+      main_light_source_(renderer, screen_width / 2, screen_height / 2,
+                         screen_width, {255, 255, 255, 255}, map_path),
+      fullscreen_light_tex_(nullptr)
+{
+    fullscreen_light_tex_ = SDL_CreateTexture(renderer_,
+                                              SDL_PIXELFORMAT_RGBA8888,
+                                              SDL_TEXTUREACCESS_TARGET,
+                                              screen_width_,
+                                              screen_height_);
 
-{}
+    if (fullscreen_light_tex_) {
+        SDL_SetTextureBlendMode(fullscreen_light_tex_, SDL_BLENDMODE_BLEND);
+        SDL_Texture* prev = SDL_GetRenderTarget(renderer_);
+        SDL_SetRenderTarget(renderer_, fullscreen_light_tex_);
+
+        SDL_Color color = main_light_source_.current_color_;
+        SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, color.a);
+        SDL_RenderClear(renderer_);
+
+        SDL_SetRenderTarget(renderer_, prev);
+    } else {
+        std::cerr << "[SceneRenderer] Failed to create fullscreen light texture: "
+                  << SDL_GetError() << "\n";
+    }
+}
+
 
 
 void SceneRenderer::update_shading_groups() {
@@ -168,7 +97,7 @@ SDL_Texture* SceneRenderer::generateMask(Asset* a, int bw, int bh) {
 
     renderOrbitalLights(a, bounds, main_alpha);
 
-    renderMainLight(a,main_light_source_.get_texture(),SDL_Rect{ bounds.x - main_sz, bounds.y - main_sz, main_sz * 2, main_sz * 2 },bounds,Uint8(main_alpha/3));
+    //renderMainLight(a,main_light_source_.get_texture(),SDL_Rect{ bounds.x - main_sz, bounds.y - main_sz, main_sz * 2, main_sz * 2 },bounds,Uint8(main_alpha/3));
     
 
     // 80% opacity modulation
@@ -478,8 +407,8 @@ void SceneRenderer::renderMainLight(Asset* a,
 double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
     constexpr int FADE_ABOVE = 180;
     constexpr int FADE_BELOW = -30;
-    constexpr double MIN_OPACITY = 0.05;
-    constexpr double MAX_OPACITY = 0.6;
+    constexpr double MIN_OPACITY = 0.15;
+    constexpr double MAX_OPACITY = 0.7;
 
     int delta_y = light_world_y - asset_y;
     double factor;
@@ -497,3 +426,179 @@ double SceneRenderer::calculate_static_alpha_percentage(int asset_y, int light_w
 }
 
 
+void SceneRenderer::render_asset_lights_z() {
+    if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
+
+    static std::mt19937 flicker_rng{ std::random_device{}() };
+
+    const int downscale = 4;
+    const int blur_radius = 4;
+    const int kernel_size = blur_radius * 2 + 1;
+
+    struct LightEntry {
+        SDL_Texture* tex;
+        SDL_Rect dst;
+        Uint8 alpha;
+        SDL_RendererFlip flip;
+        bool apply_tint;
+    };
+
+    std::vector<LightEntry> z_lights;
+
+    // === Fullscreen light layer ===
+    Uint8 main_alpha = main_light_source_.current_color_.a;
+    if (fullscreen_light_tex_) {
+        SDL_Rect full_dst{ 0, 0, screen_width_, screen_height_ };
+        z_lights.push_back({ fullscreen_light_tex_, full_dst, static_cast<Uint8>(main_alpha/2), SDL_FLIP_NONE, false });
+    }
+
+    // === Main light ===
+    SDL_Texture* main_tex = main_light_source_.get_texture();
+    if (main_tex) {
+        auto [mx, my] = main_light_source_.get_position();
+        int main_sz = screen_width_ * 3;
+        SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
+        z_lights.push_back({ main_tex, main_rect, main_alpha, SDL_FLIP_NONE, false });
+    }
+
+    // === Asset-specific lights ===
+    for (Asset* a : assets_->active_assets) {
+        if (!a || !a->info || !a->info->has_light_source) continue;
+        for (const auto& light : a->info->light_sources) {
+            if (!light.texture) continue;
+
+            int offX = a->flipped ? -light.offset_x : light.offset_x;
+            SDL_Point p = util_.applyParallax(a->pos_X + offX, a->pos_Y + light.offset_y);
+
+            int lw, lh;
+            SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
+            SDL_Rect dst{ p.x - lw / 2, p.y - lh / 2, lw, lh };
+
+            float alpha_f = static_cast<float>(main_light_source_.light_brightness);
+            if (a == assets_->player) alpha_f *= 0.9f;
+
+            if (light.flicker > 0) {
+                float intensity_scale = std::clamp(light.intensity / 255.0f, 0.0f, 1.0f);
+                float max_jitter = (light.flicker / 100.0f) * intensity_scale;
+                std::uniform_real_distribution<float> dist(-max_jitter, max_jitter);
+                float jitter = dist(flicker_rng);
+                alpha_f *= (1.0f + jitter);
+            }
+
+            Uint8 alpha = static_cast<Uint8>(std::clamp(alpha_f, 0.0f, 255.0f));
+            SDL_RendererFlip flip = a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+            z_lights.push_back({ light.texture, dst, alpha, flip, true });
+        }
+    }
+
+    // === Downscale render target ===
+    int low_w = screen_width_ / downscale;
+    int low_h = screen_height_ / downscale;
+
+    SDL_Texture* lowres_mask = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
+                                                 SDL_TEXTUREACCESS_TARGET, low_w, low_h);
+    SDL_SetTextureBlendMode(lowres_mask, SDL_BLENDMODE_NONE);
+    SDL_SetRenderTarget(renderer_, lowres_mask);
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+    SDL_RenderClear(renderer_);
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_ADD);
+
+    for (auto& e : z_lights) {
+        SDL_SetTextureBlendMode(e.tex, SDL_BLENDMODE_ADD);
+        SDL_SetTextureAlphaMod(e.tex, e.alpha);
+
+        if (e.apply_tint) {
+            SDL_Color tinted = main_light_source_.apply_tint_to_color({255, 255, 255, 255}, e.alpha);
+            SDL_SetTextureColorMod(e.tex, tinted.r, tinted.g, tinted.b);
+        } else {
+            SDL_SetTextureColorMod(e.tex, 255, 255, 255);
+        }
+
+        SDL_Rect scaled_dst{
+            e.dst.x / downscale,
+            e.dst.y / downscale,
+            e.dst.w / downscale,
+            e.dst.h / downscale
+        };
+        SDL_RenderCopyEx(renderer_, e.tex, nullptr, &scaled_dst, 0, nullptr, e.flip);
+        SDL_SetTextureColorMod(e.tex, 255, 255, 255);
+    }
+
+    // === Blur pass with randomized blur shape ===
+    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, low_w, low_h, 32, SDL_PIXELFORMAT_RGBA8888);
+    SDL_RenderReadPixels(renderer_, nullptr, SDL_PIXELFORMAT_RGBA8888, surf->pixels, surf->pitch);
+
+    Uint32* pixels = static_cast<Uint32*>(surf->pixels);
+    std::vector<Uint32> temp(pixels, pixels + low_w * low_h);
+
+    std::mt19937 blur_rng{ std::random_device{}() };
+    std::uniform_real_distribution<float> weight_dist(0.5f, 2.15f);
+
+    // Horizontal blur with jittered weights
+    for (int y = 0; y < low_h; ++y) {
+        for (int x = 0; x < low_w; ++x) {
+            float r = 0, g = 0, b = 0, a = 0;
+            float total_weight = 0;
+
+            for (int k = -blur_radius; k <= blur_radius; ++k) {
+                int nx = std::clamp(x + k, 0, low_w - 1);
+                Uint8 pr, pg, pb, pa;
+                SDL_GetRGBA(temp[y * low_w + nx], surf->format, &pr, &pg, &pb, &pa);
+
+                float weight = weight_dist(blur_rng);
+                r += pr * weight;
+                g += pg * weight;
+                b += pb * weight;
+                a += pa * weight;
+                total_weight += weight;
+            }
+
+            pixels[y * low_w + x] = SDL_MapRGBA(surf->format,
+                                                static_cast<Uint8>(r / total_weight),
+                                                static_cast<Uint8>(g / total_weight),
+                                                static_cast<Uint8>(b / total_weight),
+                                                static_cast<Uint8>(a / total_weight));
+        }
+    }
+
+    // Vertical blur with jittered weights
+    temp.assign(pixels, pixels + low_w * low_h);
+    for (int y = 0; y < low_h; ++y) {
+        for (int x = 0; x < low_w; ++x) {
+            float r = 0, g = 0, b = 0, a = 0;
+            float total_weight = 0;
+
+            for (int k = -blur_radius; k <= blur_radius; ++k) {
+                int ny = std::clamp(y + k, 0, low_h - 1);
+                Uint8 pr, pg, pb, pa;
+                SDL_GetRGBA(temp[ny * low_w + x], surf->format, &pr, &pg, &pb, &pa);
+
+                float weight = weight_dist(blur_rng);
+                r += pr * weight;
+                g += pg * weight;
+                b += pb * weight;
+                a += pa * weight;
+                total_weight += weight;
+            }
+
+            pixels[y * low_w + x] = SDL_MapRGBA(surf->format,
+                                                static_cast<Uint8>(r / total_weight),
+                                                static_cast<Uint8>(g / total_weight),
+                                                static_cast<Uint8>(b / total_weight),
+                                                static_cast<Uint8>(a / total_weight));
+        }
+    }
+
+
+    SDL_Texture* blurred = SDL_CreateTextureFromSurface(renderer_, surf);
+    SDL_SetTextureBlendMode(blurred, SDL_BLENDMODE_MOD);
+    SDL_FreeSurface(surf);
+    SDL_DestroyTexture(lowres_mask);
+
+    SDL_SetRenderTarget(renderer_, nullptr);
+    SDL_Rect dst_rect{ 0, 0, screen_width_, screen_height_ };
+    SDL_RenderCopy(renderer_, blurred, nullptr, &dst_rect);
+    SDL_DestroyTexture(blurred);
+
+    if (debugging) std::cout << "[render_asset_lights_z] end" << std::endl;
+}

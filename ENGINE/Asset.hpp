@@ -60,7 +60,7 @@ public:
     int pos_Y = 0;
     int z_index = 0;
     int z_offset = 0;
-    int player_speed_mult = 10;
+    int player_speed = 10;
     bool is_lit = false;
     bool is_shaded = false;
     bool has_base_shadow = false;

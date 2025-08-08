@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 1380,
-  "max_width": 1380,
+  "min_width": 1825,
+  "max_width": 1825,
   "curvyness": 1,
   "assets": [
     {
@@ -19,7 +19,7 @@
       "name": "candle",
       "min_number": 10,
       "max_number": 20,
-      "position": "Entrance",
+      "position": "Perimeter",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -33,12 +33,12 @@
       "sector_range_max": 360
     },
     {
-      "name": "Stump",
+      "name": "ground",
       "min_number": 0,
-      "max_number": 328,
+      "max_number": 45,
       "position": "Random",
       "exact_position": null,
-      "tag": false,
+      "tag": true,
       "check_overlap": false,
       "check_min_spacing": false,
       "inherited": false
