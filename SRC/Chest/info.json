@@ -34,14 +34,14 @@
         "Spacing"
     ],
     "tags": [
-        "interaction",
         "impassable",
-        "loot",
-        "wood",
         "valuable",
-        "center",
+        "wood",
         "default",
-        "man-made"
+        "center",
+        "man-made",
+        "interaction",
+        "loot"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -49,10 +49,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 297,
+            "radius": 148,
             "y_radius": 88,
-            "x_radius": 128,
-            "falloff": 40,
+            "x_radius": 109,
+            "falloff": 0,
             "factor": 100
         }
     ],

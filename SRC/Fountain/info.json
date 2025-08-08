@@ -22,17 +22,17 @@
         "Spacing"
     ],
     "tags": [
-        "grey",
-        "movement",
+        "blue",
         "impassable",
         "medium",
-        "default",
-        "healing",
-        "light",
-        "center",
+        "movement",
         "water",
-        "blue",
-        "white"
+        "healing",
+        "default",
+        "center",
+        "grey",
+        "white",
+        "light"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -40,11 +40,26 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 357,
+            "radius": 267,
             "y_radius": 196,
-            "x_radius": 214,
-            "falloff": 40,
+            "x_radius": 181,
+            "falloff": 0,
             "factor": 100
+        },
+        {
+            "has_light_source": true,
+            "light_intensity": 173,
+            "light_color": [
+                0,
+                255,
+                255
+            ],
+            "radius": 613,
+            "falloff": 0,
+            "flicker": 0,
+            "flare": 1,
+            "offset_x": 0,
+            "offset_y": 0
         },
         {
             "has_light_source": true,

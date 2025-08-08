@@ -20,11 +20,11 @@
     },
     "tags": [
         "default",
-        "light",
-        "man-made",
+        "barrel_child",
         "orange",
         "passable",
-        "barrel_child"
+        "man-made",
+        "light"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -45,13 +45,13 @@
         },
         {
             "has_light_source": true,
-            "light_intensity": 255,
+            "light_intensity": 192,
             "light_color": [
                 255,
                 219,
                 183
             ],
-            "radius": 283,
+            "radius": 193,
             "falloff": 100,
             "flicker": 7,
             "flare": 56,

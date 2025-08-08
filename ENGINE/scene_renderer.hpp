@@ -23,6 +23,7 @@ public:
     void render();
 
 private:
+    SDL_Texture* fullscreen_light_tex_;
     SDL_Texture* generateMask(Asset* a, int bw, int bh);
     bool debugging = false;
     double player_shade_percent = 1.0;

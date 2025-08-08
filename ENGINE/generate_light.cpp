@@ -68,27 +68,26 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     Uint32* pixels = static_cast<Uint32*>(surf->pixels);
     SDL_PixelFormat* fmt = surf->format;
 
-    // === PASS 1: Improved falloff fade ===
-    float fFallNorm = falloff / 100.0f;
-    float exponent = std::pow(0.0f, fFallNorm); // exponential curve: falloff=0 → 1, falloff=1 → 10
-
+    // === PASS 1: Custom falloff using logistic curve ===
+    float steepness = 10.0f + (falloff * 0.2f);  // falloff=0 → 10, falloff=100 → 30
+    float midpoint = 0.75f;                     // defines where falloff starts
 
     for (int y = 0; y < size; ++y) {
         for (int x = 0; x < size; ++x) {
             float dx = x - drawRadius + 0.5f;
             float dy = y - drawRadius + 0.5f;
-            float dist = std::sqrt(dx*dx + dy*dy);
+            float dist = std::sqrt(dx * dx + dy * dy);
             if (dist > effRadius) {
-                pixels[y*size + x] = 0;
+                pixels[y * size + x] = 0;
                 continue;
             }
             float norm = dist / effRadius;
-            float fade = std::pow(1.0f - norm, exponent);
-            Uint8 a = static_cast<Uint8>(intensity * std::clamp(fade, 0.0f, 1.0f));
+            float fade = 1.0f / (1.0f + std::exp((norm - midpoint) * steepness));
+            Uint8 a = static_cast<Uint8>(intensity * fade);
             Uint8 r = static_cast<Uint8>(base.r * (a / 255.0f));
             Uint8 g = static_cast<Uint8>(base.g * (a / 255.0f));
             Uint8 b = static_cast<Uint8>(base.b * (a / 255.0f));
-            pixels[y*size + x] = SDL_MapRGBA(fmt, r, g, b, a);
+            pixels[y * size + x] = SDL_MapRGBA(fmt, r, g, b, a);
         }
     }
 

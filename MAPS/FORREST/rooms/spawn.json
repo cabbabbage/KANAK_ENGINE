@@ -1,7 +1,7 @@
 {
   "name": "spawn",
-  "min_width": 2235,
-  "max_width": 2235,
+  "min_width": 1825,
+  "max_width": 1825,
   "curvyness": 1,
   "assets": [
     {

@@ -19,17 +19,17 @@
         }
     },
     "tags": [
-        "small",
+        "child",
+        "default",
+        "crime",
+        "man-made",
+        "passable",
+        "brown",
+        "booze",
         "still",
         "barrel_child",
-        "brown",
-        "crime",
-        "booze",
-        "man-made",
-        "child",
-        "passable",
-        "default",
-        "drinking"
+        "drinking",
+        "small"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -57,10 +57,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 71,
-            "y_radius": 71,
-            "x_radius": 85,
-            "falloff": 60,
+            "radius": 57,
+            "y_radius": 52,
+            "x_radius": 132,
+            "falloff": 0,
             "factor": 100
         }
     ]

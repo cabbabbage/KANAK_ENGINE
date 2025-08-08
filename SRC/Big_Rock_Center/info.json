@@ -28,9 +28,9 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "center",
         "impassable",
-        "rock"
+        "rock",
+        "center"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -58,9 +58,9 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 651,
-            "y_radius": 183,
-            "x_radius": 260,
+            "radius": 390,
+            "y_radius": 168,
+            "x_radius": 286,
             "falloff": 0,
             "factor": 100
         }

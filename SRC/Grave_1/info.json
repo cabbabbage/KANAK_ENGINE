@@ -19,16 +19,16 @@
         }
     },
     "tags": [
-        "graveyard",
+        "scary",
+        "impassable",
+        "medium",
         "default",
+        "man-made",
         "grey",
         "still",
-        "medium",
         "grave",
-        "man-made",
-        "impassable",
         "death",
-        "scary"
+        "graveyard"
     ],
     "z_threshold": 4,
     "size_settings": {
@@ -68,9 +68,9 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 130,
-            "y_radius": 78,
-            "x_radius": 54,
+            "radius": 98,
+            "y_radius": 71,
+            "x_radius": 59,
             "falloff": 0,
             "factor": 100
         }

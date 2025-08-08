@@ -19,15 +19,15 @@
         }
     },
     "tags": [
-        "small",
-        "barrel_child",
-        "brown",
-        "crime",
-        "booze",
         "child",
-        "passable",
         "default",
-        "drinking"
+        "crime",
+        "passable",
+        "booze",
+        "brown",
+        "barrel_child",
+        "drinking",
+        "small"
     ],
     "z_threshold": 6,
     "size_settings": {
@@ -48,10 +48,10 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 56,
-            "y_radius": 56,
-            "x_radius": 35,
-            "falloff": 60,
+            "radius": 45,
+            "y_radius": 41,
+            "x_radius": 55,
+            "falloff": 0,
             "factor": 100
         }
     ]

@@ -30,12 +30,12 @@
     "max_child_depth": 4,
     "tags": [
         "impassable",
-        "default",
-        "Tree",
-        "tree",
         "rest",
+        "boundary",
+        "default",
         "nature",
-        "boundary"
+        "Tree",
+        "tree"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -54,9 +54,9 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 1506,
-            "y_radius": 722,
-            "x_radius": 261,
+            "radius": 722,
+            "y_radius": 602,
+            "x_radius": 391,
             "falloff": 0,
             "factor": 100
         }

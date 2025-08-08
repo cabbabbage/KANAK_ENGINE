@@ -37,9 +37,9 @@
         "volume"
     ],
     "tags": [
-        "wood",
-        "impassable",
         "collision",
+        "impassable",
+        "wood",
         "default"
     ],
     "impassable_area": "impassable_area.json",
@@ -65,9 +65,9 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 269,
-            "y_radius": 129,
-            "x_radius": 84,
+            "radius": 161,
+            "y_radius": 118,
+            "x_radius": 93,
             "falloff": 0,
             "factor": 100
         }
