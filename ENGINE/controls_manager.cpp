@@ -58,7 +58,7 @@ void ControlsManager::movement(const std::unordered_set<SDL_Keycode>& keys) {
 
         float base_speed = player_->player_speed;
         if (keys.count(SDLK_LSHIFT) || keys.count(SDLK_RSHIFT)) {
-            base_speed *= 2.0f;  // Sprinting
+            base_speed *= 1.50f;  // Sprinting
         }
 
         float speed = base_speed / len;

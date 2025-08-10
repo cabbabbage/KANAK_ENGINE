@@ -548,6 +548,9 @@ void AssetInfo::generate_lights(SDL_Renderer* renderer) {
         if (tex) {
             SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
             light_sources[i].texture = tex;
+
+            // Cache texture size
+            SDL_QueryTexture(tex, nullptr, nullptr, &light_sources[i].cached_w, &light_sources[i].cached_h);
         }
     }
 
@@ -557,6 +560,9 @@ void AssetInfo::generate_lights(SDL_Renderer* renderer) {
         if (tex) {
             SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
             orbital_light_sources[i].texture = tex;
+
+            // Cache texture size
+            SDL_QueryTexture(tex, nullptr, nullptr, &orbital_light_sources[i].cached_w, &orbital_light_sources[i].cached_h);
         }
     }
 }

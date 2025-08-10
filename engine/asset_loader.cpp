@@ -70,7 +70,9 @@ std::unique_ptr<Assets> AssetLoader::createAssets(int screen_width, int screen_h
         screen_width,
         screen_height,
         player_ptr->pos_X,
-        player_ptr->pos_Y
+        player_ptr->pos_Y, 
+        static_cast<int>(map_radius_ * 1.2)
+
     );
     std::cout << "[AssetLoader] createAssets() complete\n";
     return assetsPtr;

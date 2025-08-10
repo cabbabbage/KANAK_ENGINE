@@ -1,4 +1,4 @@
-// === File: light_map.hpp ===
+// === File: light_z_pass.hpp ===
 #pragma once
 
 #include <SDL.h>
@@ -32,8 +32,9 @@ private:
     void collect_layers(std::vector<LightEntry>& out, std::mt19937& rng);
     SDL_Texture* build_lowres_mask(const std::vector<LightEntry>& layers,
                                    int low_w, int low_h, int downscale);
-    SDL_Texture* blur_texture(SDL_Texture* source_tex, int w, int h);
 
+private:
+SDL_Rect get_scaled_position_rect(const std::pair<int,int>& pos, int fw, int fh, float inv_scale, int min_w, int min_h);
     SDL_Renderer* renderer_;
     Assets* assets_;
     RenderUtils& util_;

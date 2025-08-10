@@ -88,8 +88,11 @@ Asset* SpawnMethods::spawn_(const std::string& name,
 
             // align the preloaded area
             Area childArea = *childInfo->area_ptr;
-            childArea.align(raw->pos_X, raw->pos_Y);
 
+            childArea.align(raw->pos_X, raw->pos_Y);
+            if (raw->flipped){
+                childArea.flip_horizontal(raw->pos_X);
+            }
 
 
             auto [cx, cy] = childArea.get_center();

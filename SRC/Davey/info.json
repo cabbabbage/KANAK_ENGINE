@@ -49,7 +49,7 @@
             "lock_until_done": false
         }
     },
-    "z_threshold": 9,
+    "z_threshold": 25,
     "size_settings": {
         "scale_percentage": 45
     },
@@ -60,14 +60,14 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 686,
     "tags": [
-        "default",
-        "right",
-        "left",
         "start",
+        "right",
         "player",
-        "forward",
+        "backward",
+        "left",
+        "default",
         "passable",
-        "backward"
+        "forward"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -90,7 +90,7 @@
                 255
             ],
             "radius": 368,
-            "falloff": 46,
+            "falloff": 13,
             "flicker": 0,
             "flare": 0,
             "offset_x": 0,

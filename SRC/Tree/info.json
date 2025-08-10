@@ -7,9 +7,9 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "impassable",
         "default",
-        "spawn"
+        "spawn",
+        "impassable"
     ],
     "z_threshold": 7,
     "size_settings": {
@@ -57,5 +57,8 @@
     "has_spacing": true,
     "min_distance_all": 0,
     "anti_tags": [],
-    "has_shading": true
+    "has_shading": true,
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

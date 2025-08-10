@@ -1,10 +1,10 @@
 {
-  "radius": 7439,
+  "radius": 6927,
   "intensity": 255,
-  "orbit_radius": 1686,
-  "update_interval": 4,
+  "orbit_radius": 993,
+  "update_interval": 16,
   "mult": 0.25,
-  "fall_off": 0,
+  "fall_off": 92,
   "base_color": [
     255,
     255,
@@ -36,7 +36,7 @@
         128,
         255,
         255,
-        0
+        30
       ]
     ],
     [
@@ -45,7 +45,7 @@
         255,
         0,
         0,
-        5
+        25
       ]
     ],
     [
@@ -54,7 +54,7 @@
         128,
         255,
         255,
-        5
+        30
       ]
     ],
     [

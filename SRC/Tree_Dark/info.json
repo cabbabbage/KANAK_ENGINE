@@ -31,11 +31,11 @@
     "tags": [
         "impassable",
         "rest",
-        "boundary",
+        "tree",
         "default",
-        "nature",
+        "boundary",
         "Tree",
-        "tree"
+        "nature"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -64,5 +64,8 @@
     "has_spacing": true,
     "min_distance_all": 0,
     "anti_tags": [],
-    "has_shading": true
+    "has_shading": true,
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

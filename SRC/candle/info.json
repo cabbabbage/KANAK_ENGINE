@@ -19,12 +19,12 @@
         }
     },
     "tags": [
-        "barrel_child",
-        "passable",
-        "man-made",
+        "orange",
         "light",
+        "man-made",
+        "barrel_child",
         "default",
-        "orange"
+        "passable"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -51,8 +51,8 @@
                 219,
                 183
             ],
-            "radius": 193,
-            "falloff": 100,
+            "radius": 613,
+            "falloff": 6,
             "flicker": 7,
             "flare": 56,
             "offset_x": -2,

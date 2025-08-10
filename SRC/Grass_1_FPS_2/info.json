@@ -19,22 +19,22 @@
         }
     },
     "tags": [
-        "green",
-        "default",
-        "small",
-        "cover",
-        "moving",
-        "meadow",
-        "passable",
         "nature",
-        "plant"
+        "plant",
+        "meadow",
+        "cover",
+        "default",
+        "passable",
+        "small",
+        "moving",
+        "green"
     ],
     "has_spacing": true,
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 40,
     "z_threshold": 14,
     "size_settings": {
-        "scale_percentage": 3
+        "scale_percentage": 2
     },
     "anti_tags": [
         "center",
@@ -44,5 +44,8 @@
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "min_distance_all": 0
+    "min_distance_all": 0,
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

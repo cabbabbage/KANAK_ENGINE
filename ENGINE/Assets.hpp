@@ -18,7 +18,7 @@ public:
            int screen_width,
            int screen_height,
            int screen_center_x,
-           int screen_center_y);
+           int screen_center_y, int map_radius);
 
     void update(const std::unordered_set<SDL_Keycode>& keys,
                 int screen_center_x,
@@ -36,8 +36,9 @@ public:
     std::vector<Asset*> closest_assets;
     Asset*              player = nullptr;
     int                 visible_count = 0;
-
+    view& getView() { return window; }
 private:
+    view window;
     ControlsManager     controls;            // ✅ Now properly declared
     ActiveAssetsManager activeManager;
 
@@ -48,7 +49,7 @@ private:
     int dy = 0;
     int last_activat_update = 0;
     int update_interval = 25;
-    int num_groups_ = 10;
+    int num_groups_ = 40;
 };
 
 #endif // ASSETS_HPP

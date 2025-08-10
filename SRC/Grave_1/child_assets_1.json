@@ -1,10 +1,10 @@
 {
-  "z_offset": 1,
+  "z_offset": 0,
   "assets": [
     {
       "name": "cover",
       "min_number": -100,
-      "max_number": 50,
+      "max_number": 2,
       "position": "Random",
       "exact_position": null,
       "tag": true,

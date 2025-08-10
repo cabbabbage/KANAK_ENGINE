@@ -53,5 +53,8 @@
     "has_spacing": true,
     "min_distance_all": 0,
     "anti_tags": [],
-    "has_shading": true
+    "has_shading": true,
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

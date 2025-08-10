@@ -9,7 +9,7 @@
 #include <iostream>
 #include "light_utils.hpp" 
 
-// === Asset constructor ===
+
 Asset::Asset(std::shared_ptr<AssetInfo> info_,
              const Area& spawn_area,
              int start_pos_X,
@@ -53,8 +53,6 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
         }
     }
 }
-
-
 
 void Asset::finalize_setup(SDL_Renderer* renderer) {
     if (!info || !renderer) return;
@@ -105,11 +103,6 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
     has_shading = info->has_shading;
 }
 
-
-
-
-
-// === Added missing set_position implementation ===
 void Asset::set_position(int x, int y) {
     pos_X = x;
     pos_Y = y;
@@ -166,11 +159,6 @@ void Asset::update() {
         }
     }
 }
-
-
-
-
-
 
 void Asset::change_animation(const std::string& name) {
     if (!info || name.empty()) return;
@@ -233,7 +221,6 @@ void Asset::add_child(Asset* child) {
     children.push_back(child);
 }
 
-
 void Asset::set_z_index() {
     try {
         if (parent) {
@@ -262,10 +249,15 @@ void Asset::set_flip() {
     flipped = (dist(rng) == 1);
 }
 
-
 void Asset::set_final_texture(SDL_Texture* tex) {
     if (final_texture) SDL_DestroyTexture(final_texture);
     final_texture = tex;
+    if (tex) {
+        SDL_QueryTexture(tex, nullptr, nullptr, &cached_w, &cached_h);
+    } else {
+        cached_w = cached_h = 0;
+    }
+
 }
 
 SDL_Texture* Asset::get_final_texture() const {
@@ -280,13 +272,10 @@ bool Asset::is_shading_group_set() const {
     return shading_group_set;
 }
 
-
 void Asset::set_shading_group(int x){
     shading_group = x;
     shading_group_set = true;
 }
-
-
 
 void Asset::add_static_light_source(LightSource* light, int world_x, int world_y, Asset* owner) {
     if (!light) return;
@@ -299,8 +288,6 @@ void Asset::add_static_light_source(LightSource* light, int world_x, int world_y
     static_lights.push_back(sl);
 }
 
-
-
 void Asset::set_render_player_light(bool value) {
     render_player_light = value;
 }
@@ -308,9 +295,6 @@ void Asset::set_render_player_light(bool value) {
 bool Asset::get_render_player_light() const {
     return render_player_light;
 }
-
-
-
 
 Area Asset::get_area(const std::string& name) const {
     // Start with an empty/fallback area named appropriately

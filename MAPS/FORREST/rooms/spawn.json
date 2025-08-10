@@ -18,8 +18,8 @@
     {
       "name": "candle",
       "min_number": 10,
-      "max_number": 20,
-      "position": "Perimeter",
+      "max_number": 10,
+      "position": "Entrance",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,
@@ -39,6 +39,17 @@
       "position": "Random",
       "exact_position": null,
       "tag": true,
+      "check_overlap": false,
+      "check_min_spacing": false,
+      "inherited": false
+    },
+    {
+      "name": "Stump",
+      "min_number": -4,
+      "max_number": 149,
+      "position": "Random",
+      "exact_position": null,
+      "tag": false,
       "check_overlap": false,
       "check_min_spacing": false,
       "inherited": false

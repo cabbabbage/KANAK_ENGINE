@@ -101,7 +101,28 @@
           "required_children": []
         }
       ]
+    },
+    {
+      "level": 3,
+      "name": "layer_3",
+      "radius": 9837,
+      "min_rooms": 0,
+      "max_rooms": 9,
+      "rooms": [
+        {
+          "name": "library",
+          "min_instances": 0,
+          "max_instances": 8,
+          "required_children": []
+        },
+        {
+          "name": "KEY",
+          "min_instances": 0,
+          "max_instances": 10,
+          "required_children": []
+        }
+      ]
     }
   ],
-  "map_radius": 9484.087296526011
+  "map_radius": 12587.640687119285
 }

@@ -88,6 +88,8 @@ public:
     bool static_frame = true;
 
     void deactivate();
+    int cached_w = 0;
+    int cached_h = 0;
 
 private:
     void set_flip();

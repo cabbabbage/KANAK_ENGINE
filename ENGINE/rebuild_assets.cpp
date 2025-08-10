@@ -20,12 +20,8 @@ RebuildAssets::RebuildAssets(SDL_Renderer* renderer, const std::string& map_dir)
         std::cout << "[RebuildAssets] AssetLibrary rebuilt successfully.\n";
 
         std::cout << "[RebuildAssets] Running cartoon effect Python script...\n";
-        int result = std::system("python scripts/add_effects.py");
-        if (result != 0) {
-            std::cerr << "[RebuildAssets] Python script failed with exit code: " << result << "\n";
-        } else {
-            std::cout << "[RebuildAssets] Python script finished successfully.\n";
-        }
+        //int result = std::system("python scripts/add_effects.py");
+
 
     } catch (const std::exception& e) {
         std::cerr << "[RebuildAssets] Error: " << e.what() << "\n";

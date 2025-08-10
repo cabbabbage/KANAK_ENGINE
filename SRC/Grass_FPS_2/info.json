@@ -15,7 +15,7 @@
     "impassable_area": null,
     "z_threshold": 14,
     "size_settings": {
-        "scale_percentage": 3
+        "scale_percentage": 2
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 40,
@@ -23,15 +23,15 @@
         "Spacing"
     ],
     "tags": [
-        "green",
-        "default",
-        "moving",
-        "bluff",
-        "meadow",
-        "passable",
-        "leafy",
         "nature",
-        "plant"
+        "plant",
+        "leafy",
+        "meadow",
+        "bluff",
+        "default",
+        "passable",
+        "moving",
+        "green"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -42,5 +42,8 @@
     "max_child_depth": 2,
     "has_spacing": true,
     "min_distance_all": 40,
-    "anti_tags": []
+    "anti_tags": [],
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }
