@@ -1,3 +1,4 @@
+// === File: Asset.hpp ===
 #ifndef ASSET_HPP
 #define ASSET_HPP
 
@@ -38,9 +39,12 @@ public:
     SDL_Texture* get_image() const;
     std::string get_current_animation() const;
     std::string get_type() const;
-    void add_child(Asset child);
 
-    void add_static_light_source(LightSource* light, int world_x, int world_y);
+    // Children management (non-owning pointers; parents do NOT delete children)
+    void add_child(Asset* child);
+    inline const std::vector<Asset*>& get_children() const { return children; }
+
+    void add_static_light_source(LightSource* light, int world_x, int world_y, Asset* owner);
 
     void set_render_player_light(bool value);
     bool get_render_player_light() const;
@@ -73,16 +77,19 @@ public:
     Area spawn_area_local;
     std::vector<Area> base_areas;
     std::vector<Area> areas;
-    std::vector<Asset> children;
+
+    std::vector<Asset*> children;
+
     std::vector<StaticLight> static_lights;
-    int gradient_shadow;
+    int gradient_shadow = 0;
     int depth = 0;
-    bool has_shading;
+    bool has_shading = false;
     bool dead = false;
     bool static_frame = true;
+
     void deactivate();
+
 private:
-    double calculate_static_alpha_percentage(int asset_y, int light_world_y);
     void set_flip();
     void set_z_index();
 

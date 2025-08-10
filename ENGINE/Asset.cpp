@@ -7,6 +7,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <iostream>
+#include "light_utils.hpp" 
 
 // === Asset constructor ===
 Asset::Asset(std::shared_ptr<AssetInfo> info_,
@@ -53,9 +54,12 @@ Asset::Asset(std::shared_ptr<AssetInfo> info_,
     }
 }
 
+
+
 void Asset::finalize_setup(SDL_Renderer* renderer) {
     if (!info || !renderer) return;
 
+    // Ensure a valid starting animation
     if (current_animation.empty() ||
         info->animations[current_animation].frames.empty())
     {
@@ -67,36 +71,43 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
 
         if (it != info->animations.end() && !it->second.frames.empty()) {
             current_animation = it->first;
-            Animation &anim = it->second;
+            Animation& anim = it->second;
             static_frame = (anim.frames.size() == 1);
             anim.change(current_frame_index, static_frame);
             if (anim.randomize && anim.frames.size() > 1) {
-                std::mt19937 rng{std::random_device{}()};
+                std::mt19937 rng{ std::random_device{}() };
                 std::uniform_int_distribution<int> dist(0, int(anim.frames.size()) - 1);
                 current_frame_index = dist(rng);
             }
         }
     }
 
-    for (auto& child : children) {
-        child.finalize_setup(renderer);
+    // Finalize children (vector<Asset*>)
+    for (Asset* child : children) {
+        if (child) {
+            child->finalize_setup(renderer);
+        }
     }
 
     if (!children.empty()) {
-        std::cout << "[Asset] \"" << info->name
+        std::cout << "[Asset] \"" << (info ? info->name : std::string{"<null>"})
                   << "\" at (" << pos_X << ", " << pos_Y
                   << ") has " << children.size() << " child(ren):\n";
-        for (auto& child : children) {
-            if (child.info) {
-                std::cout << "    - \"" << child.info->name
-                          << "\" at (" << child.pos_X << ", "
-                          << child.pos_Y << ")\n";
+        for (Asset* child : children) {
+            if (child && child->info) {
+                std::cout << "    - \"" << child->info->name
+                          << "\" at (" << child->pos_X << ", "
+                          << child->pos_Y << ")\n";
             }
         }
     }
-    has_shading = info->has_shading;
 
+    has_shading = info->has_shading;
 }
+
+
+
+
 
 // === Added missing set_position implementation ===
 void Asset::set_position(int x, int y) {
@@ -108,24 +119,24 @@ void Asset::set_position(int x, int y) {
 void Asset::update() {
     if (!info) return;
     if (dead) return;
+
     // Apply any queued animation change first
     if (!next_animation.empty()) {
         if (next_animation == "freeze_on_last") {
             auto itf = info->animations.find(current_animation);
             if (itf != info->animations.end()) {
-                Animation &currAnim = itf->second;
+                Animation& currAnim = itf->second;
                 int lastIndex = static_cast<int>(currAnim.frames.size()) - 1;
                 if (current_frame_index == lastIndex) {
                     static_frame = true;
                     next_animation.clear();
                 }
             }
-        }
-        else {
+        } else {
             auto nit = info->animations.find(next_animation);
             if (nit != info->animations.end()) {
                 current_animation = next_animation;
-                Animation &anim = nit->second;
+                Animation& anim = nit->second;
                 static_frame = (static_cast<int>(anim.frames.size()) <= 1);
                 current_frame_index = 0;
             }
@@ -135,7 +146,7 @@ void Asset::update() {
 
     auto it = info->animations.find(current_animation);
     if (it == info->animations.end()) return;
-    Animation &anim = it->second;
+    Animation& anim = it->second;
 
     // Advance frame if not marked static
     if (!static_frame) {
@@ -148,9 +159,11 @@ void Asset::update() {
         }
     }
 
-    // Recurse into children
-    for (auto& c : children) {
-        c.update();
+    // Recurse into children (now vector<Asset*>)
+    for (Asset* c : children) {
+        if (c && !c->dead && c->info) {
+            c->update();
+        }
     }
 }
 
@@ -189,25 +202,37 @@ std::string Asset::get_type() const {
     return info ? info->type : "";
 }
 
-void Asset::add_child(Asset child) {
+void Asset::add_child(Asset* child) {
+    if (!child || !child->info) return;
+
+    // Pull z_offset from parent info->children table (matching by child asset name from path stem)
     if (info) {
-        for (auto& ci : info->children) {
-            if (std::filesystem::path(ci.json_path).stem().string() == child.info->name) {
-                child.set_z_offset(ci.z_offset);
-                break;
+        for (const auto& ci : info->children) {
+            try {
+                if (std::filesystem::path(ci.json_path).stem().string() == child->info->name) {
+                    child->set_z_offset(ci.z_offset);
+                    break;
+                }
+            } catch (...) {
+                // ignore malformed paths
             }
         }
     }
-    child.parent = this;
-    child.set_z_index();
-    if (info && child.info) {
+
+    child->parent = this;
+    child->set_z_index();
+
+    if (info && child->info) {
         std::cout << "[Asset] " << info->name
-                  << " adding child \"" << child.info->name
-                  << "\" at (" << child.pos_X << ", " << child.pos_Y
-                  << "), z_index=" << child.z_index << "\n";
+                  << " adding child \"" << child->info->name
+                  << "\" at (" << child->pos_X << ", " << child->pos_Y
+                  << "), z_index=" << child->z_index << "\n";
     }
-    children.push_back(std::move(child));
+
+    // Store non-owning pointer
+    children.push_back(child);
 }
+
 
 void Asset::set_z_index() {
     try {
@@ -261,16 +286,16 @@ void Asset::set_shading_group(int x){
     shading_group_set = true;
 }
 
-// === Updated add_static_light_source using alpha calculation ===
-void Asset::add_static_light_source(LightSource* light, int world_x, int world_y) {
+
+
+void Asset::add_static_light_source(LightSource* light, int world_x, int world_y, Asset* owner) {
     if (!light) return;
 
     StaticLight sl;
     sl.source = light;
     sl.offset_x = world_x - pos_X;
     sl.offset_y = world_y - pos_Y;
-    sl.alpha_percentage = calculate_static_alpha_percentage(pos_Y, world_y);
-
+    sl.alpha_percentage = LightUtils::calculate_static_alpha_percentage(this, owner);
     static_lights.push_back(sl);
 }
 
@@ -282,27 +307,6 @@ void Asset::set_render_player_light(bool value) {
 
 bool Asset::get_render_player_light() const {
     return render_player_light;
-}
-
-double Asset::calculate_static_alpha_percentage(int asset_y, int light_world_y) {
-    constexpr int FADE_ABOVE = 180;
-    constexpr int FADE_BELOW = -60;
-    constexpr double MIN_OPACITY = 0.2;
-    constexpr double MAX_OPACITY = 0.8;
-
-    int delta_y = light_world_y - asset_y;
-    double factor;
-
-    if (delta_y <= -FADE_ABOVE) {
-        factor = MIN_OPACITY;
-    } else if (delta_y >= FADE_BELOW) {
-        factor = MAX_OPACITY;
-    } else {
-        factor = double(delta_y + FADE_ABOVE) / double(FADE_ABOVE + FADE_BELOW);
-        factor = MIN_OPACITY + (MAX_OPACITY - MIN_OPACITY) * factor;
-    }
-
-    return std::clamp(factor, MIN_OPACITY, MAX_OPACITY);
 }
 
 

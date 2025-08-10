@@ -1,5 +1,5 @@
-// generate_map_light.cpp
-#include "generate_map_light.hpp"
+// Global_Light_Source.cpp
+#include "global_light_source.hpp"
 #include "generate_light.hpp"
 #include "light_source.hpp"
 #include <nlohmann/json.hpp>
@@ -11,7 +11,7 @@
 
 using json = nlohmann::json;
 
-Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
+Global_Light_Source::Global_Light_Source(SDL_Renderer* renderer,
                                        int screen_center_x,
                                        int screen_center_y,
                                        int screen_width,
@@ -64,7 +64,11 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
     if (!bc.is_array() || bc.size() < 3)
         throw std::runtime_error("[MapLight] Invalid base_color");
     base_color_.r = bc[0]; base_color_.g = bc[1]; base_color_.b = bc[2];
-    base_color_.a = (bc.size()>3 ? bc[3] : 255);
+    if (bc.size() > 3)
+        base_color_.a = static_cast<Uint8>(bc[3].get<int>());
+    else
+        base_color_.a = 255;
+
     current_color_ = base_color_;
 
     // keys
@@ -83,7 +87,7 @@ Generate_Map_Light::Generate_Map_Light(SDL_Renderer* renderer,
     build_texture();
 }
 
-void Generate_Map_Light::update() {
+void Global_Light_Source::update() {
     // only run every N frames
     if (++frame_counter_ % update_interval_ != 0) {
         //std::cout << "[MapLight::update] skipping frame " << frame_counter_ << "\n";
@@ -131,23 +135,23 @@ void Generate_Map_Light::update() {
     //std::cout << "[MapLight::update] light_brightness=" << light_brightness << "\n";
 }
 
-std::pair<int,int> Generate_Map_Light::get_position() const {
+std::pair<int,int> Global_Light_Source::get_position() const {
     return { pos_x_, pos_y_ };
 }
 
-float Generate_Map_Light::get_angle() const {
+float Global_Light_Source::get_angle() const {
     return angle_;
 }
 
-SDL_Texture* Generate_Map_Light::get_texture() const {
+SDL_Texture* Global_Light_Source::get_texture() const {
     return texture_;
 }
 
-SDL_Color Generate_Map_Light::get_tint() const {
+SDL_Color Global_Light_Source::get_tint() const {
     return tint_;
 }
 
-void Generate_Map_Light::set_light_brightness() {
+void Global_Light_Source::set_light_brightness() {
     constexpr int OFF = 245, FULL = 100;
     int a = current_color_.a;
     if (a >= OFF) {
@@ -160,7 +164,7 @@ void Generate_Map_Light::set_light_brightness() {
     }
 }
 
-void Generate_Map_Light::build_texture() {
+void Global_Light_Source::build_texture() {
     if (texture_) SDL_DestroyTexture(texture_);
 
     LightSource ls;
@@ -179,7 +183,7 @@ void Generate_Map_Light::build_texture() {
     }
 }
 
-SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
+SDL_Color Global_Light_Source::compute_color_from_horizon() const {
     // rotate so sin=1 (up) lines up with 0°
     float deg = std::fmod(angle_ * (180.0f/float(M_PI)) + 270.0f, 360.0f);
     if (deg < 0) deg += 360.0f;
@@ -219,7 +223,7 @@ SDL_Color Generate_Map_Light::compute_color_from_horizon() const {
     };
 }
 
-SDL_Color Generate_Map_Light::apply_tint_to_color(const SDL_Color& base, int alpha_mod) const {
+SDL_Color Global_Light_Source::apply_tint_to_color(const SDL_Color& base, int alpha_mod) const {
     float factor = mult_ * (alpha_mod / 255.0f);
     auto blend = [&](Uint8 bc, Uint8 tc){
         float val = bc * (1.0f - mult_) + tc * factor;
@@ -231,4 +235,19 @@ SDL_Color Generate_Map_Light::apply_tint_to_color(const SDL_Color& base, int alp
         blend(base.b, tint_.b),
         base.a
     };
+}
+
+SDL_Color Global_Light_Source::get_current_color() const {
+    return current_color_;
+}
+
+int Global_Light_Source::get_brightness() const {
+    return light_brightness;
+}
+
+Global_Light_Source::~Global_Light_Source() {
+    if (texture_) {
+        SDL_DestroyTexture(texture_);
+        texture_ = nullptr;
+    }
 }

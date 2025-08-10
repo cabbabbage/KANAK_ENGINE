@@ -8,24 +8,27 @@
 #include <functional>
 
 namespace {
-    inline void set_shading_group_recursive(Asset& asset, int group, int num_groups) {
+    inline void set_shading_group_recursive(Asset& asset, int group, int /*num_groups*/) {
         asset.set_shading_group(group);
-        for (auto& child : asset.children)
-            set_shading_group_recursive(child, group, num_groups);
+        for (Asset* child : asset.children) {
+            if (child) set_shading_group_recursive(*child, group, /*num_groups*/0);
+        }
     }
 
     inline void collect_assets_in_range(const Asset* asset, int cx, int cy, int r2, std::vector<Asset*>& result) {
         int dx = asset->pos_X - cx;
         int dy = asset->pos_Y - cy;
-        if (dx * dx + dy * dy <= r2)
+        if (dx * dx + dy * dy <= r2) {
             result.push_back(const_cast<Asset*>(asset));
-        for (const auto& child : asset->children)
-            collect_assets_in_range(&child, cx, cy, r2, result);
+        }
+        for (Asset* child : asset->children) {
+            if (child) collect_assets_in_range(child, cx, cy, r2, result);
+        }
     }
 }
 
 Assets::Assets(std::vector<Asset>&& loaded,
-               Asset* player_ptr,
+               Asset* /*player_ptr*/,
                int screen_width,
                int screen_height,
                int screen_center_x,
@@ -60,7 +63,7 @@ Assets::Assets(std::vector<Asset>&& loaded,
     }
 
     for (auto& asset : all) {
-        if (asset.info->type == "Player") {
+        if (asset.info && asset.info->type == "Player") {
             player = &asset;
             std::cout << "[Assets] Found player asset: "
                       << player->info->name << "\n";
@@ -73,7 +76,7 @@ Assets::Assets(std::vector<Asset>&& loaded,
     closest_assets = activeManager.getClosest();
     set_shading_groups();
 
-    // ✅ Now initialize persistent ControlsManager with valid player + pointer to closest_assets
+    // persistent ControlsManager with valid player + pointer to closest_assets
     controls = ControlsManager(player, &closest_assets);
 
     std::cout << "[Assets] Initialization complete. Total assets: "
@@ -95,18 +98,17 @@ void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
     set_player_light_render();
     dx = dy = 0;
 
-    controls.update(keys);  // ✅ Reuses persistent instance
+    controls.update(keys);
     dx = controls.get_dx();
     dy = controls.get_dy();
 
-    activeManager.updateDynamicChunks();
     activeManager.updateVisibility(player, screen_center_x, screen_center_y);
     activeManager.updateClosest(player, 3);
 
     active_assets  = activeManager.getActive();
     closest_assets = activeManager.getClosest();
 
-    player->update();
+    if (player) player->update();
     for (Asset* a : active_assets) {
         if (a && a != player)
             a->update();
@@ -131,29 +133,33 @@ void Assets::set_static_sources() {
     std::function<void(Asset&)> recurse = [&](Asset& owner) {
         if (owner.info) {
             for (LightSource& light : owner.info->light_sources) {
-                int lx = owner.pos_X + light.offset_x;
-                int ly = owner.pos_Y + light.offset_y;
-                int r2 = light.radius * light.radius;
+                const int lx = owner.pos_X + light.offset_x;
+                const int ly = owner.pos_Y + light.offset_y;
+                const int r2 = light.radius * light.radius;
+
                 std::vector<Asset*> targets;
                 targets.reserve(all.size());
                 for (const auto& asset : all) {
                     if (!asset.info) continue;
                     collect_assets_in_range(&asset, lx, ly, r2, targets);
                 }
+
                 for (Asset* t : targets) {
                     if (t && t->info && t->info->has_shading) {
-                        t->add_static_light_source(&light, lx, ly);
+                        t->add_static_light_source(&light, lx, ly, &owner);
                     }
                 }
             }
         }
-        for (auto& child : owner.children)
-            recurse(child);
+        for (Asset* child : owner.children) {
+            if (child) recurse(*child);
+        }
     };
 
     for (auto& owner : all)
         recurse(owner);
 }
+
 
 void Assets::set_player_light_render() {
     if (!player || !player->info) return;

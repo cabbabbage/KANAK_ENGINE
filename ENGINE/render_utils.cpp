@@ -1,6 +1,6 @@
 // RenderUtils.cpp
 #include "render_utils.hpp"
-#include "generate_map_light.hpp"
+#include "Global_Light_Source.hpp"
 #include "Asset.hpp"
 #include <cmath>
 #include <algorithm>
@@ -31,9 +31,9 @@ RenderUtils::RenderUtils(SDL_Renderer* renderer,
     trapSettings_ = {false, 0, 0, 0, 0, 1.0f, 1.0f, {255,255,255,255}};
 }
 
-Generate_Map_Light* RenderUtils::createMapLight() {
+Global_Light_Source* RenderUtils::createMapLight() {
     SDL_Color fallback = {255, 255, 255, 255};
-    map_light_ = new Generate_Map_Light(renderer_,
+    map_light_ = new Global_Light_Source(renderer_,
                                         screenWidth_ / 2,
                                         screenHeight_ / 2,
                                         screenWidth_,
@@ -266,6 +266,6 @@ void RenderUtils::renderMinimap() const {
     SDL_RenderCopy(renderer_, minimapTexture_, nullptr, &d);
 }
 
-Generate_Map_Light* RenderUtils::getMapLight() const {
+Global_Light_Source* RenderUtils::getMapLight() const {
     return map_light_;
 }
