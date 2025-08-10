@@ -1,34 +1,44 @@
-#ifndef LIGHT_MAP_HPP
-#define LIGHT_MAP_HPP
+// === File: light_map.hpp ===
+#pragma once
 
 #include <SDL.h>
 #include <vector>
-
-struct LightInstance {
-    SDL_Texture* texture;
-    SDL_Rect     dst_rect;
-    Uint8        alpha;
-
-    LightInstance(SDL_Texture* t, const SDL_Rect& d, Uint8 a)
-      : texture(t), dst_rect(d), alpha(a) {}
-};
+#include <random>
+#include "assets.hpp"
+#include "render_utils.hpp"
+#include "global_light_source.hpp"
 
 class LightMap {
 public:
-    LightMap(SDL_Renderer* renderer, int w, int h);
-    ~LightMap();
+    struct LightEntry {
+        SDL_Texture* tex;
+        SDL_Rect dst;
+        Uint8 alpha;
+        SDL_RendererFlip flip;
+        bool apply_tint;
+    };
 
-    void setBaseColor(SDL_Color color);
-    void setLights(const std::vector<LightInstance>& lights);
-    void update();
-    SDL_Texture* getTexture() const;
+    LightMap(SDL_Renderer* renderer,
+             Assets* assets,
+             RenderUtils& util,
+             Global_Light_Source& main_light,
+             int screen_width,
+             int screen_height,
+             SDL_Texture* fullscreen_light_tex);
+
+    void render(bool debugging);
 
 private:
-    SDL_Renderer*             renderer_;
-    int                       width_, height_;
-    SDL_Texture*              texture_;
-    SDL_Color                 base_color_;
-    std::vector<LightInstance> lights_;
-};
+    void collect_layers(std::vector<LightEntry>& out, std::mt19937& rng);
+    SDL_Texture* build_lowres_mask(const std::vector<LightEntry>& layers,
+                                   int low_w, int low_h, int downscale);
+    SDL_Texture* blur_texture(SDL_Texture* source_tex, int w, int h);
 
-#endif // LIGHT_MAP_HPP
+    SDL_Renderer* renderer_;
+    Assets* assets_;
+    RenderUtils& util_;
+    Global_Light_Source& main_light_;
+    int screen_width_;
+    int screen_height_;
+    SDL_Texture* fullscreen_light_tex_;
+};

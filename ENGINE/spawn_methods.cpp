@@ -110,18 +110,26 @@ Asset* SpawnMethods::spawn_(const std::string& name,
             // collect and adopt
             auto kids = childSpawner.extract_all_assets();
             std::cout << "[SpawnMethods]  Spawned " << kids.size()
-                      << " children for \"" << raw->info->name << "\"\n";
+                    << " children for \"" << raw->info->name << "\"\n";
 
             for (auto& uptr : kids) {
-                if (!uptr) continue;
-                // set the child's z_offset from the ChildInfo
+                if (!uptr || !uptr->info) continue;
+
+                // apply z-offset from ChildInfo and parent linkage
                 uptr->set_z_offset(childInfo->z_offset);
+                uptr->parent = raw;
+                //uptr->set_z_index();
+
                 std::cout << "[SpawnMethods]    Adopting child \""
-                          << uptr->info->name << "\" at ("
-                          << uptr->pos_X << ", " << uptr->pos_Y
-                          << "), z_offset=" << childInfo->z_offset << "\n";
-                raw->add_child(std::move(*uptr));
+                        << uptr->info->name << "\" at ("
+                        << uptr->pos_X << ", " << uptr->pos_Y
+                        << "), z_offset=" << childInfo->z_offset << "\n";
+
+                // parent stores non-owning pointer; we keep ownership in all_
+                raw->add_child(uptr.get());
+                all_.push_back(std::move(uptr));
             }
+
         }
     }
 

@@ -1,15 +1,17 @@
-#ifndef SCENE_RENDERER_HPP
-#define SCENE_RENDERER_HPP
+// === File: scene_renderer.hpp ===
+#pragma once
 
-#include "Assets.hpp"
-#include "render_utils.hpp"
-#include "light_map.hpp"
-#include "debug_area.hpp"
-#include "generate_map_light.hpp"
 #include <SDL.h>
-#include <vector>
-#include <tuple>
+#include <memory>
 #include <string>
+
+class Assets;
+class RenderUtils;
+class Asset;
+
+#include "global_light_source.hpp"
+#include "render_asset.hpp"
+#include "light_map.hpp"
 
 class SceneRenderer {
 public:
@@ -20,35 +22,17 @@ public:
                   int screen_height,
                   const std::string& map_path);
 
+    ~SceneRenderer() = default;
+
     void render();
 
+    bool debugging{false};
+
 private:
-    SDL_Texture* fullscreen_light_tex_;
-    SDL_Texture* generateMask(Asset* a, int bw, int bh);
-    bool debugging = false;
-    double player_shade_percent = 1.0;
-    double calculate_static_alpha_percentage(int asset_y, int light_world_y);
-
-    void render_asset_lights_z();
-
-    void renderOwnedStaticLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
-    void renderReceivedStaticLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
-    void renderMovingLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
-    void renderOrbitalLights(Asset* asset, const SDL_Rect& bounds, Uint8 alpha);
-
-    int current_shading_group_ = 1;
-    int num_groups_ = 10;
     void update_shading_groups();
+    bool shouldRegen(Asset* a);
 
-    bool shouldRegen(Asset* asset);
-    SDL_Texture* regenerateFinalTexture(Asset* asset);
-
-    void renderMainLight(Asset* asset,
-                         SDL_Texture* tex,
-                         const SDL_Rect& main_rect,
-                         const SDL_Rect& bounds,
-                         Uint8 alpha);
-
+private:
     std::string map_path_;
     SDL_Renderer* renderer_;
     Assets* assets_;
@@ -56,7 +40,12 @@ private:
     int screen_width_;
     int screen_height_;
 
-    Generate_Map_Light main_light_source_;
-};
+    Global_Light_Source main_light_source_;
+    SDL_Texture* fullscreen_light_tex_{nullptr};
+    std::unique_ptr<LightMap> z_light_pass_;
 
-#endif // SCENE_RENDERER_HPP
+    RenderAsset render_asset_;
+
+    int current_shading_group_{-1};
+    int num_groups_{10};
+};

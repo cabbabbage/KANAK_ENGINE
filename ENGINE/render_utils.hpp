@@ -4,7 +4,7 @@
 
 #include <SDL.h>
 #include <string>
-#include "generate_map_light.hpp"
+#include "global_light_source.hpp"
 
 class Asset;
 
@@ -37,8 +37,8 @@ public:
                             bool flipped = false) const;
     RenderUtils::TrapezoidGeometry getTrapezoidGeometry(SDL_Texture* tex, const SDL_FPoint quad[4]) const;
 
-    Generate_Map_Light* createMapLight();
-    Generate_Map_Light* getMapLight() const;
+    Global_Light_Source* createMapLight();
+    Global_Light_Source* getMapLight() const;
     void renderMinimap() const;
     struct TrapSettings {
         bool enabled;
@@ -71,7 +71,7 @@ private:
 
     SDL_Texture* minimapTexture_;
     std::string map_path_;
-    Generate_Map_Light* map_light_;
+    Global_Light_Source* map_light_;
 };
 
 #endif // RENDER_UTILS_HPP

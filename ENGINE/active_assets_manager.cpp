@@ -1,9 +1,10 @@
 // active_assets_manager.cpp
 #include "active_assets_manager.hpp"
+#include "Asset.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
-#include <vector>
 
 ActiveAssetsManager::ActiveAssetsManager(int screen_width, int screen_height)
   : screen_width_(screen_width),
@@ -34,7 +35,7 @@ void ActiveAssetsManager::updateVisibility(Asset* /*player*/,
     sortByDistance(screen_center_x, screen_center_y);
 }
 
-void ActiveAssetsManager::updateClosest(Asset* player, size_t max_count)
+void ActiveAssetsManager::updateClosest(Asset* player, std::size_t max_count)
 {
     closest_assets_.clear();
     if (!player) return;
@@ -49,7 +50,7 @@ void ActiveAssetsManager::updateClosest(Asset* player, size_t max_count)
         dist_pairs.emplace_back(dx*dx + dy*dy, a);
     }
 
-    size_t count = std::min(max_count, dist_pairs.size());
+    std::size_t count = std::min(max_count, dist_pairs.size());
     if (count > 0) {
         if (count < dist_pairs.size()) {
             std::nth_element(dist_pairs.begin(),
@@ -60,7 +61,7 @@ void ActiveAssetsManager::updateClosest(Asset* player, size_t max_count)
         std::sort(dist_pairs.begin(),
                   dist_pairs.begin() + count,
                   [](auto& A, auto& B){ return A.first < B.first; });
-        for (size_t i = 0; i < count; ++i) {
+        for (std::size_t i = 0; i < count; ++i) {
             closest_assets_.push_back(dist_pairs[i].second);
         }
     }
@@ -70,12 +71,18 @@ void ActiveAssetsManager::activate(Asset* asset)
 {
     if (!asset || asset->active) return;
     asset->active = true;
+
     auto it = std::lower_bound(
-      active_assets_.begin(), active_assets_.end(), asset,
-      [](Asset* A, Asset* B){ return A->z_index < B->z_index; });
+        active_assets_.begin(), active_assets_.end(), asset,
+        [](Asset* A, Asset* B){ return A->z_index < B->z_index; });
+
     active_assets_.insert(it, asset);
-    for (auto& c : asset->children) {
-        activate(&c);
+
+    // Recurse into children (now vector<Asset*>)
+    for (Asset* c : asset->children) {
+        if (c && !c->dead && c->info) {
+            c->update();
+        }
     }
 }
 
@@ -90,6 +97,7 @@ void ActiveAssetsManager::remove(Asset* asset)
 void ActiveAssetsManager::sortByDistance(int cx, int cy)
 {
     if (!all_assets_) return;
+
     const float half_w = screen_width_ * 1.5f;
     const float radius_sq = half_w * half_w;
 
@@ -116,6 +124,7 @@ void ActiveAssetsManager::sortByDistance(int cx, int cy)
     for (int dx_off = -1; dx_off <= 1; ++dx_off) {
         for (int dy_off = -1; dy_off <= 1; ++dy_off) {
             ChunkKey key = makeKey(chunk_x + dx_off, chunk_y + dy_off);
+
             auto it_stat = static_chunks_.find(key);
             if (it_stat != static_chunks_.end()) {
                 for (Asset* a : it_stat->second) {
@@ -124,6 +133,7 @@ void ActiveAssetsManager::sortByDistance(int cx, int cy)
                     }
                 }
             }
+
             auto it_dyn = dynamic_chunks_.find(key);
             if (it_dyn != dynamic_chunks_.end()) {
                 for (Asset* a : it_dyn->second) {
@@ -148,7 +158,12 @@ void ActiveAssetsManager::sortByDistance(int cx, int cy)
 void ActiveAssetsManager::sortByZIndex()
 {
     std::sort(active_assets_.begin(), active_assets_.end(),
-              [](Asset* A, Asset* B) { return A->z_index < B->z_index; });
+              [](Asset* A, Asset* B) {
+                  if (A->z_index != B->z_index) return A->z_index < B->z_index;
+                  if (A->pos_Y != B->pos_Y)     return A->pos_Y < B->pos_Y;
+                  if (A->pos_X != B->pos_X)     return A->pos_X < B->pos_X;
+                  return A < B;
+              });
 }
 
 void ActiveAssetsManager::buildStaticChunks()
@@ -156,7 +171,10 @@ void ActiveAssetsManager::buildStaticChunks()
     static_chunks_.clear();
     movable_assets_.clear();
     if (!all_assets_) return;
+
     for (auto& a : *all_assets_) {
+        if (!a.info) continue;
+
         const std::string& t = a.info->type;
         if (t == "Player" || t == "NPC" || t == "Animal" || t == "Enemy") {
             movable_assets_.push_back(&a);
