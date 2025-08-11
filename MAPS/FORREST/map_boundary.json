@@ -17,7 +17,7 @@
       {
         "name": "Tree_Dark",
         "tag": false,
-        "percent": 34,
+        "percent": 35,
         "color": "#8a8bec"
       },
       {
@@ -25,12 +25,6 @@
         "tag": false,
         "percent": 34,
         "color": "#5bad2e"
-      },
-      {
-        "name": "Big_Rock",
-        "tag": false,
-        "percent": 1,
-        "color": "#27571c"
       }
     ]
   }

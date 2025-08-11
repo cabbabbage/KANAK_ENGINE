@@ -15,7 +15,7 @@ class SizePage(tk.Frame):
         self._fit_img = None
         self._loaded = False
 
-        # Page background
+        # Page boundary
         self.configure(bg='#1e1e1e')
 
         # Title header

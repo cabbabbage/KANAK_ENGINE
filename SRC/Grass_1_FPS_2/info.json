@@ -19,22 +19,22 @@
         }
     },
     "tags": [
-        "nature",
-        "plant",
-        "meadow",
-        "cover",
-        "default",
-        "passable",
-        "small",
         "moving",
-        "green"
+        "cover",
+        "passable",
+        "nature",
+        "meadow",
+        "plant",
+        "default",
+        "green",
+        "small"
     ],
     "has_spacing": true,
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 40,
     "z_threshold": 14,
     "size_settings": {
-        "scale_percentage": 2
+        "scale_percentage": 3
     },
     "anti_tags": [
         "center",

@@ -1,6 +1,6 @@
 {
     "asset_name": "Grass_FPS_2",
-    "asset_type": "MAP",
+    "asset_type": "Object",
     "animations": {
         "default": {
             "frames_path": "default",
@@ -15,7 +15,7 @@
     "impassable_area": null,
     "z_threshold": 14,
     "size_settings": {
-        "scale_percentage": 2
+        "scale_percentage": 3
     },
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 40,
@@ -23,14 +23,14 @@
         "Spacing"
     ],
     "tags": [
-        "nature",
-        "plant",
-        "leafy",
-        "meadow",
-        "bluff",
-        "default",
-        "passable",
         "moving",
+        "leafy",
+        "passable",
+        "nature",
+        "meadow",
+        "plant",
+        "default",
+        "bluff",
         "green"
     ],
     "rnd_spawn_min": 300,

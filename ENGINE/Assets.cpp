@@ -43,10 +43,10 @@ Assets::Assets(std::vector<Asset>&& loaded,
       controls(nullptr, nullptr),  // temporary init
       // Create Bounds for the current view
       window(screen_width, screen_height, view::Bounds{
-          -map_radius/2,   // left
-           map_radius/2,   // right
-          -map_radius/2,  // top
-           map_radius/2   // bottom
+          -map_radius,   // left
+           map_radius,   // right
+          -map_radius,  // top
+           map_radius   // bottom
       }),
       activeManager(screen_width, screen_height, window),
       screen_width(screen_width),
@@ -221,4 +221,24 @@ void Assets::set_shading_groups() {
     }
 }
 
+void Assets::remove(Asset* asset) {
+    if (!asset) return;
 
+    std::cout << "[Assets] Removing asset: "
+              << (asset->info ? asset->info->name : "<null>")
+              << " at (" << asset->pos_X << ", " << asset->pos_Y << ")\n";
+
+    // Remove from active asset lists
+    active_assets.erase(std::remove(active_assets.begin(), active_assets.end(), asset),
+                        active_assets.end());
+    closest_assets.erase(std::remove(closest_assets.begin(), closest_assets.end(), asset),
+                         closest_assets.end());
+
+    // Remove from main container
+    all.erase(std::remove_if(all.begin(), all.end(),
+                             [asset](Asset& a) { return &a == asset; }),
+              all.end());
+
+    // Call destructor explicitly
+    asset->~Asset();
+}

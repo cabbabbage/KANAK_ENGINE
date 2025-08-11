@@ -46,6 +46,6 @@ private:
     std::unique_ptr<LightMap> z_light_pass_;
 
     int current_shading_group_ = 0;
-    int num_groups_ = 40;
+    int num_groups_ = 20;
     bool debugging = false;
 };

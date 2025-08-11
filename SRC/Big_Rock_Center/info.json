@@ -1,6 +1,6 @@
 {
   "asset_name": "Big_Rock_Center",
-  "asset_type": "Background",
+  "asset_type": "boundary",
   "animations": {
     "default": {
       "frames_path": "default",

@@ -37,7 +37,10 @@ public:
     Asset*              player = nullptr;
     int                 visible_count = 0;
     view& getView() { return window; }
+    void remove(Asset* asset);
+
 private:
+
     view window;
     ControlsManager     controls;            // ✅ Now properly declared
     ActiveAssetsManager activeManager;
@@ -49,7 +52,7 @@ private:
     int dy = 0;
     int last_activat_update = 0;
     int update_interval = 25;
-    int num_groups_ = 40;
+    int num_groups_ = 20;
 };
 
 #endif // ASSETS_HPP

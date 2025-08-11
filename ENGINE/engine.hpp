@@ -33,7 +33,7 @@ private:
     SDL_Renderer*                            renderer;
     const int                                SCREEN_WIDTH;
     const int                                SCREEN_HEIGHT;
-    SDL_Color                                background_color;
+    SDL_Color                                boundary_color;
     SDL_Texture*                             overlay_texture;
     SDL_Texture*                             minimap_texture_;
     std::unique_ptr<AssetLoader>             loader_;

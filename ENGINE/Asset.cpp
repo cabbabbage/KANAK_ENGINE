@@ -80,7 +80,7 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
         }
     }
 
-    // Finalize children (vector<Asset*>)
+    // Finalize children
     for (Asset* child : children) {
         if (child) {
             child->finalize_setup(renderer);
@@ -101,8 +101,32 @@ void Asset::finalize_setup(SDL_Renderer* renderer) {
     }
 
     has_shading = info->has_shading;
+
 }
 
+bool Asset::get_merge(){
+    return merged;
+}
+
+
+
+
+SDL_Texture* Asset::get_current_frame() const {
+    auto itc = custom_frames.find(current_animation);
+    if (itc != custom_frames.end() && !itc->second.empty())
+        return itc->second[current_frame_index];
+
+    auto iti = info->animations.find(current_animation);
+    if (iti != info->animations.end())
+        return iti->second.get_frame(current_frame_index);
+
+    return nullptr;
+}
+
+
+void Asset::set_remove(){
+    remove = true;
+}
 void Asset::set_position(int x, int y) {
     pos_X = x;
     pos_Y = y;
@@ -166,21 +190,6 @@ void Asset::change_animation(const std::string& name) {
     next_animation = name;
 }
 
-SDL_Texture* Asset::get_current_frame() const {
-    auto itc = custom_frames.find(current_animation);
-    if (itc != custom_frames.end() && !itc->second.empty())
-        return itc->second[current_frame_index];
-
-    auto iti = info->animations.find(current_animation);
-    if (iti != info->animations.end())
-        return iti->second.get_frame(current_frame_index);
-
-    return nullptr;
-}
-
-SDL_Texture* Asset::get_image() const {
-    return get_current_frame();
-}
 
 std::string Asset::get_current_animation() const {
     return current_animation;
@@ -297,7 +306,6 @@ bool Asset::get_render_player_light() const {
 }
 
 Area Asset::get_area(const std::string& name) const {
-    // Start with an empty/fallback area named appropriately
     Area result(name);
 
     if (info) {
@@ -316,28 +324,21 @@ Area Asset::get_area(const std::string& name) const {
         else if (name == "attack" && info->has_attack_area && info->attack_area) {
             result = *info->attack_area;
         }
-        // otherwise fall back to empty area of that name
     }
 
-    // If the sprite is flipped, mirror the local-area horizontally
     if (flipped) {
         result.flip_horizontal();
     }
 
-    // Finally, move the area into world space at the asset's position
     result.align(pos_X, pos_Y);
 
     return result;
 }
 
-
-
-
-
-// In Asset.cpp:
 void Asset::deactivate() {
     if (final_texture) {
         SDL_DestroyTexture(final_texture);
         final_texture = nullptr;
     }
 }
+

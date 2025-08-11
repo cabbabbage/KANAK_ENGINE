@@ -46,8 +46,8 @@ bool Check::check(const std::shared_ptr<AssetInfo>& info,
         }
     }
 
-    if (info->type == "Background") {
-        if (debug_) std::cout << "[Check] Background asset; skipping spacing and type distance checks.\n";
+    if (info->type == "boundary") {
+        if (debug_) std::cout << "[Check] boundary asset; skipping spacing and type distance checks.\n";
         return false;
     }
 

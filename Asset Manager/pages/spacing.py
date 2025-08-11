@@ -13,7 +13,7 @@ class SpacingThresholdPage(tk.Frame):
         self.area_file = "spacing_area.json"
         self._loaded = False
 
-        # Page background
+        # Page boundary
         self.configure(bg='#1e1e1e')
 
         # Title header

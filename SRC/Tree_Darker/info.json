@@ -1,7 +1,7 @@
 {
     "impassable_area": "impassable_area.json",
     "asset_name": "Tree_Darker",
-    "asset_type": "Background",
+    "asset_type": "boundary",
     "duplicatable": false,
     "duplication_interval_min": 30,
     "duplication_interval_max": 60,
@@ -10,11 +10,21 @@
     "animations": {
         "default": {
             "frames_path": "default",
-            "speed": 1.0,
             "on_end": "default",
+            "event_data": [],
             "randomize": true,
             "audio_path": "",
-            "volume": 50
+            "volume": 50,
+            "lock_until_done": false
+        },
+        "group": {
+            "frames_path": "group",
+            "on_end": "group",
+            "event_data": [],
+            "randomize": false,
+            "audio_path": "",
+            "volume": 50,
+            "lock_until_done": false
         }
     },
     "z_threshold": 12,
@@ -24,7 +34,9 @@
     "spacing_area": "spacing_area.json",
     "min_same_type_distance": 21,
     "tags": [
-        "impassable"
+        "impassable",
+        "default",
+        "group"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,

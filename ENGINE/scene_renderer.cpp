@@ -132,8 +132,8 @@ void SceneRenderer::render() {
             int dx = a->pos_X - px;
             int dy = a->pos_Y - py;
             if ((!((dx * dx + dy * dy) <= (1200 * 1200))) &&
-                a->info->type == "Background" &&
-                (a->get_shading_group() % 4 != 0)) {
+                a->info->type == "boundary" &&
+                (a->get_shading_group() % 2 != 0)) {
                 continue;
             }
         }
