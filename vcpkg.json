@@ -10,6 +10,5 @@
     "glad",
     "opengl",
     "sdl2-gfx"
-  ],
-  "builtin-baseline": "5d6a2cb6a6f7a8a5a707d6f75fd3d89174f0af37"
+  ]
 }
