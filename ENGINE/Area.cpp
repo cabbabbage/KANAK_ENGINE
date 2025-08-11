@@ -1,3 +1,4 @@
+// Area.cpp
 #include "area.hpp"
 #include "cache_manager.hpp"
 #include <fstream>
@@ -9,9 +10,11 @@
 #include <stdexcept>
 #include <filesystem>
 #include <sstream>
-#include <SDL.h>
+#include <optional>
 
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
 
 static std::mt19937 rng{std::random_device{}()};
 
@@ -49,7 +52,6 @@ Area::Area(const std::string& name, int cx, int cy, int w, int h,
     pos_X = (minx + maxx) / 2;
     pos_Y = maxy;
     update_geometry_data();
-
 }
 
 Area::Area(const std::string& name, const std::string& json_path, float scale)
@@ -212,14 +214,13 @@ bool Area::contains_point(const Point& pt) const {
     const double y = pt.second;
     const size_t n = points.size();
     if (n < 3) return false;
-    
+
     for (size_t i = 0, j = n - 1; i < n; j = i++) {
         double xi = points[i].first;
         double yi = points[i].second;
         double xj = points[j].first;
         double yj = points[j].second;
 
-        // Check if edge crosses horizontal ray at 'y'
         bool crossing = ((yi > y) != (yj > y)) &&
                         (x < xi + (y - yi) * (xj - xi) / (yj - yi));
         if (crossing) inside = !inside;
@@ -227,7 +228,6 @@ bool Area::contains_point(const Point& pt) const {
 
     return inside;
 }
-
 
 bool Area::intersects(const Area& other) const {
     auto [a0, a1, a2, a3] = get_bounds();
@@ -270,8 +270,6 @@ SDL_Texture* Area::get_texture() const {
     return texture_;
 }
 
-
-
 void Area::create_area_texture(SDL_Renderer* renderer) {
     if (!renderer || points.size() < 3) return;
 
@@ -286,18 +284,20 @@ void Area::create_area_texture(SDL_Renderer* renderer) {
     SDL_Texture* prev_target = SDL_GetRenderTarget(renderer);
     SDL_SetRenderTarget(renderer, target);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);  // Clear with transparent
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);  // Area outline color
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);
 
     std::vector<SDL_Point> line_points;
+    line_points.reserve(points.size() + 1);
     for (const auto& p : points) {
         line_points.push_back(SDL_Point{ p.first - minx, p.second - miny });
     }
-    line_points.push_back(line_points.front());  // Close the loop
-
-    SDL_RenderDrawLines(renderer, line_points.data(), static_cast<int>(line_points.size()));
+    if (!line_points.empty()) {
+        line_points.push_back(line_points.front());
+        SDL_RenderDrawLines(renderer, line_points.data(), static_cast<int>(line_points.size()));
+    }
 
     SDL_SetRenderTarget(renderer, prev_target);
 
@@ -305,14 +305,16 @@ void Area::create_area_texture(SDL_Renderer* renderer) {
     SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
 }
 
-
-void Area::flip_horizontal() {
+void Area::flip_horizontal(std::optional<int> axis_x) {
     if (points.empty()) return;
 
-    int cx = center_x;
-    for (auto& [x, y] : points) {
-        x = 2 * cx - x;
+    int cx = axis_x.has_value() ? *axis_x : center_x;
+    for (auto& p : points) {
+        p.first = 2 * cx - p.first;
     }
+
+    // Re-align pos_X relative to chosen axis to keep semantic consistency.
+    pos_X = 2 * cx - pos_X;
 
     update_geometry_data();
 }

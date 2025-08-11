@@ -178,10 +178,13 @@ void Global_Light_Source::build_texture() {
     texture_ = gen.generate(renderer_, "map", ls, 0);
     if (!texture_) {
         std::cerr << "[MapLight] build_texture failed\n";
+        cached_w_ = cached_h_ = 0;
     } else {
-     //   std::cout << "[MapLight] build_texture succeeded\n";
+        SDL_QueryTexture(texture_, nullptr, nullptr, &cached_w_, &cached_h_);
     }
 }
+
+
 
 SDL_Color Global_Light_Source::compute_color_from_horizon() const {
     // rotate so sin=1 (up) lines up with 0°

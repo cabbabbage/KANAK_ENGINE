@@ -5,7 +5,7 @@
   "min_height": 2082,
   "max_height": 2500,
   "edge_smoothness": 100,
-  "geometry": "Circle",
+  "geometry": "Square",
   "is_spawn": false,
   "is_boss": false,
   "inherits_map_assets": false,
@@ -57,27 +57,27 @@
   ],
   "batch_assets": {
     "has_batch_assets": true,
-    "grid_spacing_min": 130,
-    "grid_spacing_max": 130,
+    "grid_spacing_min": 215,
+    "grid_spacing_max": 215,
     "jitter_min": 0,
     "jitter_max": 0,
     "batch_assets": [
       {
         "name": "null",
         "tag": false,
-        "percent": 12,
+        "percent": 20,
         "color": "#CCCCCC"
       },
       {
         "name": "Grave_1",
         "tag": false,
-        "percent": 44,
+        "percent": 40,
         "color": "#c9683c"
       },
       {
         "name": "Grave_2",
         "tag": false,
-        "percent": 44,
+        "percent": 40,
         "color": "#335364"
       }
     ]

@@ -7,7 +7,7 @@ from PIL import Image, ImageTk
 from pages.range import Range
 
 ASSET_DIR = "SRC"
-HARD_CODED_TYPES = ["Player", "Object", "Background", "Enemy", "Map Boundary", "MAP"]
+HARD_CODED_TYPES = ["Player", "Object", "boundary", "Enemy", "Map Boundary", "MAP"]
 
 class BasicInfoPage(ttk.Frame):
     def __init__(self, parent, on_rename_callback=None):

@@ -1,4 +1,4 @@
-// global_light_source.hpp
+// === File: global_light_source.hpp ===
 #pragma once
 
 #include <SDL.h>
@@ -27,9 +27,12 @@ public:
     // Optional helper: apply current tint to a color with external alpha modifier
     SDL_Color apply_tint_to_color(const SDL_Color& base, int alpha_mod) const;
 
-
     SDL_Color get_current_color() const;
-    int get_brightness() const;
+    int       get_brightness() const;
+
+    // Cached dimensions for performance
+    int get_cached_w() const { return cached_w_; }
+    int get_cached_h() const { return cached_h_; }
 
 private:
     struct KeyEntry {
@@ -69,4 +72,8 @@ private:
     int   update_interval_;
 
     std::vector<KeyEntry> key_colors_;
+
+    // Cached texture dimensions
+    int cached_w_ = 0;
+    int cached_h_ = 0;
 };

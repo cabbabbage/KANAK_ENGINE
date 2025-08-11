@@ -15,7 +15,7 @@ class PassabilityPage(tk.Frame):
         self.is_passable_var = tk.BooleanVar(value=True)
         self.is_passable_var.trace_add("write", lambda *_: self._on_toggle())
 
-        # Page background
+        # Page boundary
         self.configure(bg='#1e1e1e')
 
         # Title header

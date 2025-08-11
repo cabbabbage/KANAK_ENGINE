@@ -13,7 +13,7 @@ class AnimationsPage(tk.Frame):
         self.anim_configs = {}
         self._loaded = False
 
-        # Page background
+        # Page boundary
         self.configure(bg='#1e1e1e')
 
         # Header with title and Add button

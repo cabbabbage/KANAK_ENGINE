@@ -1,6 +1,6 @@
 {
     "asset_name": "Bush_FPS_2",
-    "asset_type": "Background",
+    "asset_type": "boundary",
     "animations": {
         "default": {
             "frames_path": "default",

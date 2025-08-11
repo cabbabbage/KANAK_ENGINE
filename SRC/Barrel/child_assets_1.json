@@ -4,7 +4,7 @@
     {
       "name": "barrel_child",
       "min_number": -100,
-      "max_number": 75,
+      "max_number": 2000,
       "position": "Random",
       "exact_position": null,
       "tag": true,

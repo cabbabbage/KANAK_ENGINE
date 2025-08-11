@@ -6,12 +6,12 @@
 #include <iostream>
 
 LightMap::LightMap(SDL_Renderer* renderer,
-                       Assets* assets,
-                       RenderUtils& util,
-                       Global_Light_Source& main_light,
-                       int screen_width,
-                       int screen_height,
-                       SDL_Texture* fullscreen_light_tex)
+                   Assets* assets,
+                   RenderUtils& util,
+                   Global_Light_Source& main_light,
+                   int screen_width,
+                   int screen_height,
+                   SDL_Texture* fullscreen_light_tex)
     : renderer_(renderer),
       assets_(assets),
       util_(util),
@@ -22,52 +22,59 @@ LightMap::LightMap(SDL_Renderer* renderer,
 {}
 
 void LightMap::render(bool debugging) {
-    if (debugging) std::cout << "[render_asset_lights_z] start" << std::endl;
+    if (debugging) std::cout << "[render_asset_lights_z] start\n";
 
     static std::mt19937 flicker_rng{ std::random_device{}() };
+    static std::vector<LightEntry> z_lights;
+    z_lights.clear();
 
-    std::vector<LightEntry> z_lights;
     collect_layers(z_lights, flicker_rng);
 
+    // Downscale disabled here for speed (kept at 1)
     const int downscale = 4;
-    int low_w = std::max(1, screen_width_ / downscale);
-    int low_h = std::max(1, screen_height_ / downscale);
+    const int low_w = screen_width_  / downscale;
+    const int low_h = screen_height_ / downscale;
 
     SDL_Texture* lowres_mask = build_lowres_mask(z_lights, low_w, low_h, downscale);
 
-    // Read back + blur
-    SDL_Texture* blurred = blur_texture(lowres_mask, low_w, low_h);
-
-    // Composite to screen
+    SDL_SetTextureBlendMode(lowres_mask, SDL_BLENDMODE_MOD);
     SDL_SetRenderTarget(renderer_, nullptr);
-    SDL_Rect dst_rect{ 0, 0, screen_width_, screen_height_ };
-    SDL_RenderCopy(renderer_, blurred, nullptr, &dst_rect);
+    SDL_RenderCopy(renderer_, lowres_mask, nullptr, nullptr);
 
-    SDL_DestroyTexture(blurred);
     SDL_DestroyTexture(lowres_mask);
 
-    if (debugging) std::cout << "[render_asset_lights_z] end" << std::endl;
+    if (debugging) std::cout << "[render_asset_lights_z] end\n";
 }
 
 void LightMap::collect_layers(std::vector<LightEntry>& out, std::mt19937& rng) {
-    // Fullscreen light layer
+    const float inv_scale = 1.0f / assets_->getView().get_scale();
+    constexpr int min_visible_w = 1;
+    constexpr int min_visible_h = 1;
+
     Uint8 main_alpha = main_light_.get_current_color().a;
+
+    // Fullscreen light tex
     if (fullscreen_light_tex_) {
-        SDL_Rect full_dst{ 0, 0, screen_width_, screen_height_ };
-        out.push_back({ fullscreen_light_tex_, full_dst, static_cast<Uint8>(main_alpha / 2), SDL_FLIP_NONE, false });
+        out.push_back({ fullscreen_light_tex_, { 0, 0, screen_width_, screen_height_ },
+                        static_cast<Uint8>(main_alpha / 2), SDL_FLIP_NONE, false });
     }
 
-    // Main orbital/map light
-    SDL_Texture* main_tex = main_light_.get_texture();
-    if (main_tex) {
-        auto [mx, my] = main_light_.get_position();
-        int main_sz = screen_width_ * 3;
-        SDL_Rect main_rect{ mx - main_sz, my - main_sz, main_sz * 2, main_sz * 2 };
-        out.push_back({ main_tex, main_rect, main_alpha, SDL_FLIP_NONE, false });
+    // Main light map
+    if (SDL_Texture* map_tex = main_light_.get_texture()) {
+        int lw = main_light_.get_cached_w();
+        int lh = main_light_.get_cached_h();
+
+        if (lw == 0 || lh == 0) SDL_QueryTexture(map_tex, nullptr, nullptr, &lw, &lh);
+
+        SDL_Rect map_rect = get_scaled_position_rect(main_light_.get_position(),
+                                                     lw, lh, inv_scale,
+                                                     min_visible_w, min_visible_h);
+        if (map_rect.w != 0 || map_rect.h != 0) {
+            out.push_back({ map_tex, map_rect, main_alpha, SDL_FLIP_NONE, false });
+        }
     }
 
     // Asset lights
-    static std::mt19937 flicker_rng{ std::random_device{}() };
     for (Asset* a : assets_->active_assets) {
         if (!a || !a->info || !a->info->has_light_source) continue;
 
@@ -75,11 +82,13 @@ void LightMap::collect_layers(std::vector<LightEntry>& out, std::mt19937& rng) {
             if (!light.texture) continue;
 
             int offX = a->flipped ? -light.offset_x : light.offset_x;
-            SDL_Point p = util_.applyParallax(a->pos_X + offX, a->pos_Y + light.offset_y);
+            int lw = light.cached_w, lh = light.cached_h;
+            if (lw == 0 || lh == 0) SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
 
-            int lw, lh;
-            SDL_QueryTexture(light.texture, nullptr, nullptr, &lw, &lh);
-            SDL_Rect dst{ p.x - lw / 2, p.y - lh / 2, lw, lh };
+            SDL_Rect dst = get_scaled_position_rect({ a->pos_X + offX, a->pos_Y + light.offset_y },
+                                                    lw, lh, inv_scale,
+                                                    min_visible_w, min_visible_h);
+            if (dst.w == 0 && dst.h == 0) continue;
 
             float alpha_f = static_cast<float>(main_light_.get_brightness());
             if (a == assets_->player) alpha_f *= 0.9f;
@@ -87,19 +96,18 @@ void LightMap::collect_layers(std::vector<LightEntry>& out, std::mt19937& rng) {
             if (light.flicker > 0) {
                 float intensity_scale = std::clamp(light.intensity / 255.0f, 0.0f, 1.0f);
                 float max_jitter = (light.flicker / 100.0f) * intensity_scale;
-                std::uniform_real_distribution<float> dist(-max_jitter, max_jitter);
-                float jitter = dist(flicker_rng);
-                alpha_f *= (1.0f + jitter);
+                alpha_f *= (1.0f + std::uniform_real_distribution<float>(-max_jitter, max_jitter)(rng));
             }
 
             Uint8 alpha = static_cast<Uint8>(std::clamp(alpha_f, 0.0f, 255.0f));
-            SDL_RendererFlip flip = a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-            out.push_back({ light.texture, dst, alpha, flip, true });
+            out.push_back({ light.texture, dst, alpha,
+                            a->flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE, true });
         }
     }
 }
 
-SDL_Texture* LightMap::build_lowres_mask(const std::vector<LightEntry>& layers, int low_w, int low_h, int downscale) {
+SDL_Texture* LightMap::build_lowres_mask(const std::vector<LightEntry>& layers,
+                                         int low_w, int low_h, int downscale) {
     SDL_Texture* lowres_mask = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
                                                  SDL_TEXTUREACCESS_TARGET, low_w, low_h);
     SDL_SetTextureBlendMode(lowres_mask, SDL_BLENDMODE_NONE);
@@ -126,81 +134,22 @@ SDL_Texture* LightMap::build_lowres_mask(const std::vector<LightEntry>& layers, 
             e.dst.h / downscale
         };
         SDL_RenderCopyEx(renderer_, e.tex, nullptr, &scaled_dst, 0, nullptr, e.flip);
-        SDL_SetTextureColorMod(e.tex, 255, 255, 255);
     }
 
     return lowres_mask;
 }
 
-SDL_Texture* LightMap::blur_texture(SDL_Texture* source_tex, int w, int h) {
-    // Read back
-    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA8888);
-    SDL_RenderReadPixels(renderer_, nullptr, SDL_PIXELFORMAT_RGBA8888, surf->pixels, surf->pitch);
-
-    Uint32* pixels = static_cast<Uint32*>(surf->pixels);
-    std::vector<Uint32> temp(pixels, pixels + w * h);
-
-    const int blur_radius = 4;
-    std::mt19937 blur_rng{ std::random_device{}() };
-    std::uniform_real_distribution<float> weight_dist(0.5f, 2.15f);
-
-    // Horizontal pass
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            float r = 0, g = 0, b = 0, a = 0;
-            float total_weight = 0;
-
-            for (int k = -blur_radius; k <= blur_radius; ++k) {
-                int nx = std::clamp(x + k, 0, w - 1);
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(temp[y * w + nx], surf->format, &pr, &pg, &pb, &pa);
-
-                float weight = weight_dist(blur_rng);
-                r += pr * weight;
-                g += pg * weight;
-                b += pb * weight;
-                a += pa * weight;
-                total_weight += weight;
-            }
-
-            pixels[y * w + x] = SDL_MapRGBA(surf->format,
-                                            static_cast<Uint8>(r / total_weight),
-                                            static_cast<Uint8>(g / total_weight),
-                                            static_cast<Uint8>(b / total_weight),
-                                            static_cast<Uint8>(a / total_weight));
-        }
+SDL_Rect LightMap::get_scaled_position_rect(const std::pair<int,int>& pos, int fw, int fh,
+                                            float inv_scale, int min_w, int min_h) {
+    int sw = static_cast<int>(fw * inv_scale);
+    int sh = static_cast<int>(fh * inv_scale);
+    if (sw < min_w && sh < min_h) {
+        return {0, 0, 0, 0};
     }
 
-    // Vertical pass
-    temp.assign(pixels, pixels + w * h);
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            float r = 0, g = 0, b = 0, a = 0;
-            float total_weight = 0;
+    SDL_Point cp = util_.applyParallax(pos.first, pos.second);
+    cp.x = screen_width_ / 2 + static_cast<int>((cp.x - screen_width_ / 2) * inv_scale);
+    cp.y = screen_height_ / 2 + static_cast<int>((cp.y - screen_height_ / 2) * inv_scale);
 
-            for (int k = -blur_radius; k <= blur_radius; ++k) {
-                int ny = std::clamp(y + k, 0, h - 1);
-                Uint8 pr, pg, pb, pa;
-                SDL_GetRGBA(temp[ny * w + x], surf->format, &pr, &pg, &pb, &pa);
-
-                float weight = weight_dist(blur_rng);
-                r += pr * weight;
-                g += pg * weight;
-                b += pb * weight;
-                a += pa * weight;
-                total_weight += weight;
-            }
-
-            pixels[y * w + x] = SDL_MapRGBA(surf->format,
-                                            static_cast<Uint8>(r / total_weight),
-                                            static_cast<Uint8>(g / total_weight),
-                                            static_cast<Uint8>(b / total_weight),
-                                            static_cast<Uint8>(a / total_weight));
-        }
-    }
-
-    SDL_Texture* blurred = SDL_CreateTextureFromSurface(renderer_, surf);
-    SDL_SetTextureBlendMode(blurred, SDL_BLENDMODE_MOD);
-    SDL_FreeSurface(surf);
-    return blurred;
+    return SDL_Rect{ cp.x - sw / 2, cp.y - sh / 2, sw, sh };
 }

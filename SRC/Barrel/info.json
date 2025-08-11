@@ -38,9 +38,9 @@
     ],
     "tags": [
         "collision",
+        "default",
         "impassable",
-        "wood",
-        "default"
+        "wood"
     ],
     "impassable_area": "impassable_area.json",
     "spacing_area": "spacing_area.json",

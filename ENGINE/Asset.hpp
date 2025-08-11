@@ -36,7 +36,7 @@ public:
     void change_animation(const std::string& name);
 
     SDL_Texture* get_current_frame() const;
-    SDL_Texture* get_image() const;
+
     std::string get_current_animation() const;
     std::string get_type() const;
 
@@ -88,8 +88,15 @@ public:
     bool static_frame = true;
 
     void deactivate();
+    int cached_w = 0;
+    int cached_h = 0;
+bool get_merge();
 
+
+void set_remove();
 private:
+    bool merged = false;
+    bool remove = false;
     void set_flip();
     void set_z_index();
 

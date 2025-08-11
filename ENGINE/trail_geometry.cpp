@@ -19,13 +19,16 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
     const Point& start, const Point& end, int curvyness, std::mt19937& rng)
 {
     std::vector<Point> line;
-    line.reserve(curvyness + 2);
+    line.reserve(static_cast<size_t>(curvyness) + 2);
     line.push_back(start);
 
     if (curvyness > 0) {
         double dx = end.first  - start.first;
         double dy = end.second - start.second;
         double len = std::hypot(dx, dy);
+        if (len <= 0.0) len = 1.0;
+
+        // Allow more bend on longer spans; scale with curvyness.
         double max_offset = len * 0.25 * (static_cast<double>(curvyness) / 8.0);
         std::uniform_real_distribution<double> offset_dist(-max_offset, max_offset);
 
@@ -33,13 +36,16 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
             double t  = static_cast<double>(i) / (curvyness + 1);
             double px = start.first  + t * dx;
             double py = start.second + t * dy;
+
+            // Perpendicular (unit) to the chord
             double nx = -dy / len;
             double ny =  dx / len;
+
             double off = offset_dist(rng);
 
             line.emplace_back(
-                int(std::round(px + nx * off)),
-                int(std::round(py + ny * off))
+                std::round(px + nx * off),
+                std::round(py + ny * off)
             );
         }
     }
@@ -51,41 +57,46 @@ std::vector<TrailGeometry::Point> TrailGeometry::build_centerline(
 std::vector<TrailGeometry::Point> TrailGeometry::extrude_centerline(
     const std::vector<Point>& centerline, double width)
 {
-    double half_w = width * 0.5;
+    const double half_w = width * 0.5;
     std::vector<Point> left, right;
+    left.reserve(centerline.size());
+    right.reserve(centerline.size());
 
     for (size_t i = 0; i < centerline.size(); ++i) {
         double cx = centerline[i].first;
         double cy = centerline[i].second;
-        double dx, dy;
 
+        double dx, dy;
         if (i == 0) {
-            dx = centerline[i + 1].first - cx;
+            dx = centerline[i + 1].first  - cx;
             dy = centerline[i + 1].second - cy;
         } else if (i == centerline.size() - 1) {
             dx = cx - centerline[i - 1].first;
             dy = cy - centerline[i - 1].second;
         } else {
-            dx = centerline[i + 1].first - centerline[i - 1].first;
+            dx = centerline[i + 1].first  - centerline[i - 1].first;
             dy = centerline[i + 1].second - centerline[i - 1].second;
         }
 
         double len = std::hypot(dx, dy);
-        if (len == 0) len = 1.0;
+        if (len <= 0.0) len = 1.0;
+
+        // Unit normal
         double nx = -dy / len;
-        double ny = dx / len;
+        double ny =  dx / len;
 
         left.emplace_back(
-            static_cast<int>(std::round(cx + nx * half_w)),
-            static_cast<int>(std::round(cy + ny * half_w))
+            std::round(cx + nx * half_w),
+            std::round(cy + ny * half_w)
         );
         right.emplace_back(
-            static_cast<int>(std::round(cx - nx * half_w)),
-            static_cast<int>(std::round(cy - ny * half_w))
+            std::round(cx - nx * half_w),
+            std::round(cy - ny * half_w)
         );
     }
 
     std::vector<Point> polygon;
+    polygon.reserve(left.size() + right.size());
     polygon.insert(polygon.end(), left.begin(), left.end());
     polygon.insert(polygon.end(), right.rbegin(), right.rend());
     return polygon;
@@ -100,7 +111,7 @@ TrailGeometry::Point TrailGeometry::compute_edge_point(const Point& center,
     double dx = toward.first  - center.first;
     double dy = toward.second - center.second;
     double len = std::hypot(dx, dy);
-    if (len == 0.0) return center;
+    if (len <= 0.0) return center;
 
     double dirX = dx / len;
     double dirY = dy / len;
@@ -145,63 +156,126 @@ bool TrailGeometry::attempt_trail_connection(
     json config;
     in >> config;
 
-    int min_width = config.value("min_width", 40);
-    int max_width = config.value("max_width", 80);
-    int curvyness = config.value("curvyness", 2);
-    std::string name = config.value("name", "trail_segment");
+    const int min_width = config.value("min_width", 40);
+    const int max_width = config.value("max_width", 80);
+    const int curvyness = config.value("curvyness", 2);
+    const std::string name = config.value("name", "trail_segment");
 
-    double width = std::uniform_int_distribution<int>(min_width, max_width)(rng);
+    const double width = static_cast<double>(
+        std::uniform_int_distribution<int>(min_width, max_width)(rng));
+
     if (testing) {
         std::cout << "[TrailGen] Using asset: " << path
                   << "  width=" << width
                   << "  curvyness=" << curvyness << "\n";
     }
 
-    Point a_center = a->room_area->get_center();
-    Point b_center = b->room_area->get_center();
+    // Centers from room areas (may be centroid; not guaranteed strictly inside for concave shapes).
+    const Point a_center = a->room_area->get_center();
+    const Point b_center = b->room_area->get_center();
 
-    const double overshoot = 300.0;
-    auto extend_past_edge = [&](const Point& center, const Point& toward, const Area* area) -> Point {
+    // Helper: given a center and target, find the edge point, an overshoot outside,
+    // and a guaranteed interior point that extends the trail *into* the room.
+    const double overshoot = 100.0;
+    const double min_interior_depth = std::max(40.0, width * 0.75); // ensure visible penetration
+
+    auto make_edge_triplet = [&](const Point& center,
+                                 const Point& toward,
+                                 const Area* area)
+    {
+        // Edge on boundary (last inside sample)
         Point edge = TrailGeometry::compute_edge_point(center, toward, area);
-        double dx = edge.first - center.first;
+
+        // Direction unit from center -> edge
+        double dx = edge.first  - center.first;
         double dy = edge.second - center.second;
         double len = std::hypot(dx, dy);
-        if (len == 0.0) return edge;
-
+        if (len <= 0.0) len = 1.0;
         double ux = dx / len;
         double uy = dy / len;
 
-        return {
-            edge.first + ux * overshoot,
-            edge.second + uy * overshoot
+        // Overshoot beyond the room, to avoid pinching at entrance
+        Point outside = { edge.first + ux * overshoot,
+                          edge.second + uy * overshoot };
+
+        // Interior point: step *back from the edge into the room* by a fixed depth.
+        // If the polygon is concave and this projected point lands outside,
+        // walk back toward 'center' until inside.
+        Point interior = { edge.first - ux * min_interior_depth,
+                           edge.second - uy * min_interior_depth };
+
+        auto is_inside = [&](const Point& p)->bool{
+            return area->contains_point({ static_cast<int>(std::round(p.first)),
+                                          static_cast<int>(std::round(p.second)) });
         };
+
+        if (!is_inside(interior)) {
+            // Walk back in small steps until we re-enter the room or reach the center.
+            const int max_fix_steps = 1024;
+            const double step = 2.0;
+            Point p = interior;
+            for (int i = 0; i < max_fix_steps; ++i) {
+                if (is_inside(p)) { interior = p; break; }
+                // move a bit toward the center
+                p.first  -= ux * step;
+                p.second -= uy * step;
+                // Stop if we pass the center
+                if (std::hypot(p.first - center.first, p.second - center.second) > len + 2.0) {
+                    break;
+                }
+            }
+            // Fallback: if still not inside, use the center (guarantees deep penetration)
+            if (!is_inside(interior)) {
+                interior = center;
+            }
+        }
+
+        return std::make_tuple(interior, edge, outside);
     };
 
-    Point a_edge = extend_past_edge(a_center, b_center, a->room_area.get());
-    Point b_edge = extend_past_edge(b_center, a_center, b->room_area.get());
+    Point a_interior, a_edge, a_outside;
+    std::tie(a_interior, a_edge, a_outside) = make_edge_triplet(a_center, b_center, a->room_area.get());
 
+    Point b_interior, b_edge, b_outside;
+    std::tie(b_interior, b_edge, b_outside) = make_edge_triplet(b_center, a_center, b->room_area.get());
+
+    // For intersection filtering, cache bounds of endpoints.
     auto [aminx, aminy, amaxx, amaxy] = a->room_area->get_bounds();
     auto [bminx, bminy, bmaxx, bmaxy] = b->room_area->get_bounds();
 
     for (int attempt = 0; attempt < 1000; ++attempt) {
+        // Centerline: explicitly ensure the corridor *starts well inside A*,
+        // exits A at a_edge, travels outside, then *re-enters B* at b_edge and
+        // continues *well inside B*.
         std::vector<Point> full_line;
-        full_line.push_back(a_center);
+        full_line.reserve(static_cast<size_t>(curvyness) + 6);
+
+        // Inside A → to A edge → overshoot outside
+        full_line.push_back(a_interior);
         full_line.push_back(a_edge);
 
-        auto middle = build_centerline(a_edge, b_edge, curvyness, rng);
+        // Middle section with bends: from A_outside to B_outside
+        auto middle = build_centerline(a_outside, b_outside, curvyness, rng);
         full_line.insert(full_line.end(), middle.begin(), middle.end());
 
+        // From outside to B edge → into B interior
         full_line.push_back(b_edge);
-        full_line.push_back(b_center);
+        full_line.push_back(b_interior);
 
+        // Extrude to polygon
         auto polygon = extrude_centerline(full_line, width);
 
+        // Convert to int points for Area
         std::vector<Area::Point> pts;
-        for (auto& p : polygon)
-            pts.emplace_back(int(std::round(p.first)), int(std::round(p.second)));
+        pts.reserve(polygon.size());
+        for (auto& p : polygon) {
+            pts.emplace_back(static_cast<int>(std::round(p.first)),
+                             static_cast<int>(std::round(p.second)));
+        }
 
         Area candidate("trail_candidate", pts);
 
+        // Coarse intersection filter (skip the two endpoint rooms)
         int intersection_count = 0;
         for (auto& area : existing_areas) {
             auto [minx, miny, maxx, maxy] = area.get_bounds();
@@ -222,6 +296,7 @@ bool TrailGeometry::attempt_trail_connection(
             continue;
         }
 
+        // Create the trail room using this polygon
         std::string room_dir = fs::path(path).parent_path().string();
         auto trail_room = std::make_unique<Room>(
             a->map_origin,
@@ -234,11 +309,13 @@ bool TrailGeometry::attempt_trail_connection(
             &candidate
         );
 
+        // Wire connections
         a->add_connecting_room(trail_room.get());
         b->add_connecting_room(trail_room.get());
         trail_room->add_connecting_room(a);
         trail_room->add_connecting_room(b);
 
+        // Register area and store room
         existing_areas.push_back(candidate);
         trail_rooms.push_back(std::move(trail_room));
 

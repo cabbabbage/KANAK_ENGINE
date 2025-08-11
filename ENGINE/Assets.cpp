@@ -6,6 +6,9 @@
 #include <iostream>
 #include <unordered_set>
 #include <functional>
+#include <thread>
+#include <chrono>
+
 
 namespace {
     inline void set_shading_group_recursive(Asset& asset, int group, int /*num_groups*/) {
@@ -27,21 +30,31 @@ namespace {
     }
 }
 
+
+
 Assets::Assets(std::vector<Asset>&& loaded,
                Asset* /*player_ptr*/,
                int screen_width,
                int screen_height,
                int screen_center_x,
-               int screen_center_y)
+               int screen_center_y,
+                int map_radius)
     : player(nullptr),
       controls(nullptr, nullptr),  // temporary init
-      activeManager(screen_width, screen_height),
+      // Create Bounds for the current view
+      window(screen_width, screen_height, view::Bounds{
+          -map_radius,   // left
+           map_radius,   // right
+          -map_radius,  // top
+           map_radius   // bottom
+      }),
+      activeManager(screen_width, screen_height, window),
       screen_width(screen_width),
       screen_height(screen_height),
       dx(0),
       dy(0),
       last_activat_update(0),
-      update_interval(20)
+      update_interval(25)
 {
     std::cout << "[Assets] Initializing Assets manager...\n";
 
@@ -76,7 +89,6 @@ Assets::Assets(std::vector<Asset>&& loaded,
     closest_assets = activeManager.getClosest();
     set_shading_groups();
 
-    // persistent ControlsManager with valid player + pointer to closest_assets
     controls = ControlsManager(player, &closest_assets);
 
     std::cout << "[Assets] Initialization complete. Total assets: "
@@ -89,13 +101,27 @@ Assets::Assets(std::vector<Asset>&& loaded,
     }
 
     std::cout << "[Assets] All static sources set.\n";
+    set_player_light_render();
+    activeManager.updateVisibility(player, screen_center_x, screen_center_y);
+    activeManager.sortByZIndex();
+
+    window.zoom_scale(1.0, 200);
+
+
 }
+
 
 void Assets::update(const std::unordered_set<SDL_Keycode>& keys,
                     int screen_center_x,
                     int screen_center_y)
 {
+    window.update();
+    if(window.intro){
+        activeManager.updateVisibility(player, screen_center_x, screen_center_y);
+        return;
+    }
     set_player_light_render();
+
     dx = dy = 0;
 
     controls.update(keys);
@@ -193,4 +219,26 @@ void Assets::set_shading_groups() {
         set_shading_group_recursive(a, group, num_groups_);
         group = (group == num_groups_) ? 1 : group + 1;
     }
+}
+
+void Assets::remove(Asset* asset) {
+    if (!asset) return;
+
+    std::cout << "[Assets] Removing asset: "
+              << (asset->info ? asset->info->name : "<null>")
+              << " at (" << asset->pos_X << ", " << asset->pos_Y << ")\n";
+
+    // Remove from active asset lists
+    active_assets.erase(std::remove(active_assets.begin(), active_assets.end(), asset),
+                        active_assets.end());
+    closest_assets.erase(std::remove(closest_assets.begin(), closest_assets.end(), asset),
+                         closest_assets.end());
+
+    // Remove from main container
+    all.erase(std::remove_if(all.begin(), all.end(),
+                             [asset](Asset& a) { return &a == asset; }),
+              all.end());
+
+    // Call destructor explicitly
+    asset->~Asset();
 }

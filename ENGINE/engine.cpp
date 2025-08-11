@@ -2,7 +2,7 @@
 
 #include "engine.hpp"
 #include "fade_textures.hpp"
-#include "generate_base_shadow.hpp"
+
 #include "shadow_overlay.hpp"
 #include <iostream>
 #include <filesystem>
@@ -19,7 +19,7 @@ Engine::Engine(const std::string& map_path,
       renderer(renderer),
       SCREEN_WIDTH(screen_w),
       SCREEN_HEIGHT(screen_h),
-      background_color({20, 33, 21, 150}),
+      boundary_color({20, 33, 21, 150}),
       overlay_texture(nullptr),
       minimap_texture_(nullptr),
       game_assets(nullptr),
@@ -54,7 +54,7 @@ void Engine::init() {
 
     util = RenderUtils(renderer, SCREEN_WIDTH, SCREEN_HEIGHT, minimap_texture_, map_path);
     scene = new SceneRenderer(renderer, game_assets, util, SCREEN_WIDTH, SCREEN_HEIGHT, map_path);
-    GenerateBaseShadow base(renderer, roomTrailAreas, game_assets);
+    //DistantAssetOpt base(renderer, roomTrailAreas, game_assets);
 
     std::cout << "\n\nENTERING GAME LOOP\n\n";
     game_loop();

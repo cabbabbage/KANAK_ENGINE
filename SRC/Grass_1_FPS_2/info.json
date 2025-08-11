@@ -19,15 +19,15 @@
         }
     },
     "tags": [
-        "green",
-        "default",
-        "small",
-        "cover",
         "moving",
-        "meadow",
+        "cover",
         "passable",
         "nature",
-        "plant"
+        "meadow",
+        "plant",
+        "default",
+        "green",
+        "small"
     ],
     "has_spacing": true,
     "spacing_area": "spacing_area.json",
@@ -44,5 +44,8 @@
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
-    "min_distance_all": 0
+    "min_distance_all": 0,
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

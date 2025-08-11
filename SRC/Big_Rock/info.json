@@ -1,14 +1,24 @@
 {
     "asset_name": "Big_Rock",
-    "asset_type": "Background",
+    "asset_type": "boundary",
     "animations": {
         "default": {
             "frames_path": "default",
-            "speed": 1.0,
             "on_end": "default",
+            "event_data": [],
+            "randomize": true,
+            "audio_path": "",
+            "volume": 50,
+            "lock_until_done": false
+        },
+        "group": {
+            "frames_path": "group",
+            "on_end": "group",
+            "event_data": [],
             "randomize": false,
             "audio_path": "",
-            "volume": 50
+            "volume": 50,
+            "lock_until_done": false
         }
     },
     "impassable_area": "impassable_area.json",
@@ -28,9 +38,11 @@
     "min_child_depth": 0,
     "max_child_depth": 2,
     "tags": [
-        "impassable",
         "rock",
-        "boundary"
+        "impassable",
+        "boundary",
+        "default",
+        "group"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,

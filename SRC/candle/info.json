@@ -19,12 +19,12 @@
         }
     },
     "tags": [
-        "barrel_child",
-        "passable",
-        "man-made",
         "light",
+        "man-made",
+        "orange",
+        "barrel_child",
         "default",
-        "orange"
+        "passable"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -33,7 +33,7 @@
         "scale_percentage": 5
     },
     "spacing_area": "spacing_area.json",
-    "min_same_type_distance": 200,
+    "min_same_type_distance": 1299,
     "blend_mode": "SDL_BLENDMODE_BLEND",
     "lighting_info": [
         {
@@ -51,10 +51,10 @@
                 219,
                 183
             ],
-            "radius": 193,
-            "falloff": 100,
+            "radius": 543,
+            "falloff": 0,
             "flicker": 7,
-            "flare": 56,
+            "flare": 33,
             "offset_x": -2,
             "offset_y": -30
         }

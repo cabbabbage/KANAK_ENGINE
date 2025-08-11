@@ -1,17 +1,16 @@
 // === File: scene_renderer.hpp ===
 #pragma once
 
-#include <SDL.h>
-#include <memory>
 #include <string>
-
-class Assets;
-class RenderUtils;
-class Asset;
-
+#include <memory>
+#include <SDL.h>
+#include "light_map.hpp"
 #include "global_light_source.hpp"
 #include "render_asset.hpp"
-#include "light_map.hpp"
+
+class Assets;
+class Asset;
+class RenderUtils;
 
 class SceneRenderer {
 public:
@@ -22,17 +21,18 @@ public:
                   int screen_height,
                   const std::string& map_path);
 
-    ~SceneRenderer() = default;
-
     void render();
-
-    bool debugging{false};
 
 private:
     void update_shading_groups();
     bool shouldRegen(Asset* a);
+    SDL_Rect get_scaled_position_rect(Asset* a,
+                                      int fw,
+                                      int fh,
+                                      float inv_scale,
+                                      int min_w,
+                                      int min_h);
 
-private:
     std::string map_path_;
     SDL_Renderer* renderer_;
     Assets* assets_;
@@ -41,11 +41,11 @@ private:
     int screen_height_;
 
     Global_Light_Source main_light_source_;
-    SDL_Texture* fullscreen_light_tex_{nullptr};
+    SDL_Texture* fullscreen_light_tex_;
+    RenderAsset render_asset_;
     std::unique_ptr<LightMap> z_light_pass_;
 
-    RenderAsset render_asset_;
-
-    int current_shading_group_{-1};
-    int num_groups_{10};
+    int current_shading_group_ = 0;
+    int num_groups_ = 20;
+    bool debugging = false;
 };

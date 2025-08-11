@@ -9,13 +9,18 @@
   "max_child_depth": 2,
   "animations": {
     "default": {
-      "path": null,
-      "end_path": null
+      "frames_path": "default",
+      "on_end": "default",
+      "event_data": [],
+      "randomize": false,
+      "audio_path": "",
+      "volume": 50,
+      "lock_until_done": false
     }
   },
   "tags": [
-    "passable",
-    "default"
+    "default",
+    "passable"
   ],
   "has_spacing": true,
   "spacing_area": "spacing_area.json",

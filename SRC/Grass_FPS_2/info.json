@@ -1,6 +1,6 @@
 {
     "asset_name": "Grass_FPS_2",
-    "asset_type": "MAP",
+    "asset_type": "Object",
     "animations": {
         "default": {
             "frames_path": "default",
@@ -23,15 +23,15 @@
         "Spacing"
     ],
     "tags": [
-        "green",
-        "default",
         "moving",
-        "bluff",
-        "meadow",
-        "passable",
         "leafy",
+        "passable",
         "nature",
-        "plant"
+        "meadow",
+        "plant",
+        "default",
+        "bluff",
+        "green"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -42,5 +42,8 @@
     "max_child_depth": 2,
     "has_spacing": true,
     "min_distance_all": 40,
-    "anti_tags": []
+    "anti_tags": [],
+    "can_invert": true,
+    "update_radius": 1000,
+    "render_radius": 1000
 }

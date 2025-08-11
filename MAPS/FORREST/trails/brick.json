@@ -2,7 +2,7 @@
   "name": "brick",
   "min_width": 700,
   "max_width": 700,
-  "curvyness": 3,
+  "curvyness": 4,
   "inherits_map_assets": true,
   "assets": [],
   "batch_assets": {
