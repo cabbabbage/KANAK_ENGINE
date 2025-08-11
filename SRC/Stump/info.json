@@ -23,14 +23,14 @@
   "spacing_area": "spacing_area.json",
   "min_same_type_distance": 0,
   "tags": [
-    "nature",
-    "still",
-    "meadow",
-    "impassable",
     "wood",
-    "default",
     "brown",
-    "medium"
+    "still",
+    "nature",
+    "default",
+    "medium",
+    "meadow",
+    "impassable"
   ],
   "rnd_spawn_min": 300,
   "rnd_spawn_max": 400,
@@ -55,9 +55,7 @@
     "small",
     "white"
   ],
-  "child_assets": [
-    "child_assets_1.json"
-  ],
+  "child_assets": [],
   "min_distance_all": 0,
   "lighting_info": [
     {

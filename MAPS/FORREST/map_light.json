@@ -2,9 +2,9 @@
   "radius": 6927,
   "intensity": 255,
   "orbit_radius": 993,
-  "update_interval": 16,
+  "update_interval": 8,
   "mult": 0.25,
-  "fall_off": 92,
+  "fall_off": 100,
   "base_color": [
     255,
     255,

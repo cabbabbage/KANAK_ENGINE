@@ -19,7 +19,7 @@
       "name": "candle",
       "min_number": 10,
       "max_number": 10,
-      "position": "Entrance",
+      "position": "Perimeter",
       "exact_position": null,
       "tag": false,
       "check_overlap": false,

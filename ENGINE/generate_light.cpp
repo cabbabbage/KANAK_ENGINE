@@ -36,8 +36,8 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     const std::string meta_file  = folder + "/metadata.json";
     const std::string img_file   = folder + "/light.png";
 
-    // How aggressively to blur. If you change this, cache will invalidate.
-    const int blur_passes = 15;
+    // Old look: no blur used. Keep this in metadata for cache key.
+    const int blur_passes = 0;
 
     json meta;
     if (CacheManager::load_metadata(meta_file, meta)) {
@@ -45,7 +45,7 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
             meta.value("radius",   -1) == light.radius &&
             meta.value("fall_off", -1) == light.fall_off &&
             meta.value("intensity",-1) == light.intensity &&
-            meta.value("flare",    -1) == light.flare &&
+            meta.value("flare",    -1) == light.flare && // kept for key stability, not used
             meta.value("blur_passes", -1) == blur_passes &&
             meta.contains("color") &&
             meta["color"].is_array() && meta["color"].size() == 3 &&
@@ -65,19 +65,18 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
         }
     }
 
-    // Rebuild
+    // Rebuild with old visual logic
     fs::remove_all(folder);
     fs::create_directories(folder);
 
     const int radius    = light.radius;
     const int falloff   = std::clamp(light.fall_off, 0, 100);
-    const SDL_Color base = light.color;
+    const SDL_Color col = light.color;
     const int intensity = std::clamp(light.intensity, 0, 255);
+    // flare kept in metadata for compatibility, but not used in old look
     const int flare     = std::clamp(light.flare, 0, 100);
 
-    const int drawRadius = radius;
-    const int size = std::max(1, drawRadius * 2);
-    const float effRadius = static_cast<float>(drawRadius);
+    const int size = std::max(1, radius * 2);
 
     SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, size, size, 32, SDL_PIXELFORMAT_RGBA32);
     if (!surf) {
@@ -94,132 +93,86 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     Uint32* pixels = static_cast<Uint32*>(surf->pixels);
     SDL_PixelFormat* fmt = surf->format;
 
-    // === PASS 1: radial falloff (logistic curve) ===
-    const float steepness = 10.0f + (falloff * 0.2f); // 10..30
-    const float midpoint  = 0.75f;                    // where fade starts
+    // White core from old version
+    float white_core_ratio  = std::pow(1.0f - falloff / 100.0f, 2.0f);
+    float white_core_radius = radius * white_core_ratio;
+
+    // Ultra-subtle, wide light rays from old version
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> angle_dist(0.0f, 2.0f * float(M_PI));
+    std::uniform_real_distribution<float> spread_dist(0.2f, 0.6f);   // wide spread
+    std::uniform_int_distribution<int>    ray_count_dist(4, 7);
+    const int ray_count = ray_count_dist(rng);
+
+    std::vector<std::pair<float, float>> rays;
+    rays.reserve(ray_count);
+    for (int i = 0; i < ray_count; ++i) {
+        rays.emplace_back(angle_dist(rng), spread_dist(rng));
+    }
+
+    // Fill with transparent outside radius
+    auto put_pixel = [&](int x, int y, Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
+        pixels[y * size + x] = SDL_MapRGBA(fmt, r, g, b, a);
+    };
 
     for (int y = 0; y < size; ++y) {
         for (int x = 0; x < size; ++x) {
-            float dx = x - drawRadius + 0.5f;
-            float dy = y - drawRadius + 0.5f;
+            float dx = x - radius + 0.5f;
+            float dy = y - radius + 0.5f;
             float dist = std::sqrt(dx * dx + dy * dy);
-            if (dist > effRadius) {
-                pixels[y * size + x] = 0;
+
+            if (dist > radius) {
+                put_pixel(x, y, 0, 0, 0, 0);
                 continue;
             }
-            float norm = dist / effRadius;
-            float fade = 1.0f / (1.0f + std::exp((norm - midpoint) * steepness));
-            Uint8 a = static_cast<Uint8>(intensity * std::clamp(fade, 0.0f, 1.0f));
 
-            // Pre-multiplied-ish color so additive stack doesn’t blow out
-            Uint8 r = static_cast<Uint8>(base.r * (a / 255.0f));
-            Uint8 g = static_cast<Uint8>(base.g * (a / 255.0f));
-            Uint8 b = static_cast<Uint8>(base.b * (a / 255.0f));
+            float angle = std::atan2(dy, dx);
 
-            pixels[y * size + x] = SDL_MapRGBA(fmt, r, g, b, a);
+            // Ray boost up to 10% along wide angular bands
+            float ray_boost = 1.0f;
+            for (const auto& rs : rays) {
+                float ray_angle = rs.first;
+                float spread    = rs.second;
+                float diff = std::fabs(angle - ray_angle);
+                diff = std::fmod(diff + 2.0f * float(M_PI), 2.0f * float(M_PI));
+                if (diff > float(M_PI)) diff = 2.0f * float(M_PI) - diff;
+                if (diff < spread) {
+                    float f = 1.0f - (diff / spread);
+                    ray_boost += f * 0.05f; // extremely subtle
+                }
+            }
+            ray_boost = std::clamp(ray_boost, 1.0f, 1.1f);
+
+            // Old power-law alpha falloff
+            float alpha_ratio = std::pow(1.0f - (dist / float(radius)), 1.4f);
+            alpha_ratio = std::clamp(alpha_ratio * ray_boost, 0.0f, 1.0f);
+
+            // Old scaling used 1.6
+            Uint8 alpha = static_cast<Uint8>(std::min(255.0f, intensity * alpha_ratio * 1.6f));
+
+            SDL_Color final_color;
+            if (dist <= white_core_radius) {
+                // Blend toward white in the core
+                final_color.r = static_cast<Uint8>((255 + col.r) / 2);
+                final_color.g = static_cast<Uint8>((255 + col.g) / 2);
+                final_color.b = static_cast<Uint8>((255 + col.b) / 2);
+                final_color.a = alpha;
+            } else {
+                // Interpolate from whitish core color to base color
+                float t = (dist - white_core_radius) / std::max(1e-6f, (radius - white_core_radius));
+                Uint8 core_r = static_cast<Uint8>((255 + col.r) / 2);
+                Uint8 core_g = static_cast<Uint8>((255 + col.g) / 2);
+                Uint8 core_b = static_cast<Uint8>((255 + col.b) / 2);
+
+                final_color.r = static_cast<Uint8>((1.0f - t) * core_r + t * col.r);
+                final_color.g = static_cast<Uint8>((1.0f - t) * core_g + t * col.g);
+                final_color.b = static_cast<Uint8>((1.0f - t) * core_b + t * col.b);
+                final_color.a = alpha;
+            }
+
+            put_pixel(x, y, final_color.r, final_color.g, final_color.b, final_color.a);
         }
     }
-
-    // === PASS 2: thin lens flares ===
-    if (flare > 0) {
-        auto drawCircle = [&](int cx, int cy, int rad, Uint8 alpha) {
-            if (rad <= 0) return;
-            for (int dy = -rad; dy <= rad; ++dy) {
-                int yy = cy + dy;
-                if (yy < 0 || yy >= size) continue;
-                int dx_limit = static_cast<int>(std::sqrt(std::max(0, rad * rad - dy * dy)));
-                for (int dx = -dx_limit; dx <= dx_limit; ++dx) {
-                    int xx = cx + dx;
-                    if (xx < 0 || xx >= size) continue;
-                    int idx = yy * size + xx;
-
-                    Uint8 pr, pg, pb, pa;
-                    SDL_GetRGBA(pixels[idx], fmt, &pr, &pg, &pb, &pa);
-                    Uint8 na = static_cast<Uint8>(std::min(255, int(pa) + int(alpha)));
-                    Uint8 nr = static_cast<Uint8>(base.r * (na / 255.0f));
-                    Uint8 ng = static_cast<Uint8>(base.g * (na / 255.0f));
-                    Uint8 nb = static_cast<Uint8>(base.b * (na / 255.0f));
-                    pixels[idx] = SDL_MapRGBA(fmt, nr, ng, nb, na);
-                }
-            }
-        };
-
-        static std::mt19937 rng{ std::random_device{}() };
-        std::uniform_real_distribution<float> angDist(0.0f, 2.0f * float(M_PI));
-        std::uniform_real_distribution<float> lenDist(radius * 0.8f, radius * 1.6f);
-        std::uniform_real_distribution<float> widthDist(radius * 0.006f, radius * 0.022f);
-
-        int streakCount = std::clamp(flare / 15, 3, 8);
-        for (int s = 0; s < streakCount; ++s) {
-            float angle  = angDist(rng);
-            float length = lenDist(rng);
-            float widthF = widthDist(rng);
-            int steps    = std::max(1, static_cast<int>(length));
-            for (int i = 0; i <= steps; ++i) {
-                float t  = float(i) / steps;
-                int cx   = static_cast<int>(drawRadius + std::cos(angle) * t * length);
-                int cy   = static_cast<int>(drawRadius + std::sin(angle) * t * length);
-                int rad  = static_cast<int>(widthF * (1.0f - t));
-                Uint8 alphaVal = static_cast<Uint8>(flare * (1.0f - t) * 0.5f);
-                drawCircle(cx, cy, rad, alphaVal);
-            }
-        }
-    }
-
-    // === PASS 3: heavy separable box-blur, many passes ===
-    auto blur_surface = [&](SDL_Surface* surface, int passes) {
-        if (!surface || passes <= 0) return;
-
-        const int w = surface->w;
-        const int h = surface->h;
-        std::vector<Uint32> temp(w * h);
-
-        auto get_pixel = [&](int x, int y) -> Uint32 {
-            x = std::clamp(x, 0, w - 1);
-            y = std::clamp(y, 0, h - 1);
-            return static_cast<Uint32*>(surface->pixels)[y * w + x];
-        };
-
-        for (int pass = 0; pass < passes; ++pass) {
-            // Horizontal blur (radius = 3)
-            for (int y = 0; y < h; ++y) {
-                for (int x = 0; x < w; ++x) {
-                    int r = 0, g = 0, b = 0, a = 0, count = 0;
-                    for (int k = -3; k <= 3; ++k) {
-                        Uint8 pr, pg, pb, pa;
-                        SDL_GetRGBA(get_pixel(x + k, y), surface->format, &pr, &pg, &pb, &pa);
-                        r += pr; g += pg; b += pb; a += pa; ++count;
-                    }
-                    temp[y * w + x] = SDL_MapRGBA(surface->format,
-                                                  Uint8(r / count),
-                                                  Uint8(g / count),
-                                                  Uint8(b / count),
-                                                  Uint8(a / count));
-                }
-            }
-
-            // Vertical blur (radius = 3)
-            for (int y = 0; y < h; ++y) {
-                for (int x = 0; x < w; ++x) {
-                    int r = 0, g = 0, b = 0, a = 0, count = 0;
-                    for (int k = -3; k <= 3; ++k) {
-                        Uint8 pr, pg, pb, pa;
-                        SDL_GetRGBA(temp[std::clamp(y + k, 0, h - 1) * w + x],
-                                    surface->format, &pr, &pg, &pb, &pa);
-                        r += pr; g += pg; b += pb; a += pa; ++count;
-                    }
-                    static_cast<Uint32*>(surface->pixels)[y * w + x] =
-                        SDL_MapRGBA(surface->format,
-                                    Uint8(r / count),
-                                    Uint8(g / count),
-                                    Uint8(b / count),
-                                    Uint8(a / count));
-                }
-            }
-        }
-    };
-
-    blur_surface(surf, blur_passes);
 
     SDL_UnlockSurface(surf);
 
@@ -231,7 +184,7 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     }
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
-    // Cache the blurred image for next run
+    // Cache result
     CacheManager::save_surface_as_png(surf, img_file);
     SDL_FreeSurface(surf);
 
@@ -239,9 +192,9 @@ SDL_Texture* GenerateLight::generate(SDL_Renderer* renderer,
     new_meta["radius"]      = light.radius;
     new_meta["fall_off"]    = light.fall_off;
     new_meta["intensity"]   = light.intensity;
-    new_meta["flare"]       = flare;
-    new_meta["blur_passes"] = blur_passes;
-    new_meta["color"]       = { base.r, base.g, base.b };
+    new_meta["flare"]       = flare;        // stored, not used
+    new_meta["blur_passes"] = blur_passes;  // 0 for old look
+    new_meta["color"]       = { col.r, col.g, col.b };
     CacheManager::save_metadata(meta_file, new_meta);
 
     return tex;

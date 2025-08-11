@@ -97,6 +97,9 @@ SDL_Rect SceneRenderer::get_scaled_position_rect(Asset* a, int fw, int fh, float
 void SceneRenderer::render() {
     static int render_call_count = 0;
     ++render_call_count;
+    if (!assets_->getView().intro){
+                update_shading_groups();
+    }
 
 
 

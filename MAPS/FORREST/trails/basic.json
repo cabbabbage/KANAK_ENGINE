@@ -2,7 +2,7 @@
   "name": "basic",
   "min_width": 702,
   "max_width": 702,
-  "curvyness": 8,
+  "curvyness": 4,
   "assets": [
     {
       "name": "candle",

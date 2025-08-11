@@ -22,17 +22,17 @@
         "Spacing"
     ],
     "tags": [
-        "blue",
-        "impassable",
-        "medium",
+        "light",
         "movement",
-        "water",
-        "healing",
-        "default",
-        "center",
         "grey",
+        "healing",
+        "impassable",
         "white",
-        "light"
+        "default",
+        "water",
+        "medium",
+        "center",
+        "blue"
     ],
     "rnd_spawn_min": 300,
     "rnd_spawn_max": 400,
@@ -40,7 +40,7 @@
         {
             "has_light_source": true,
             "light_intensity": 255,
-            "radius": 267,
+            "radius": 494,
             "y_radius": 196,
             "x_radius": 181,
             "falloff": 0,
@@ -50,29 +50,14 @@
             "has_light_source": true,
             "light_intensity": 173,
             "light_color": [
-                0,
+                138,
                 255,
                 255
             ],
-            "radius": 613,
+            "radius": 449,
             "falloff": 0,
             "flicker": 0,
-            "flare": 1,
-            "offset_x": 0,
-            "offset_y": 0
-        },
-        {
-            "has_light_source": true,
-            "light_intensity": 0,
-            "light_color": [
-                255,
-                255,
-                255
-            ],
-            "radius": 0,
-            "falloff": 0,
-            "flicker": 0,
-            "flare": 0,
+            "flare": 3,
             "offset_x": 0,
             "offset_y": 0
         }
