@@ -2,11 +2,11 @@
   "name": "tarot-game",
   "version-string": "0.1.0",
   "dependencies": [
-    "nlohmann-json",
-    "sdl2",
+    { "name": "sdl2", "default-features": false, "features": ["core"] },
     "sdl2-image",
     "sdl2-mixer",
     "sdl2-ttf",
+    "nlohmann-json",
     "glad",
     "opengl",
     "sdl2-gfx"

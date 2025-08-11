@@ -9,23 +9,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Default to Release if not set
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
 # Compiler cache (ccache/sccache) if present
 find_program(CCACHE_PROGRAM ccache)
 find_program(SCCACHE_PROGRAM sccache)
 if(CCACHE_PROGRAM)
-  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 elseif(SCCACHE_PROGRAM)
-  set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
 endif()
 
 # Speed-oriented flags
 if(MSVC)
-  add_compile_options(/MP /Zc:inline /Zc:__cplusplus /permissive- /FS /bigobj)
+    add_compile_options(/MP /Zc:inline /Zc:__cplusplus /permissive- /FS /bigobj)
 else()
-  add_compile_options(-pipe)
+    add_compile_options(-pipe)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/ENGINE)
@@ -34,79 +34,60 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/ENGINE)
 # Sources
 # ------------------------------------------
 file(GLOB ENGINE_SRC CONFIGURE_DEPENDS
-  ${CMAKE_SOURCE_DIR}/ENGINE/*.cpp
-  ${CMAKE_SOURCE_DIR}/ENGINE/*.hpp
+    ${CMAKE_SOURCE_DIR}/ENGINE/*.cpp
+    ${CMAKE_SOURCE_DIR}/ENGINE/*.hpp
 )
 add_executable(engine ${ENGINE_SRC})
 
 # Unity build (jumbo) for faster compiles
 option(ENABLE_UNITY_BUILD "Enable unity/jumbo build for faster compiles" ON)
 if(ENABLE_UNITY_BUILD)
-  set_target_properties(engine PROPERTIES UNITY_BUILD ON)
-  set_target_properties(engine PROPERTIES UNITY_BUILD_BATCH_SIZE 16)
+    set_target_properties(engine PROPERTIES UNITY_BUILD ON)
+    set_target_properties(engine PROPERTIES UNITY_BUILD_BATCH_SIZE 16)
 endif()
 
-# Precompiled header (create ENGINE/pch.hpp if you want this)
+# Precompiled header
 option(ENABLE_PCH "Enable precompiled headers" ON)
 if(ENABLE_PCH AND EXISTS "${CMAKE_SOURCE_DIR}/ENGINE/pch.hpp")
-  target_precompile_headers(engine PRIVATE ${CMAKE_SOURCE_DIR}/ENGINE/pch.hpp)
+    target_precompile_headers(engine PRIVATE ${CMAKE_SOURCE_DIR}/ENGINE/pch.hpp)
 endif()
 
 # ------------------------------------------
-# Includes
-# ------------------------------------------
-target_include_directories(engine
-  PRIVATE
-    ${CMAKE_SOURCE_DIR}/ENGINE
-    ${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/include/custom
-)
-
-# Mark vcpkg includes as SYSTEM to quiet warnings and speed checks
-target_include_directories(engine SYSTEM PRIVATE
-  ${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/include
-)
-
-# ------------------------------------------
-# Dependencies
+# Dependencies via vcpkg
 # ------------------------------------------
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_image CONFIG REQUIRED)
 find_package(SDL2_mixer CONFIG REQUIRED)
 find_package(SDL2_ttf CONFIG REQUIRED)
+find_package(SDL2_gfx CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 
-# SDL2_gfx: prefer config target if available in vcpkg
-# vcpkg exports target **SDL2_gfx::SDL2_gfx** (note the case).
-find_package(SDL2_gfx CONFIG QUIET)
-set(SDL2_GFX_LIBRARIES "")
-if(TARGET SDL2_gfx::SDL2_gfx)
-  set(SDL2_GFX_LIBRARIES SDL2_gfx::SDL2_gfx)
-else()
-  # Manual fallback if no config package was found
-  set(SDL2_GFX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/include/SDL2")
-  set(SDL2_GFX_LIBRARY     "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/lib/SDL2_gfx.lib")
-  if(NOT EXISTS "${SDL2_GFX_INCLUDE_DIR}/SDL2_gfxPrimitives.h" OR NOT EXISTS "${SDL2_GFX_LIBRARY}")
-    message(FATAL_ERROR "SDL2_gfx not found. Install it via vcpkg: vcpkg install sdl2-gfx:x64-windows")
-  endif()
-  target_include_directories(engine SYSTEM PRIVATE ${SDL2_GFX_INCLUDE_DIR})
-  list(APPEND SDL2_GFX_LIBRARIES ${SDL2_GFX_LIBRARY})
-endif()
+# ------------------------------------------
+# Include dirs
+# ------------------------------------------
+target_include_directories(engine
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/ENGINE
+)
 
+# ------------------------------------------
+# Link libraries
+# ------------------------------------------
 target_link_libraries(engine
-  PRIVATE
-    nlohmann_json::nlohmann_json
-    SDL2::SDL2 SDL2::SDL2main
-    SDL2_image::SDL2_image
-    SDL2_mixer::SDL2_mixer
-    SDL2_ttf::SDL2_ttf
-    glad::glad
-    OpenGL::GL
-    ${SDL2_GFX_LIBRARIES}
+    PRIVATE
+        nlohmann_json::nlohmann_json
+        SDL2::SDL2 SDL2::SDL2main
+        SDL2_image::SDL2_image
+        SDL2_mixer::SDL2_mixer
+        SDL2_ttf::SDL2_ttf
+        SDL2_gfx::SDL2_gfx
+        glad::glad
+        OpenGL::GL
 )
 
 # Faster relinks on MSVC Debug
 if(MSVC)
-  target_link_options(engine PRIVATE "$<$<CONFIG:Debug>:/INCREMENTAL>")
+    target_link_options(engine PRIVATE "$<$<CONFIG:Debug>:/INCREMENTAL>")
 endif()
