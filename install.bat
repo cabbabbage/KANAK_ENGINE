@@ -31,7 +31,17 @@ if errorlevel 1 (
     echo [ERROR] Failed to clone repository.
     pause & exit /b 1
 )
+
 cd KANAK_ENGINE
+
+echo [INSTALL] Checking out kaden_branch...
+git fetch origin
+git checkout kaden_branch 2>nul
+if errorlevel 1 (
+    echo [INSTALL] Branch kaden_branch does not exist locally. Creating...
+    git checkout -b kaden_branch
+)
+
 
 echo [INSTALL] Step 4: Installing Python requirements...
 if exist requirements.txt (
