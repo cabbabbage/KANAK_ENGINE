@@ -2,9 +2,63 @@
 setlocal enabledelayedexpansion
 
 set "EXTRA_ARGS="
+set "TOOL_MODE=0"
+
 if "%~1"=="-r" (
     echo [INFO] RebuildAssets mode requested.
     set "EXTRA_ARGS=-r"
+)
+if "%~1"=="-t" (
+    echo [INFO] ToolBuild mode requested.
+    set "TOOL_MODE=1"
+)
+
+:: === Tool mode steps (-t) ===
+if %TOOL_MODE%==1 (
+    echo [TOOL] Step 1: Checking Python installation...
+    where python >nul 2>nul
+    if errorlevel 1 (
+        echo [TOOL] Python not found. Installing via winget...
+        winget install -e --id Python.Python.3
+        if errorlevel 1 (
+            echo [ERROR] Failed to install Python.
+            pause & exit /b 1
+        )
+    ) else (
+        echo [TOOL] Python found: 
+        python --version
+    )
+
+    echo [TOOL] Step 2: Installing Python requirements...
+    if exist requirements.txt (
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
+        if errorlevel 1 (
+            echo [ERROR] Failed to install requirements.txt
+            pause & exit /b 1
+        )
+    ) else (
+        echo [WARN] requirements.txt not found.
+    )
+
+    echo [TOOL] Step 3: Checking executable build...
+    if not exist "Kanak_Manager.exe" (
+        echo [TOOL] Building Kanak_Manager executable with PyInstaller...
+        python -m PyInstaller --onefile --windowed Kanak_Manager/main.py
+        if errorlevel 1 (
+            echo [ERROR] PyInstaller build failed.
+            pause & exit /b 1
+        )
+        if exist "dist\main.exe" (
+            move /Y "dist\main.exe" "Kanak_Manager.exe" >nul
+            echo [TOOL] Executable moved to root as Kanak_Manager.exe
+        ) else (
+            echo [ERROR] PyInstaller did not produce dist\main.exe
+            pause & exit /b 1
+        )
+    ) else (
+        echo [TOOL] Executable already exists.
+    )
 )
 
 :: === Step 1: Ensure vcpkg exists and is bootstrapped ===
@@ -63,28 +117,6 @@ if not exist "%STB_DEST%\stb_image_resize2.h" (
     )
 )
 
-
-
-:: === Step 3: Install missing dependencies ===
-set "VCPKG_TRIPLET=x64-windows"
-set "DEPENDENCIES=sdl2 sdl2-image sdl2-mixer sdl2-ttf sdl2-gfx nlohmann-json glad"
-
-echo Checking for missing vcpkg dependencies (triplet: !VCPKG_TRIPLET!)...
-
-for %%D in (!DEPENDENCIES!) do (
-    vcpkg\\vcpkg list | findstr /i "%%D:x64-windows" >nul
-    if errorlevel 1 (
-        echo [INFO] Installing missing package: %%D
-        vcpkg\\vcpkg install %%D --triplet !VCPKG_TRIPLET!
-        if errorlevel 1 (
-            echo [ERROR] Failed to install %%D
-            pause & exit /b 1
-        )
-    ) else (
-        echo [OK] %%D already installed.
-    )
-)
-echo ✅ All dependencies verified or installed.
 
 :: === Step 4: Clean build ===
 echo Cleaning previous CMake cache...
