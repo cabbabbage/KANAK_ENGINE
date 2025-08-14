@@ -82,7 +82,6 @@ target_link_libraries(engine
         SDL2_image::SDL2_image
         SDL2_mixer::SDL2_mixer
         SDL2_ttf::SDL2_ttf
-        SDL2_gfx::SDL2_gfx
         glad::glad
         OpenGL::GL
 )

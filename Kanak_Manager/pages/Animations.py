@@ -56,7 +56,7 @@ class AnimationsPage(tk.Frame):
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         # Load trigger definitions
-        self.triggers_df = pd.read_csv("Asset Manager/triggers.csv")
+        self.triggers_df = pd.read_csv("Game_Manager/triggers.csv")
 
         # Load existing animations
         self._load_existing()

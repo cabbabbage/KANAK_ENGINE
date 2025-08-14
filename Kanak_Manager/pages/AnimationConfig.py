@@ -35,7 +35,7 @@ class AnimationEditor(ttk.Frame):
         self.area_ui = None
         self.preview_gif = None
 
-        self.triggers_df = pd.read_csv("Asset Manager/triggers.csv")
+        self.triggers_df = pd.read_csv("Game_Manager/triggers.csv")
         self.available_triggers = self.triggers_df["trigger_name"].tolist()
 
         self._build_ui()

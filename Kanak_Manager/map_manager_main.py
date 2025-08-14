@@ -69,7 +69,7 @@ class MapManagerApp(tk.Toplevel):
         # Top fixed buttons
         btn_frame = tk.Frame(left, bg='#1e1e1e')
         btn_frame.pack(fill=tk.X, padx=8, pady=(8,4))
-        switch_btn = tk.Button(btn_frame, text="Switch to Asset Manager",
+        switch_btn = tk.Button(btn_frame, text="Switch to Game_Manager",
                                bg="#007BFF", fg="white",
                                font=("Segoe UI",11,"bold"),
                                relief='flat', borderwidth=0,

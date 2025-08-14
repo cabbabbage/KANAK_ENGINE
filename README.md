@@ -94,7 +94,7 @@ Handled by `SceneRenderer`.
 
 ---
 
-## 7. Python Asset Manager
+## 7. Python Game_Manager
 Python/Tkinter tool used for:
 - Creating and editing `info.json` for each asset.
 - Designing collision/interactivity areas visually.
