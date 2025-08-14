@@ -1,4 +1,4 @@
-name: CMake on multiple platforms with vcpkg
+name: CMake on Windows with vcpkg
 
 on:
   push:
@@ -8,65 +8,65 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
-        include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
+        c_compiler: [cl]
+        cpp_compiler: [cl]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      - name: Set reusable strings
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    # === Bootstrap vcpkg ===
-    - name: Bootstrap vcpkg
-      shell: bash
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        ./vcpkg/bootstrap-vcpkg.sh
+      # Optional: Improve resilience of Windows networking during large downloads
+      - name: Windows networking retry tweaks (optional)
+        shell: bash
+        run: |
+          git config --global http.postBuffer 524288000
+          git config --global http.version HTTP/1.1 || true
 
-    # === Install dependencies from manifest ===
-    - name: Install dependencies from vcpkg.json
-      shell: bash
-      run: ./vcpkg/vcpkg install --clean-after-build
+      # === Bootstrap vcpkg ===
+      - name: Bootstrap vcpkg
+        shell: bash
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh
 
-    - name: Configure CMake (with vcpkg toolchain)
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-        -S ${{ github.workspace }}
+      # === Install dependencies from manifest with retry + binary caching ===
+      - name: Install dependencies from vcpkg.json
+        shell: bash
+        env:
+          VCPKG_FEATURE_FLAGS: "manifests,registries,binarycaching"
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+        run: |
+          for i in {1..4}; do
+            ./vcpkg/vcpkg install --clean-after-build && exit 0
+            echo "vcpkg install failed (attempt $i). Sleeping 20s then retrying..."
+            sleep 20
+          done
+          echo "vcpkg install failed after retries." >&2
+          exit 1
 
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      - name: Configure CMake (with vcpkg toolchain)
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+          -S ${{ github.workspace }}
 
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest --build-config ${{ matrix.build_type }}
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+      - name: Test
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        run: ctest --build-config ${{ matrix.build_type }}
